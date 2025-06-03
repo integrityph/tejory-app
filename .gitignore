@@ -1,0 +1,11 @@
+linux/
+macos/
+windows/
+build/
+.dart_tool/
+.vscode/
+.flutter-plugins
+.flutter-plugins-dependencies
+pass.txt
+commands
+.DS_Store

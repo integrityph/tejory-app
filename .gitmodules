@@ -1,0 +1,3 @@
+[submodule "android/app/src/main/cpp/secp256k1"]
+	path = android/app/src/main/cpp/secp256k1
+	url = https://github.com/bitcoin-core/secp256k1

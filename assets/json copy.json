@@ -1,0 +1,45 @@
+{
+  "data": [
+    {
+      "id": "bitcoin",
+      "rank": "1",
+      "symbol": "BTC",
+      "name": "Bitcoin Testnet",
+      "priceUsd": "0.00000000",
+      "changePercent24Hr": "0.00000000",
+      "hrpBech32": "tb",
+      "decimals": 8,
+      "yahooFinance": "BTC-USD",
+      "hdCode": 0,
+      "webId": "bitcoin",
+      "peerSeedType": "dns",
+      "peerSource": "seed.testnet4.wiz.biz,seed.testnet4.bitcoin.sprovoost.nl",
+      "defaultPort": 48333,
+      "magic": "1c163f28",
+      "blockZeroHash": "000000000000000000001ebd58c244970b3aa9d783bb001011fbe8ea8e98e00e",
+      "netVersionPublicHex": "043587CF",
+      "netVersionPrivateHex": "04358394"
+    },
+    {
+      "id": "bitcoin",
+      "rank": "1",
+      "symbol": "BTC",
+      "name": "Bitcoin",
+      "priceUsd": "0.00000000",
+      "changePercent24Hr": "0.00000000",
+      "hrpBech32": "bc",
+      "decimals": 8,
+      "yahooFinance": "BTC-USD",
+      "hdCode": 0,
+      "webId": "bitcoin",
+      "peerSeedType": "dns",
+      "peerSource": "seed.bitcoin.sipa.be,dnsseed.bluematt.me,dnsseed.bitcoin.dashjr-list-of-p2p-nodes.us,seed.bitcoin.jonasschnelli.ch,seed.btc.petertodd.net,seed.bitcoin.sprovoost.nl,dnsseed.emzy.de,seed.bitcoin.wiz.biz,seed.mainnet.achownodes.xyz",
+      "defaultPort": 8333,
+      "magic": "f9beb4d9",
+      "blockZeroHash": "000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f",
+      "netVersionPublicHex": "0488B21E",
+      "netVersionPrivateHex": "0488ADE4"
+    }
+  ],
+  "version": 1
+}

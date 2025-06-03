@@ -1,0 +1,13 @@
+{
+  "data": [
+    {
+      "currency0":"Ethereum",
+			"currency1":"Tether",
+			"fee":500,
+			"tickSpacing":10,
+			"address":"0x72331fcb696b0151904c03584b66dc8365bc63f8a144d89a773384e3a579ca73",
+			"dex":"uniswap_v4"
+    }
+  ],
+  "version": 1
+}

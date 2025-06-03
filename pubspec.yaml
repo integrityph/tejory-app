@@ -1,0 +1,251 @@
+name: tejory
+description: "This app is a crypto wallet for the Tejory hardware wallet card."
+# The following line prevents the package from being accidentally published to
+# pub.dev using `flutter pub publish`. This is preferred for private packages.
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+# The following defines the version and build number for your application.
+# A version number is three numbers separated by dots, like 1.2.43
+# followed by an optional build number separated by a +.
+# Both the version and the builder number may be overridden in flutter
+# build by specifying --build-name and --build-number, respectively.
+# In Android, build-name is used as versionName while build-number used as versionCode.
+# Read more about Android versioning at https://developer.android.com/studio/publish/versioningz
+# In iOS, build-name is used as CFBundleShortVersionString while build-number is used as CFBundleVersion.
+# Read more about iOS versioning at
+# https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
+# In Windows, build-name is used as the major, minor, and patch parts
+# of the product and file versions while build-number is used as the build suffix.
+version: 0.6.1+43
+
+environment:
+  sdk: ">=3.7.2 <4.0.0"
+
+# Dependencies specify other packages that your package needs in order to work.
+# To automatically upgrade your package dependencies to the latest versions
+# consider running `flutter pub upgrade --major-versions`. Alternatively,
+# dependencies can be manually updated by changing the version numbers below to
+# the latest version available on pub.dev. To see which dependencies have newer
+# versions available, run `flutter pub outdated`.
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # The following adds the Cupertino Icons font to your application.
+  # Use with the CupertinoIcons class for iOS style icons.
+  cupertino_icons: ^1.0.8
+  isar: ^3.1.0+1
+  isar_flutter_libs: ^3.1.0+1
+  objectbox: ^4.1.0
+  objectbox_flutter_libs: ^4.1.0
+  path_provider: ^2.1.5
+  # blockchain_utils: ^4.1.0
+  blockchain_utils: ^5.0.0
+  dart_des: ^1.0.2
+  # nfc_manager: ^3.5.0
+  nfc_manager: ^4.0.2
+  bech32: ^0.2.2
+  # bip39: ^1.0.6
+  dnsolve: ^1.0.2
+  murmur3: ^2.1.0
+  # bitcoin_base: ^5.2.0
+  bitcoin_base: ^6.4.0
+  mutex: ^3.1.0
+  crypto: ^3.0.6
+  # http: ^1.3.0
+  http: ^1.4.0
+  collection: ^1.19.0
+  elliptic: ^0.3.11
+  ecdsa: ^0.1.2
+  # intl: ^0.19.0
+  intl: ^0.20.2
+  url_launcher: ^6.3.1
+  qr_code_scanner: ^1.0.1
+  qr_flutter: ^4.1.0
+  # shared_preferences: ^2.5.2
+  shared_preferences: ^2.5.3
+  sensors_plus: ^6.1.1
+  base58check: ^2.0.0
+  local_auth: ^2.3.0
+  # flutter_local_notifications: ^18.0.1
+  flutter_local_notifications: ^19.2.1
+  # syncfusion_flutter_charts: ^28.2.11
+  syncfusion_flutter_charts: ^29.2.5
+  package_info_plus: ^8.3.0
+  advance_math: ^5.3.2
+  cryptography: ^2.7.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  # The "flutter_lints" package below contains a set of recommended lints to
+  # encourage good coding practices. The lint set provided by the package is
+  # activated in the `analysis_options.yaml` file located at the root of your
+  # package. See that file for information about deactivating specific lint
+  # rules and activating additional ones.
+  flutter_lints: ^5.0.0
+  isar_generator: ^3.1.0+1
+  objectbox_generator: ^4.1.0
+  build_runner: ^2.4.13
+  flutter_launcher_icons: ^0.14.3
+  # test: ^1.25.9
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/logo/TEJORY_logo.png"
+  # adaptive_icon_background: ""
+  # adaptive_icon_foreground: ""
+  min_sdk_android: 23
+  remove_alpha_ios: true
+  background_color_ios: "#ffffff"
+  image_path_ios: "assets/logo/TEJORY_logo_ios.png"
+
+
+# For information on the generic Dart part of this file, see the
+# following page: https://dart.dev/tools/pub/pubspec
+
+# The following section is specific to Flutter packages.
+flutter:
+
+  # The following line ensures that the Material Icons font is
+  # included with your application, so that you can use the icons in
+  # the material Icons class.
+  uses-material-design: true
+  assets:
+    - assets/integritynet-logo-red.png
+    - assets/1inch.png
+    - assets/aave.png
+    - assets/ada.png
+    - assets/agix.png
+    - assets/aioz.png
+    - assets/akt.png
+    - assets/algo.png
+    - assets/ankr.png
+    - assets/ant.png
+    - assets/ar.png
+    - assets/atom.png
+    - assets/avax.png
+    - assets/axs.png
+    - assets/bch.png
+    - assets/bnb.png
+    - assets/bsv.png
+    - assets/btc.png
+    - assets/cake.png
+    - assets/cdt.png
+    - assets/celo.png
+    - assets/cfx.png
+    - assets/chz.png
+    - assets/ckb.png
+    - assets/comp.png
+    - assets/cro.png
+    - assets/crv.png
+    - assets/dai.png
+    - assets/dexe.png
+    - assets/doge.png
+    - assets/dot.png
+    - assets/egld.png
+    - assets/enj.png
+    - assets/eos.png
+    - assets/etc.png
+    - assets/eth.png
+    - assets/fei.png
+    - assets/fet.png
+    - assets/fil.png
+    - assets/flow.png
+    - assets/ftm.png
+    - assets/ftt.png
+    - assets/ftx.png
+    - assets/gala.png
+    - assets/glm.png
+    - assets/gno.png
+    - assets/grt.png
+    - assets/gt.png
+    - assets/hbar.png
+    - assets/hnt.png
+    - assets/hot.png
+    - assets/icp.png
+    - assets/inj.png
+    - assets/iota.png
+    - assets/iotx.png
+    - assets/kava.png
+    - assets/kcs.png
+    - assets/klay.png
+    - assets/ksm.png
+    - assets/ldo.png
+    - assets/leo.png
+    - assets/link.png
+    - assets/lpt.png
+    - assets/ltc.png
+    - assets/mana.png
+    - assets/matic.png
+    - assets/mina.png
+    - assets/mkr.png
+    - assets/near.png
+    - assets/neo.png
+    - assets/nexo.png
+    - assets/nxm.png
+    - assets/ocean.png
+    - assets/okb.png
+    - assets/om.png
+    - assets/pendle.png
+    - assets/qnt.png
+    - assets/ray.png
+    - assets/rbn.png
+    - assets/rndr.png
+    - assets/rose.png
+    - assets/rpl.png
+    - assets/rune.png
+    - assets/sand.png
+    - assets/shib.png
+    - assets/skl.png
+    - assets/snx.png
+    - assets/sol.png
+    - assets/steth.png
+    - assets/stx.png
+    - assets/super.png
+    - assets/tfuel.png
+    - assets/theta.png
+    - assets/ton.png
+    - assets/trx.png
+    - assets/tusd.png
+    - assets/twt.png
+    - assets/uni.png
+    - assets/usdc.png
+    - assets/usdt.png
+    - assets/vet.png
+    - assets/wbtc.png
+    - assets/wemix.png
+    - assets/woo.png
+    - assets/xdc.png
+    - assets/xec.png
+    - assets/xlm.png
+    - assets/xmr.png
+    - assets/xrp.png
+    - assets/xtz.png
+    - assets/zec.png
+    - assets/zil.png
+    - assets/zrx.png
+    - assets/qr.png
+    - assets/btcln.png
+    - assets/background/bg1.png
+    - assets/nft.jpg
+    - assets/coindata.json
+    - assets/lpdata.json
+    - assets/background/sample.png
+    - assets/logo/TEJORY_logo.png
+    - assets/logo/TEJORY_logo_ios.png
+    - assets/logo/TEJORY_logo_background.png
+    - assets/nfc-t.png
+    - assets/logo/TEJORY-1.png
+    - assets/logo/tejoryname.png
+    - assets/background/shake.png
+    - assets/icons/receive.png
+    - assets/icons/download.png
+    - assets/icons/scann.png
+
+  fonts:
+   - family:  CustomIcons
+     fonts:
+      - asset: assets/fonts/CustomIcons.ttf

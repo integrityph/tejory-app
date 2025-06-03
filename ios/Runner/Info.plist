@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>NSCameraUsageDescription</key>
+	<string>The app needs to use the camera to capture QR code when reading an address.</string>
+	<key>CADisableMinimumFrameDurationOnPhone</key>
+	<true/>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>CFBundleDisplayName</key>
+	<string>Tejory Wallet</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>tejory</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(FLUTTER_BUILD_NAME)</string>
+	<key>CFBundleSignature</key>
+	<string>????</string>
+	<key>CFBundleVersion</key>
+	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>LSRequiresIPhoneOS</key>
+	<true/>
+	<key>NFCReaderUsageDescription</key>
+	<string>Tejory Hardware Wallet</string>
+	<key>UIApplicationSupportsIndirectInputEvents</key>
+	<true/>
+	<key>UILaunchStoryboardName</key>
+	<string>LaunchScreen</string>
+	<key>UIMainStoryboardFile</key>
+	<string>Main</string>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+	</array>
+	<key>UISupportedInterfaceOrientations~ipad</key>
+	<array>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+	</array>
+	<key>com.apple.developer.nfc.readersession.iso7816.select-identifiers</key>
+	<array>
+		<string>D2760000850101</string>
+		<string>846A000000000000</string>
+		<string>846A00000000000000</string>
+		<string>846A608000000000</string>
+		<string>846A60800000000000</string>
+	</array>
+</dict>
+</plist>
