@@ -122,6 +122,9 @@ class _AssetListState extends State<AssetList> with ChangeNotifier {
 
   setPrivacy(bool val) {
     privacy = val;
+    for (final asset in assets) {
+      asset.triggerNotifier();
+    }
     notifyListeners();
   }
 
@@ -352,6 +355,7 @@ class _AssetListState extends State<AssetList> with ChangeNotifier {
       coin.contractHash = initialAssets.assets[i].contractHash;
       coin.template = initialAssets.assets[i].template;
       coin.active = initialAssets.assets[i].active;
+      coin.workerIsolateRequired = initialAssets.assets[i].workerIsolateRequired;
       int coinId = await coin.save();
 
       if (coin.blockZeroHash != null && coin.blockZeroHash!.isNotEmpty) {
@@ -452,6 +456,7 @@ class _AssetListState extends State<AssetList> with ChangeNotifier {
       asset.template = coin.template;
       asset.priceUsd = coin.usdPrice ?? 0.0;
       asset.active = coin.active??true;
+      asset.workerIsolateRequired = coin.workerIsolateRequired??false;
       asset.walletId = myWalletId;
       asset.assetIndex = i;
       asset.initCoin(allWallets);

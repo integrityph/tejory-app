@@ -26,6 +26,7 @@ class Coin {
   String? template;
   double? usdPrice;
   bool? active;
+  bool? workerIsolateRequired;
 
   Future<int> save() async {
     Isar isar = Singleton.getDB();

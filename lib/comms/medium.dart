@@ -22,6 +22,7 @@ abstract class Medium {
     NFCSessionCallbackFunction callback, {
     String? baseClassUI,
     List<int>? PIN,
+    List<int>? newPIN,
     bool isNewPIN = false,
     bool changePIN = false,
     String enterPINMessage = "Enter your PIN",

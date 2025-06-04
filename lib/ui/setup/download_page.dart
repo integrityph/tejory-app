@@ -517,6 +517,7 @@ class _DownloadPageState extends State<DownloadPage> {
             },
             baseClassUI: "DownloadPage",
             enterPINMessage: "Create a PIN Code",
+            isNewPIN: true
           );
         }
 

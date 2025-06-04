@@ -2,7 +2,8 @@ import 'package:tejory/wallets/wallet_app.dart';
 
 class WalletStatus {
   bool setupCompleted = true;
-  bool pinLocked = false;
+  int pinRemainingTries = 0;
+  int pukRemainingTries = 0;
   String serialNumber = "";
   String version = "";
   String apiVersion = "";

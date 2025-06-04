@@ -21,6 +21,7 @@ import 'package:tejory/crypto-helper/ethscan.dart';
 import 'package:tejory/crypto-helper/keccak.dart';
 import 'package:tejory/singleton.dart';
 import 'package:http/http.dart' as http;
+import 'package:tejory/wallets/iwallet.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:web_socket_channel/status.dart' as status;
 
@@ -44,13 +45,14 @@ class Ether extends CryptoCoin {
     "eth.rpc.blxrbdn.com",
     "ethereum-rpc.publicnode.com",
     "rpc.mevblocker.io",
-    "eth-mainnet.g.alchemy.com/v2/${APIKeys.getAPIKey("alchemy")}"
+    "eth-mainnet.g.alchemy.com/v2/${APIKeys.getAPIKey("alchemy")}",
   ];
   List<String> rpcWebsocketServer = [
-    "eth-mainnet.g.alchemy.com/v2/${APIKeys.getAPIKey("alchemy")}"
+    "eth-mainnet.g.alchemy.com/v2/${APIKeys.getAPIKey("alchemy")}",
   ];
-  late int rpcIndex =
-      Random(DateTime.now().millisecondsSinceEpoch).nextInt(rpcServer.length);
+  late int rpcIndex = Random(
+    DateTime.now().millisecondsSinceEpoch,
+  ).nextInt(rpcServer.length);
   String API_SERVER = "api.etherscan.io"; //"api-sepolia.etherscan.io";
   int cachedFee = 20000000000; // 20_000_000_000 (20 gwei)
   int? cachedNonce = 0;
@@ -62,16 +64,17 @@ class Ether extends CryptoCoin {
   final double PRIORITY_PERCENTAGE = 0.1;
   final TX_GAS_UNITS = 21000;
 
-  Ether(int walletId,
-      {required WalletType walletType,
-      required List<int> magic,
-      required int port,
-      required String peerSeedType,
-      required String peerSource,
-      int? coinId,
-      String? netVersionPublicHex,
-      String? netVersionPrivateHex})
-      : super.newCoin("Ethereum", "ETH", 18) {
+  Ether(
+    int walletId, {
+    required WalletType walletType,
+    required List<int> magic,
+    required int port,
+    required String peerSeedType,
+    required String peerSource,
+    int? coinId,
+    String? netVersionPublicHex,
+    String? netVersionPrivateHex,
+  }) : super.newCoin("Ethereum", "ETH", 18) {
     super.port = port;
     super.id = coinId;
     super.peerSource = peerSource;
@@ -107,11 +110,15 @@ class Ether extends CryptoCoin {
   }
 
   @override
-  Future<BigInt> calculateFee(String toAddress, BigInt amount,
-      {noChange = false}) async {
+  Future<BigInt> calculateFee(
+    String toAddress,
+    BigInt amount, {
+    noChange = false,
+  }) async {
     var maxFeePerGas = getGasPrice();
-    var maxPriorityFeePerGas =
-        BigInt.from((maxFeePerGas.toDouble() * PRIORITY_PERCENTAGE).toInt());
+    var maxPriorityFeePerGas = BigInt.from(
+      (maxFeePerGas.toDouble() * PRIORITY_PERCENTAGE).toInt(),
+    );
     maxFeePerGas += maxPriorityFeePerGas;
 
     return maxFeePerGas * BigInt.from(TX_GAS_UNITS);
@@ -131,8 +138,9 @@ class Ether extends CryptoCoin {
   @override
   String getAddressFromBytes(Uint8List address, {String? bechHRP}) {
     var addressHex = hex.encode(address);
-    var checksum =
-        keccak(Uint8List.fromList(addressHex.toLowerCase().codeUnits));
+    var checksum = keccak(
+      Uint8List.fromList(addressHex.toLowerCase().codeUnits),
+    );
 
     var checksumHex = hex.encode(checksum);
 
@@ -200,11 +208,15 @@ class Ether extends CryptoCoin {
   Uint8List getPublicKey(String path, {bool compressed = false}) {
     var pathParts = path.split("/");
     String parentPubKey = getExtendedPublicKey(
-        pathParts.sublist(0, pathParts.length - 1).join("/"));
-    var parentAccount =
-        Bip32Slip10Secp256k1.fromExtendedKey(parentPubKey, getNetVersion());
-    var childKey = parentAccount
-        .childKey(Bip32KeyIndex(int.parse(pathParts[pathParts.length - 1])));
+      pathParts.sublist(0, pathParts.length - 1).join("/"),
+    );
+    var parentAccount = Bip32Slip10Secp256k1.fromExtendedKey(
+      parentPubKey,
+      getNetVersion(),
+    );
+    var childKey = parentAccount.childKey(
+      Bip32KeyIndex(int.parse(pathParts[pathParts.length - 1])),
+    );
 
     if (compressed) {
       return Uint8List.fromList(childKey.publicKey.compressed);
@@ -215,8 +227,11 @@ class Ether extends CryptoCoin {
   String getExtendedPublicKey(String path) {
     // check if the key is already in the DB
     var isar = Singleton.getDB();
-    keyCollection.Key? key =
-        isar.keys.getByPathWalletCoinSync(path, walletId, id);
+    keyCollection.Key? key = isar.keys.getByPathWalletCoinSync(
+      path,
+      walletId,
+      id,
+    );
     Bip32PublicKey pubkey;
 
     // if the key is not if the DB, create it and save it
@@ -240,11 +255,18 @@ class Ether extends CryptoCoin {
     Bip32KeyData keyData = Bip32KeyData(chainCode: chainCode);
     List<int> keyBytes = hex.decode(key.pubKey!);
     EllipticCurveTypes curveType = EllipticCurveTypes.secp256k1;
-    pubkey =
-        Bip32PublicKey.fromBytes(keyBytes, keyData, getNetVersion(), curveType);
+    pubkey = Bip32PublicKey.fromBytes(
+      keyBytes,
+      keyData,
+      getNetVersion(),
+      curveType,
+    );
 
-    final hdw = Bip32Slip10Secp256k1.fromPublicKey(keyBytes,
-        keyData: keyData, keyNetVer: getNetVersion());
+    final hdw = Bip32Slip10Secp256k1.fromPublicKey(
+      keyBytes,
+      keyData: keyData,
+      keyNetVer: getNetVersion(),
+    );
     pubkey = hdw.publicKey;
 
     return pubkey.toExtended;
@@ -253,7 +275,9 @@ class Ether extends CryptoCoin {
   Bip32Slip10Secp256k1? getNearestParentKey(String path) {
     if (extendedPrivateKey != null) {
       final hdw = Bip32Slip10Secp256k1.fromExtendedKey(
-          extendedPrivateKey!, getNetVersion());
+        extendedPrivateKey!,
+        getNetVersion(),
+      );
       return hdw;
     }
 
@@ -285,27 +309,35 @@ class Ether extends CryptoCoin {
     }
     List<int> pubkey = hex.decode(key.pubKey!);
     Bip32KeyData? keyData = Bip32KeyData(
-        chainCode: Bip32ChainCode(hex.decode(key.chainCode!)),
-        depth: Bip32Depth(pathParts.length),
-        index: Bip32KeyIndex(index));
+      chainCode: Bip32ChainCode(hex.decode(key.chainCode!)),
+      depth: Bip32Depth(pathParts.length),
+      index: Bip32KeyIndex(index),
+    );
     Bip32KeyNetVersions? keyNetVer = getNetVersion();
 
-    final hdw = Bip32Slip10Secp256k1.fromPublicKey(pubkey,
-        keyData: keyData, keyNetVer: keyNetVer);
+    final hdw = Bip32Slip10Secp256k1.fromPublicKey(
+      pubkey,
+      keyData: keyData,
+      keyNetVer: keyNetVer,
+    );
 
     return hdw;
   }
 
   Bip32KeyNetVersions getNetVersion() {
     return Bip32KeyNetVersions(
-        //     hex.decode(netVersionPublicHex!), hex.decode(netVersionPrivateHex!));
-        [0x04, 0x35, 0x87, 0xCF],
-        [0x04, 0x35, 0x83, 0x94]);
+      //     hex.decode(netVersionPublicHex!), hex.decode(netVersionPrivateHex!));
+      [0x04, 0x35, 0x87, 0xCF],
+      [0x04, 0x35, 0x83, 0x94],
+    );
   }
 
   @override
-  Future<String> getReceivingAddress(
-      {String? network, int account = 0, BigInt? amount}) async {
+  Future<String> getReceivingAddress({
+    String? network,
+    int account = 0,
+    BigInt? amount,
+  }) async {
     String path = "m/44'/60'/${account}'/0/0";
     // int nextIndex = getNextIndex(path);
     // path += "/${nextIndex}";
@@ -328,8 +360,12 @@ class Ether extends CryptoCoin {
   }
 
   @override
-  Future<Block?> getStartBlock(bool isNew, bool easyImport, int? startYear,
-      {int? blockHeight}) async {
+  Future<Block?> getStartBlock(
+    bool isNew,
+    bool easyImport,
+    int? startYear, {
+    int? blockHeight,
+  }) async {
     return null;
   }
 
@@ -357,14 +393,14 @@ class Ether extends CryptoCoin {
     tx.destination = getAddressBytes(toAddress);
     tx.gasLimit = TX_GAS_UNITS;
     tx.maxFeePerGas = getGasPrice();
-    tx.maxPriorityFeePerGas =
-        BigInt.from((tx.maxFeePerGas.toDouble() * PRIORITY_PERCENTAGE).toInt());
+    tx.maxPriorityFeePerGas = BigInt.from(
+      (tx.maxFeePerGas.toDouble() * PRIORITY_PERCENTAGE).toInt(),
+    );
     tx.maxFeePerGas += tx.maxPriorityFeePerGas;
     if (noChange) {
       tx.amount = balance - (tx.maxFeePerGas * BigInt.from(tx.gasLimit));
       if ((tx.amount - amount).abs() > BigInt.from(5) && !noChange) {
-        print(
-            "invalid amount tx.amount: ${tx.amount}, amount:${amount}");
+        print("invalid amount tx.amount: ${tx.amount}, amount:${amount}");
         return null;
       }
     } else {
@@ -405,7 +441,8 @@ class Ether extends CryptoCoin {
 
   @override
   Future<List<TxDB>?> setupTransactionsForPathChildren(
-      List<String> paths) async {
+    List<String> paths,
+  ) async {
     return null;
   }
 
@@ -423,23 +460,40 @@ class Ether extends CryptoCoin {
     String path = "m/44'/60'/0'/0/0";
     List<int>? sig;
     EtherTx ethTx = tx as EtherTx;
-    await wallet.signingWallet!.startSession(
-        context,
-        await (dynamic session, {List<int>? pinCode, List<int>? pinCodeNew}) async {
-          wallet.signingWallet!.setMediumSession(session);
-          if (pinCode == null) {
-            print("no PIN provided");
-            return false;
-          }
-          var pinOK = await wallet.signingWallet!.verifyPIN(String.fromCharCodes(pinCode));
-          if (!pinOK) {
-            print("invalid PIN");
-            return false;
-          }
-          sig = await wallet.signingWallet!
-              .signTX(ethTx.getRawTX(), "ETH", true, paths: [path]);
-          return true;
-        });
+    String? errorMes;
+    var success = await wallet.signingWallet!.startSession(context, await (
+      dynamic session, {
+      List<int>? pinCode,
+      List<int>? pinCodeNew,
+    }) async {
+      wallet.signingWallet!.setMediumSession(session);
+      if (pinCode == null) {
+        errorMes = "PIN code was not entered";
+        return false;
+      }
+      var pinResult = await wallet.signingWallet!.verifyPIN(
+        String.fromCharCodes(pinCode),
+      );
+      print("startSession: sent verifyPIN, result is ${pinResult}");
+      if (pinResult != VerifyPINResult.OK) {
+        errorMes = pinResult.toString();
+        return false;
+      }
+      sig = await wallet.signingWallet!.signTX(
+        ethTx.getRawTX(),
+        "ETH",
+        true,
+        paths: [path],
+      );
+      return true;
+    });
+
+    if (!success) {
+      if (errorMes != null) {
+        throw Exception(errorMes!);
+      }
+      return null;
+    }
 
     if (sig == null || sig?.length == 0) {
       return null;
@@ -447,11 +501,13 @@ class Ether extends CryptoCoin {
 
     // check if the S value is too big
     BigInt n = BigInt.parse(
-        "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141",
-        radix: 16);
+      "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141",
+      radix: 16,
+    );
     BigInt halfn = BigInt.parse(
-        "7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0",
-        radix: 16);
+      "7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0",
+      radix: 16,
+    );
 
     int rLength = sig![3];
     int sIndex = 4 + rLength + 2;
@@ -480,15 +536,16 @@ class Ether extends CryptoCoin {
   }
 
   @override
-  void storeTransaction(Tx tx,
-      {PST? pst,
-      bool confirmed = true,
-      bool verified = true,
-      bool failed = false}) {}
+  void storeTransaction(
+    Tx tx, {
+    PST? pst,
+    bool confirmed = true,
+    bool verified = true,
+    bool failed = false,
+  }) {}
 
   @override
-  void transmitTxBytes(Uint8List buf) {
-  }
+  void transmitTxBytes(Uint8List buf) {}
 
   @override
   Future<void> updateBalance() async {
@@ -515,19 +572,21 @@ class Ether extends CryptoCoin {
   }
 
   Future<BigInt?> getBalanceFromAPI() async {
-    var jObj = await rpcCall(
-          "eth_getBalance", [await getReceivingAddress(), "latest"]);
+    var jObj = await rpcCall("eth_getBalance", [
+      await getReceivingAddress(),
+      "latest",
+    ]);
 
-      if (jObj == null) {
-        return null;
-      }
+    if (jObj == null) {
+      return null;
+    }
 
-      String? newBalanceStr = (jObj["result"] ?? null) as String?;
-      if (newBalanceStr == null) {
-        return null;
-      }
-      BigInt newBalance = BigInt.parse(newBalanceStr.substring(2), radix: 16);
-      return newBalance;
+    String? newBalanceStr = (jObj["result"] ?? null) as String?;
+    if (newBalanceStr == null) {
+      return null;
+    }
+    BigInt newBalance = BigInt.parse(newBalanceStr.substring(2), radix: 16);
+    return newBalance;
   }
 
   Future<void> connect() async {
@@ -553,8 +612,11 @@ class Ether extends CryptoCoin {
     }
   }
 
-  Future<Map<String, dynamic>?> rpcCall(String method, List<dynamic> params,
-      {int depth = 0}) async {
+  Future<Map<String, dynamic>?> rpcCall(
+    String method,
+    List<dynamic> params, {
+    int depth = 0,
+  }) async {
     if (depth == rpcServer.length * 2) {
       return null;
     }
@@ -567,7 +629,7 @@ class Ether extends CryptoCoin {
       "jsonrpc": "2.0",
       "method": method, //"eth_getBalance",
       "params": params, //[getReceivingAddress(), "latest"],
-      "id": 0
+      "id": 0,
     };
     String body = json.encode(bodyObj);
 
@@ -629,7 +691,8 @@ class Ether extends CryptoCoin {
   Future<void> getTxListFromAPI() async {
     String address = await getReceivingAddress();
     var URL = Uri.parse(
-        'https://${API_SERVER}/v2/api?chainid=${CHAIN_ID}&module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&page=1&offset=1000&sort=asc&apikey=${APIKeys.getAPIKey("etherscan")}');
+      'https://${API_SERVER}/v2/api?chainid=${CHAIN_ID}&module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&page=1&offset=1000&sort=asc&apikey=${APIKeys.getAPIKey("etherscan")}',
+    );
     http.Response response;
     Map<String, dynamic> jObj;
 
@@ -665,7 +728,8 @@ class Ether extends CryptoCoin {
       tx.lockingScript = (tx.isDeposit!) ? result.from! : result.to!;
       tx.outputIndex = 0;
       tx.time = DateTime.fromMillisecondsSinceEpoch(
-          int.parse(result.timeStamp!) * 1000);
+        int.parse(result.timeStamp!) * 1000,
+      );
       tx.verified = true;
       tx.wallet = walletId;
       await tx.save();
@@ -702,8 +766,10 @@ class Ether extends CryptoCoin {
   }
 
   Future<int?> getNonceFromAPI() async {
-    var jObj = await rpcCall(
-        "eth_getTransactionCount", [await getReceivingAddress(), "latest"]);
+    var jObj = await rpcCall("eth_getTransactionCount", [
+      await getReceivingAddress(),
+      "latest",
+    ]);
     if (jObj == null) {
       return null;
     }
@@ -726,72 +792,74 @@ class Ether extends CryptoCoin {
         "alchemy_minedTransactions",
         {
           "addresses": [
-            {
-              "to": myAddress,
-            },
-            {
-              "from":myAddress,
-            },
+            {"to": myAddress},
+            {"from": myAddress},
           ],
           "includeRemoved": false,
-          "hashesOnly": true
-        }
+          "hashesOnly": true,
+        },
       ],
-      "id": 1
+      "id": 1,
     };
 
     final channel = WebSocketChannel.connect(URL);
 
-    channel.ready.then((val) {
-      setIsConnected(true);
-      channel.sink.add(json.encode(filterObj));
-      channel.stream.listen((msg) async {
-        try {
+    channel.ready
+        .then((val) {
           setIsConnected(true);
-          print(msg);
-          var msgStr = msg as String;
-          var obj = jsonDecode(msgStr) as Map<String, dynamic>;
-          Map<String, dynamic>? params = obj["params"];
-          if (params == null) {
-            return;
-          }
-          var newBalance = await getBalanceFromAPI();
-          if (newBalance == null) {
-            return;
-          }
-          if (newBalance != balance) {
-            balance = newBalance;
-            getTxListFromAPI();
-            notifyListeners();
-          }
-        } catch (e) {
+          channel.sink.add(json.encode(filterObj));
+          channel.stream.listen(
+            (msg) async {
+              try {
+                setIsConnected(true);
+                print(msg);
+                var msgStr = msg as String;
+                var obj = jsonDecode(msgStr) as Map<String, dynamic>;
+                Map<String, dynamic>? params = obj["params"];
+                if (params == null) {
+                  return;
+                }
+                var newBalance = await getBalanceFromAPI();
+                if (newBalance == null) {
+                  return;
+                }
+                if (newBalance != balance) {
+                  balance = newBalance;
+                  getTxListFromAPI();
+                  notifyListeners();
+                }
+              } catch (e) {
+                setIsConnected(false);
+                print(e);
+              }
+            },
+            onError: (v) {
+              try {
+                channel.sink.close(status.goingAway);
+              } catch (e) {}
+              // retry again after 5 seconds
+              Future.delayed(Duration(seconds: 5)).then((v) {
+                streamEvents();
+              });
+            },
+            onDone: () {
+              try {
+                channel.sink.close(status.goingAway);
+              } catch (e) {}
+              // retry again after 5 seconds
+              Future.delayed(Duration(seconds: 5)).then((v) {
+                streamEvents();
+              });
+            },
+          );
+        })
+        .onError((e, s) {
           setIsConnected(false);
-          print(e);
-        }
-      },onError:(v){
-        try{
-          channel.sink.close(status.goingAway);
-        } catch(e){}
-        // retry again after 5 seconds
-        Future.delayed(Duration(seconds: 5)).then((v){
-          streamEvents();
+          // retry again after 5 seconds
+          Future.delayed(Duration(seconds: 5)).then((v) {
+            streamEvents();
+          });
         });
-      },onDone: (){
-        try{
-          channel.sink.close(status.goingAway);
-        } catch(e){}
-        // retry again after 5 seconds
-        Future.delayed(Duration(seconds: 5)).then((v){
-          streamEvents();
-        });
-      });
-    }).onError((e, s) {
-      setIsConnected(false);
-      // retry again after 5 seconds
-      Future.delayed(Duration(seconds: 5)).then((v) {
-        streamEvents();
-      });
-    });
   }
 
   bool isValidAddress(String address) {

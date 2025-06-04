@@ -26,10 +26,10 @@ class Tejory extends StatefulWidget {
   Tejory({super.key});
 
   @override
-  _TejoryState createState() => _TejoryState();
+  TejoryState createState() => TejoryState();
 }
 
-class _TejoryState extends State<Tejory> with RouteAware {
+class TejoryState extends State<Tejory> with RouteAware {
   accountSetting? selectedMenu;
   int _currentIndex = 0;
 
@@ -54,7 +54,7 @@ class _TejoryState extends State<Tejory> with RouteAware {
     super.initState();
 
     SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
-    initNotifications();
+    Singleton.initNotifications();
   }
 
   @override
@@ -134,44 +134,5 @@ class _TejoryState extends State<Tejory> with RouteAware {
         },
       ),
     );
-  }
-
-  Future<void> initNotifications() async {
-    Singleton.notificationsEnabled =
-        await Singleton.flutterLocalNotificationsPlugin
-            .resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin
-            >()
-            ?.requestNotificationsPermission() ?? false;
-
-    // initialize the plugin. app_icon needs to be a added as a drawable resource to the Android head project
-    const AndroidInitializationSettings initializationSettingsAndroid =
-        AndroidInitializationSettings('launcher_icon');
-    final DarwinInitializationSettings initializationSettingsDarwin =
-        DarwinInitializationSettings();
-    final InitializationSettings initializationSettings =
-        InitializationSettings(
-          android: initializationSettingsAndroid,
-          iOS: initializationSettingsDarwin,
-          macOS: null,
-          linux: null,
-        );
-    await Singleton.flutterLocalNotificationsPlugin.initialize(
-      initializationSettings,
-      onDidReceiveNotificationResponse: onDidReceiveNotificationResponse,
-    );
-  }
-
-  void onDidReceiveNotificationResponse(
-    NotificationResponse notificationResponse,
-  ) async {
-    final String? payload = notificationResponse.payload;
-    if (notificationResponse.payload != null) {
-      print('notification payload: $payload');
-    }
-    // await Navigator.push(
-    //   context,
-    //   MaterialPageRoute<void>(builder: (context) => SecondScreen(payload)),
-    // );
   }
 }

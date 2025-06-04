@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:isolate';
 
 import 'package:flutter/services.dart';
+import 'package:tejory/api_keys/api_keys.dart';
 import 'package:tejory/coins/crypto_coin.dart';
 import 'package:tejory/singleton.dart';
 import 'package:tejory/ui/asset.dart';
@@ -74,17 +75,20 @@ class AssetIsolate {
     if (message is SendPort) {
       sendPorts[workerIndex] = message;
       final RootIsolateToken? rootIsolateToken = RootIsolateToken.instance;
-      sendPorts[workerIndex]!.send(rootIsolateToken);
+      if (rootIsolateToken == null) {
+        print("rootIsolateToken is null. Isolate failed to initialize.");
+        return;
+      }
+      Map<String, dynamic> initialIsolateConfig = {
+        'command': '_initialize_isolate',
+        'isolate_root_token': rootIsolateToken,
+        'api_keys': APIKeys.keys,
+        'coin_config': coins[workerIndex].toConfigMap(),
+      };
+      sendPorts[workerIndex]!.send(initialIsolateConfig);
     } else if (message is String && message == "READY") {
       _isolatesReady[workerIndex].complete();
-    } else if (message is String && message == "GET_ASSET_CONFIG") {
-      print("isolate sending coin to isolate");
-      // send first message containing the coin
-      Map<String, dynamic> coinMessage = {
-        'command': 'initialize_coin_from_config',
-        'config': coins[workerIndex].toConfigMap(),
-      };
-      sendPorts[workerIndex]!.send(coinMessage);
+      print("isolate ${coins[workerIndex].symbol()}.$workerIndex is ready");
     } else if (message is Map<String, dynamic>) {
       coins[workerIndex].receiveResponse(message);
     }
@@ -94,7 +98,6 @@ class AssetIsolate {
     print("Isolate started");
     final receivePort = ReceivePort();
     sendPort.send(receivePort.sendPort);
-    print("Isolate receivePort sent");
 
     CryptoCoin? coin;
 
@@ -105,13 +108,6 @@ class AssetIsolate {
       if (msg is String && msg == "KILL") {
         // Handle special KILL command
         Isolate.exit();
-      } else if (msg is RootIsolateToken) {
-        BackgroundIsolateBinaryMessenger.ensureInitialized(msg);
-        print("Isolate opening DB");
-        await Singleton.initDB();
-        print("Isolate READY");
-        sendPort.send("GET_ASSET_CONFIG");
-        return;
       }
       
       // This part if for CryptoCoin method messages
@@ -121,16 +117,24 @@ class AssetIsolate {
       }
       Map<String, dynamic> msgMap = msg;
 
-      if (msgMap["command"] == "initialize_coin_from_config") {
+      if (msgMap["command"] == "_initialize_isolate") {
         // assign the coin instance which is a copy of the main isolate instance
-        Map<String, dynamic> receivedConfig = msgMap['config'];
+        RootIsolateToken rootIsolateToken = msgMap['isolate_root_token'];
+        Map<String, String> apiKey = msgMap['api_keys'];
+        Map<String, dynamic> coinConfig = msgMap['coin_config'];
+        
+        // initialize DB
+        BackgroundIsolateBinaryMessenger.ensureInitialized(rootIsolateToken);
+        await Singleton.initDB();
 
-        coin = Asset.fromConfig(receivedConfig);
+        // initialize API keys
+        APIKeys.keys = apiKey;
 
+        // initialize coin from config
+        coin = Asset.fromConfig(coinConfig);
         // configure the coin for worker isolate
         coin!.isUIInstance = false;
         coin!.addListener((){
-          print("isolate sending notifyListeners");
           // send notify listeners changes:
           sendPort.send(coin!.getState());
         });
@@ -179,6 +183,13 @@ class AssetIsolate {
         case "setOnline":
           try {
             coin!.setOnline(msgMap["params"]["val"]);
+          } catch (e) {
+            error = e;
+          }
+          break;
+        case "callInternalFunction":
+          try {
+            coin!.callInternalFunction(msgMap["params"]["method"], msgMap["params"]["params"]);
           } catch (e) {
             error = e;
           }

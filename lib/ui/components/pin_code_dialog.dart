@@ -4,6 +4,7 @@ import 'package:tejory/keypad/keypad.dart';
 
 class PINCodeDialog {
   _getPINContainer(String data) {
+    print("_getPINContainer ${data}");
     return Container(
       child: Text(
         data,
@@ -30,19 +31,29 @@ class PINCodeDialog {
     List<String> PINText = [" ", " ", " ", " "];
     TextEditingController pinController = TextEditingController();
     bool listening = false;
-    Numpad numpad = Numpad(autoShow:true, keyboardController:pinController, onEditingCompleteKeyboard: (NumpadState numpadState) {
-        numpadState.setVisible(false);
-        Navigator.of(context).pop(PIN);
-    });
-    
-    print("ready to show PIN dialog");
-    var dialogFuture = showDialog(
+    Numpad numpad = Numpad(
+          autoShow: true,
+          keyboardController: pinController,
+          onEditingCompleteKeyboard: (NumpadState numpadState) {
+            numpadState.setVisible(false);
+            Navigator.of(context).pop(PIN);
+          },
+        );
+    Stopwatch watch = Stopwatch()..start();
+
+    print("ready to show PIN dialog ${watch.elapsedMilliseconds}");
+    var dialogFuture = showDialog<List<int>?>(
       context: context,
       barrierDismissible: false,
+      useRootNavigator: true,
       builder: (BuildContext context) {
+        print("showDialog.builder ${watch.elapsedMilliseconds}");        
         return Dialog.fullscreen(
           child: StatefulBuilder(
             builder: (BuildContext context, StateSetter setState) {
+              print(
+                "showDialog.builder.StatefulBuilder.builder ${watch.elapsedMilliseconds}",
+              );
               if (!listening) {
                 listening = true;
                 pinController.addListener(() {
@@ -105,8 +116,7 @@ class PINCodeDialog {
           ),
         );
       },
-      useRootNavigator: false,
     );
-    return await dialogFuture;
+    return dialogFuture;
   }
 }

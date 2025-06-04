@@ -107,8 +107,13 @@ const CoinSchema = CollectionSchema(
       name: r'webId',
       type: IsarType.string,
     ),
-    r'yahooFinance': PropertySchema(
+    r'workerIsolateRequired': PropertySchema(
       id: 18,
+      name: r'workerIsolateRequired',
+      type: IsarType.bool,
+    ),
+    r'yahooFinance': PropertySchema(
+      id: 19,
       name: r'yahooFinance',
       type: IsarType.string,
     )
@@ -258,7 +263,8 @@ void _coinSerialize(
   writer.writeString(offsets[15], object.template);
   writer.writeDouble(offsets[16], object.usdPrice);
   writer.writeString(offsets[17], object.webId);
-  writer.writeString(offsets[18], object.yahooFinance);
+  writer.writeBool(offsets[18], object.workerIsolateRequired);
+  writer.writeString(offsets[19], object.yahooFinance);
 }
 
 Coin _coinDeserialize(
@@ -287,7 +293,8 @@ Coin _coinDeserialize(
   object.template = reader.readStringOrNull(offsets[15]);
   object.usdPrice = reader.readDoubleOrNull(offsets[16]);
   object.webId = reader.readStringOrNull(offsets[17]);
-  object.yahooFinance = reader.readStringOrNull(offsets[18]);
+  object.workerIsolateRequired = reader.readBoolOrNull(offsets[18]);
+  object.yahooFinance = reader.readStringOrNull(offsets[19]);
   return object;
 }
 
@@ -335,6 +342,8 @@ P _coinDeserializeProp<P>(
     case 17:
       return (reader.readStringOrNull(offset)) as P;
     case 18:
+      return (reader.readBoolOrNull(offset)) as P;
+    case 19:
       return (reader.readStringOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -2801,6 +2810,34 @@ extension CoinQueryFilter on QueryBuilder<Coin, Coin, QFilterCondition> {
     });
   }
 
+  QueryBuilder<Coin, Coin, QAfterFilterCondition>
+      workerIsolateRequiredIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'workerIsolateRequired',
+      ));
+    });
+  }
+
+  QueryBuilder<Coin, Coin, QAfterFilterCondition>
+      workerIsolateRequiredIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'workerIsolateRequired',
+      ));
+    });
+  }
+
+  QueryBuilder<Coin, Coin, QAfterFilterCondition> workerIsolateRequiredEqualTo(
+      bool? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'workerIsolateRequired',
+        value: value,
+      ));
+    });
+  }
+
   QueryBuilder<Coin, Coin, QAfterFilterCondition> yahooFinanceIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNull(
@@ -3169,6 +3206,18 @@ extension CoinQuerySortBy on QueryBuilder<Coin, Coin, QSortBy> {
     });
   }
 
+  QueryBuilder<Coin, Coin, QAfterSortBy> sortByWorkerIsolateRequired() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'workerIsolateRequired', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Coin, Coin, QAfterSortBy> sortByWorkerIsolateRequiredDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'workerIsolateRequired', Sort.desc);
+    });
+  }
+
   QueryBuilder<Coin, Coin, QAfterSortBy> sortByYahooFinance() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'yahooFinance', Sort.asc);
@@ -3411,6 +3460,18 @@ extension CoinQuerySortThenBy on QueryBuilder<Coin, Coin, QSortThenBy> {
     });
   }
 
+  QueryBuilder<Coin, Coin, QAfterSortBy> thenByWorkerIsolateRequired() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'workerIsolateRequired', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Coin, Coin, QAfterSortBy> thenByWorkerIsolateRequiredDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'workerIsolateRequired', Sort.desc);
+    });
+  }
+
   QueryBuilder<Coin, Coin, QAfterSortBy> thenByYahooFinance() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'yahooFinance', Sort.asc);
@@ -3549,6 +3610,12 @@ extension CoinQueryWhereDistinct on QueryBuilder<Coin, Coin, QDistinct> {
     });
   }
 
+  QueryBuilder<Coin, Coin, QDistinct> distinctByWorkerIsolateRequired() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'workerIsolateRequired');
+    });
+  }
+
   QueryBuilder<Coin, Coin, QDistinct> distinctByYahooFinance(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -3669,6 +3736,12 @@ extension CoinQueryProperty on QueryBuilder<Coin, Coin, QQueryProperty> {
   QueryBuilder<Coin, String?, QQueryOperations> webIdProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'webId');
+    });
+  }
+
+  QueryBuilder<Coin, bool?, QQueryOperations> workerIsolateRequiredProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'workerIsolateRequired');
     });
   }
 

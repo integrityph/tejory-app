@@ -19,7 +19,8 @@
       "blockZeroHash": "000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f",
       "netVersionPublicHex": "0488B21E",
       "netVersionPrivateHex": "0488ADE4",
-			"active": true
+			"active": true,
+			"workerIsolateRequired": true
     },
 		{
       "id": "ether",
@@ -110,5 +111,5 @@
 			"active": false
     }
   ],
-  "version": 2
+  "version": 3
 }

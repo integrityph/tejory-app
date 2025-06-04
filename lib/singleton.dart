@@ -202,4 +202,43 @@ class Singleton {
 
     return "$appName $version ($buildNumber)";
   }
+
+  static Future<void> initNotifications() async {
+    Singleton.notificationsEnabled =
+        await Singleton.flutterLocalNotificationsPlugin
+            .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin
+            >()
+            ?.requestNotificationsPermission() ?? false;
+
+    // initialize the plugin. app_icon needs to be a added as a drawable resource to the Android head project
+    const AndroidInitializationSettings initializationSettingsAndroid =
+        AndroidInitializationSettings('launcher_icon');
+    final DarwinInitializationSettings initializationSettingsDarwin =
+        DarwinInitializationSettings();
+    final InitializationSettings initializationSettings =
+        InitializationSettings(
+          android: initializationSettingsAndroid,
+          iOS: initializationSettingsDarwin,
+          macOS: null,
+          linux: null,
+        );
+    await Singleton.flutterLocalNotificationsPlugin.initialize(
+      initializationSettings,
+      onDidReceiveNotificationResponse: onDidReceiveNotificationResponse,
+    );
+  }
+
+  static void onDidReceiveNotificationResponse(
+    NotificationResponse notificationResponse,
+  ) async {
+    final String? payload = notificationResponse.payload;
+    if (notificationResponse.payload != null) {
+      print('notification payload: $payload');
+    }
+    // await Navigator.push(
+    //   context,
+    //   MaterialPageRoute<void>(builder: (context) => SecondScreen(payload)),
+    // );
+  }
 }

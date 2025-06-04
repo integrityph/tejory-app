@@ -21,10 +21,12 @@ class NumpadState extends State<Numpad> {
 
   @override
   void initState() {
+    print("NumpadState.initState start");
     super.initState();
     keyboardController = widget.keyboardController;
     onEditingCompleteKeyboard = widget.onEditingCompleteKeyboard;
     visibleKeyboard = widget.autoShow;
+    print("NumpadState.initState end");
   }
 
   void openKeyboard(TextEditingController controller,

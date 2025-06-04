@@ -396,7 +396,7 @@ class _SenderState extends State<Sender> {
           : handleTokenChange,
       items: () {
         List<DropdownMenuItem<String>> x = Singleton
-            .assetList.assetListState.assets
+            .assetList.assetListState.filteredAssets
             .map<DropdownMenuItem<String>>((Asset _asset) {
           return DropdownMenuItem<String>(
               value: _asset.id,
@@ -784,14 +784,30 @@ class _SenderState extends State<Sender> {
         Tx? tx = await asset!.makeTransaction(
             address, asset!.getBaseAmount(amount),
             noChange: _isMax);
-        print('RawTX: ${hex.encode(tx!.getRawTX())}');
+        if (tx == null) {
+          showDialog(
+            context: context,
+            builder: (context) {
+              return AlertDialog(
+                content: Text('Unable to generate transaction'),
+              );
+            },
+          );
+          return;
+        }
+        print('RawTX: ${hex.encode(tx.getRawTX())}');
 
         Uint8List? signedBytes;
         PST pst = asset!.makePST(tx);
-        if (asset!.getWalletType() == WalletType.tejoryCard) {
-          signedBytes = await signTxNFC(pst, tx);
-        } else {
-          signedBytes = await signTxPhone(pst, tx);
+        String? ErrorMsg;
+        try{
+          if (asset!.getWalletType() == WalletType.tejoryCard) {
+            signedBytes = await signTxNFC(pst, tx);
+          } else {
+            signedBytes = await signTxPhone(pst, tx);
+          }
+        } catch(e) {
+          ErrorMsg = e.toString().replaceFirst("Exception: ", "");
         }
 
         if (signedBytes == null) {
@@ -799,7 +815,15 @@ class _SenderState extends State<Sender> {
             context: context,
             builder: (context) {
               return AlertDialog(
-                content: Text('Error in signing transaction'),
+                icon: Icon(Icons.error_outline, color: Colors.red, size:36),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  spacing: 5,
+                  children: [
+                    Text("Transaction Failed", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    Text('${ErrorMsg==null?"Unknown error in signing transaction":ErrorMsg}'),
+                  ],
+                ),
               );
             },
           );
@@ -809,7 +833,7 @@ class _SenderState extends State<Sender> {
         print('Signed TX: ${hex.encode(signedBytes)}');
 
         // asset = Singleton.assetList.assetListState.findAsset(selectedToken);
-        asset!.transmitTxBytes(signedBytes);
+        // asset!.transmitTxBytes(signedBytes);
 
         Tx signedTx = tx.fromTxBytes(signedBytes);
         var txHash = signedTx.getHashHex();
@@ -921,7 +945,7 @@ class _SenderState extends State<Sender> {
       );
       return null;
     }
-
+    
     Uint8List? signedBytes = await asset!.signTx(pst, tx, context);
 
     return signedBytes;

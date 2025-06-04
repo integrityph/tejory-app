@@ -50,6 +50,7 @@ class Asset with ChangeNotifier {
   Widget iconOnline = Container(width: 40, height: 40);
   Widget iconOffline = Container(width: 40, height: 40);
   bool active = true;
+  bool workerIsolateRequired = false;
 
   Asset({
     required this.id,
@@ -84,6 +85,7 @@ class Asset with ChangeNotifier {
       asset.contractHash = json['contractHash'] ?? '';
       asset.template = json['template'] ?? '';
       asset.active = json['active'] ?? true;
+      asset.workerIsolateRequired = json['workerIsolateRequired'] ?? false;
       return asset;
     } catch (e) {
       throw e;
@@ -193,7 +195,7 @@ class Asset with ChangeNotifier {
   }
 
   Future<void> initWorker() async {
-    if (!active) {
+    if (!active || !workerIsolateRequired) {
       if (isolate != null) {
         isolate!.kill().then((_){
           isolate = null;
@@ -227,6 +229,7 @@ class Asset with ChangeNotifier {
       "template":template,
       "id":coinId,
       "active":active,
+      "workerIsolateRequired":workerIsolateRequired,
     };
     coinTemplate = fromConfig(configMap);
 
@@ -236,6 +239,7 @@ class Asset with ChangeNotifier {
         coins.add(fromConfig(configMap)!);
       }
       coins[i].walletId = wallets[i].id;
+      coins[i].walletType = wallets[i].type;
       coins[i].hrp = _hrpBech32;
       coins[i].decimals = decimals;
       coins[i].online = online;

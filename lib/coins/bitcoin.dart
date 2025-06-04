@@ -28,6 +28,7 @@ import 'package:tejory/crypto-helper/bech32m.dart';
 import 'package:tejory/crypto-helper/hd_wallet.dart';
 import 'package:tejory/crypto-helper/other_helpers.dart';
 import 'package:tejory/singleton.dart';
+import 'package:tejory/wallets/iwallet.dart';
 import 'package:tejory/wallets/tejorycard/bitcoin_applet.dart';
 import 'crypto_coin.dart';
 import 'package:bitcoin_base/bitcoin_base.dart';
@@ -207,11 +208,45 @@ class Bitcoin extends CryptoCoin {
     return total;
   }
 
+  @override
+  void callInternalFunction(String method, Map<String, dynamic> params) {
+    switch (method) {
+      case "getPublicKeyHashes":
+        getPublicKeyHashes(
+          refresh: params["refresh"],
+          externalGap: params["externalGap"],
+          internalGap: params["internalGap"],
+        );
+      default:
+        print("bitcoin.callInternalFunction unknown method ${method}");
+    }
+  }
+
   List<Uint8List> getPublicKeyHashes({
-    bool refresh = false,
-    int externalGap = 20,
-    int internalGap = 20,
+    bool? refresh = false,
+    int? externalGap = 20,
+    int? internalGap = 20,
+    bool? refreshBloomFilters = false,
   }) {
+    refresh = refresh ?? false;
+    externalGap = externalGap ?? 20;
+    internalGap = internalGap ?? 20;
+    refreshBloomFilters = refreshBloomFilters ?? false;
+    if (isUIInstance) {
+      getAssetIsolatePort().send(<String, dynamic>{
+        "command": "callInternalFunction",
+        "params": {
+          "method": "getPublicKeyHashes",
+          "params": {
+            "refresh": refresh,
+            "externalGap": externalGap,
+            "internalGap": internalGap,
+            "refreshBloomFilters": refreshBloomFilters,
+          },
+        },
+      });
+      return [];
+    }
     if (addressList.isNotEmpty && !refresh) {
       return addressList;
     }
@@ -266,6 +301,13 @@ class Bitcoin extends CryptoCoin {
           }
         }
       }
+    }
+
+    if (refreshBloomFilters) {
+      () async {
+        Uint8List payload = await msgFilterLoad(addressList);
+        sendMessage(makeMsg('filterload', payload));
+      }();
     }
 
     return addressList;
@@ -1522,9 +1564,7 @@ class Bitcoin extends CryptoCoin {
       await nextKey!.save();
 
       // update address list
-      getPublicKeyHashes(refresh: true);
-      Uint8List payload = await msgFilterLoad(addressList);
-      sendMessage(makeMsg('filterload', payload));
+      getPublicKeyHashes(refresh: true, refreshBloomFilters: true);
     }();
 
     return nextKeyIndex;
@@ -2280,6 +2320,7 @@ class Bitcoin extends CryptoCoin {
 
     int MAX_SIG_ERROR = 5;
 
+    String? errorMes;
     var success = await wallet.signingWallet!.startSession(context, await (
       dynamic session, {
       List<int>? pinCode,
@@ -2287,14 +2328,15 @@ class Bitcoin extends CryptoCoin {
     }) async {
       wallet.signingWallet!.setMediumSession(session);
       if (pinCode == null) {
-        print("no PIN provided");
+        errorMes = "PIN code was not entered";
         return false;
       }
-      var pinOK = await wallet.signingWallet!.verifyPIN(
+      var pinResult = await wallet.signingWallet!.verifyPIN(
         String.fromCharCodes(pinCode),
       );
-      if (!pinOK) {
-        print("invalid PIN");
+      print("startSession: sent verifyPIN, result is ${pinResult}");
+      if (pinResult != VerifyPINResult.OK) {
+        errorMes = pinResult.toString();
         return false;
       }
       Uint8List? tempSig;
@@ -2325,6 +2367,9 @@ class Bitcoin extends CryptoCoin {
     });
 
     if (!success) {
+      if (errorMes != null) {
+        throw Exception(errorMes!);
+      }
       return null;
     }
 

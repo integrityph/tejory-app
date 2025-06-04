@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:nfc_manager/nfc_manager.dart';
 import 'package:tejory/apdu/channel.dart';
 import 'package:tejory/apdu/iso7816/iso7816.dart';
+import 'package:tejory/wallets/iwallet.dart';
 import 'package:tejory/wallets/tejorycard/core-response-parser/card_auth_verify_resp.dart';
 import 'package:tejory/wallets/tejorycard/core-response-parser/get_pub_key_resp.dart';
 import 'package:tejory/wallets/tejorycard/core-response-parser/get_status_resp.dart';
@@ -33,8 +34,15 @@ class CoreApplet {
     if (selected) {
       return {};
     }
-    var response = await ch.sendAPDU(ISO7816.CLA_ISO, ISO7816.INS_SELECT, 0x04,
-        0x00, AID.length, Uint8List.fromList(AID), 0x00);
+    var response = await ch.sendAPDU(
+      ISO7816.CLA_ISO,
+      ISO7816.INS_SELECT,
+      0x04,
+      0x00,
+      AID.length,
+      Uint8List.fromList(AID),
+      0x00,
+    );
 
     Map<String, Uint8List> resMap = {};
 
@@ -48,7 +56,8 @@ class CoreApplet {
     resMap["_SW"] = Channel.intToSW(sw);
     if (sw != 0x9000) {
       resMap["_ERROR_MSG"] = Uint8List.fromList(
-          (AppletSWResponse.getSWResponse(sw, resMap["_SW"]!)).codeUnits);
+        (AppletSWResponse.getSWResponse(sw, resMap["_SW"]!)).codeUnits,
+      );
       print(String.fromCharCodes(resMap["_ERROR_MSG"]!));
       return resMap;
     }
@@ -60,7 +69,10 @@ class CoreApplet {
   // APDU FUNCTIONS
   // #1 Initial Setup
   Future<Map<String, Uint8List>?> initialSetup(
-      Uint8List? BIP32Seed, String? pin, String? puk) async {
+    Uint8List? BIP32Seed,
+    String? pin,
+    String? puk,
+  ) async {
     // ensure applet is selected
     await selectApplet();
 
@@ -85,8 +97,15 @@ class CoreApplet {
       cdata.addAll(puk.codeUnits);
     }
 
-    var response = await ch.sendAPDU(CLA, CoresInstruction.INS_INITIAL_SETUP,
-        p1, 0x00, lc, Uint8List.fromList(cdata), 0x00);
+    var response = await ch.sendAPDU(
+      CLA,
+      CoresInstruction.INS_INITIAL_SETUP,
+      p1,
+      0x00,
+      lc,
+      Uint8List.fromList(cdata),
+      0x00,
+    );
 
     Map<String, Uint8List> resMap = {};
 
@@ -113,8 +132,15 @@ class CoreApplet {
       cdata.addAll(BIP32Seed);
     }
 
-    var response = await ch.sendAPDU(CLA, CoresInstruction.INS_REPLACE_HD_SEED,
-        p1, 0x00, lc, Uint8List.fromList(cdata), 0x00);
+    var response = await ch.sendAPDU(
+      CLA,
+      CoresInstruction.INS_REPLACE_HD_SEED,
+      p1,
+      0x00,
+      lc,
+      Uint8List.fromList(cdata),
+      0x00,
+    );
 
     Map<String, Uint8List> resMap = {};
 
@@ -130,8 +156,10 @@ class CoreApplet {
   }
 
   // #3 HD Public Key Derivation
-  Future<Map<String, Uint8List>?> hdPubKeyDerivation(Uint8List path,
-      {bool getExtendedKey = false}) async {
+  Future<Map<String, Uint8List>?> hdPubKeyDerivation(
+    Uint8List path, {
+    bool getExtendedKey = false,
+  }) async {
     await selectApplet();
 
     int p1 = 0;
@@ -146,13 +174,14 @@ class CoreApplet {
     cdata.addAll(path);
 
     var response = await ch.sendAPDU(
-        CLA,
-        CoresInstruction.INS_HD_PUB_KEY_DERIVE,
-        p1,
-        0x00,
-        lc,
-        Uint8List.fromList(cdata),
-        0x00);
+      CLA,
+      CoresInstruction.INS_HD_PUB_KEY_DERIVE,
+      p1,
+      0x00,
+      lc,
+      Uint8List.fromList(cdata),
+      0x00,
+    );
 
     Map<String, Uint8List> resMap = {};
 
@@ -169,7 +198,9 @@ class CoreApplet {
 
   // #4 Set Private Key
   Future<Map<String, Uint8List>?> setPrivKey(
-      int keyIndex, Uint8List? privKey) async {
+    int keyIndex,
+    Uint8List? privKey,
+  ) async {
     await selectApplet();
 
     int p1 = 0;
@@ -185,8 +216,15 @@ class CoreApplet {
     cdata.add(privKey!.length);
     cdata.addAll(privKey);
 
-    var response = await ch.sendAPDU(CLA, CoresInstruction.INS_SET_PRIV_KEY, p1,
-        p2, lc, Uint8List.fromList(cdata), 0x00);
+    var response = await ch.sendAPDU(
+      CLA,
+      CoresInstruction.INS_SET_PRIV_KEY,
+      p1,
+      p2,
+      lc,
+      Uint8List.fromList(cdata),
+      0x00,
+    );
 
     Map<String, Uint8List> resMap = {};
 
@@ -206,8 +244,15 @@ class CoreApplet {
     await selectApplet();
 
     int lc = 0;
-    var response = await ch.sendAPDU(CLA, CoresInstruction.INS_GET_PUB_KEY,
-        keyIndex, 0x00, lc, Uint8List.fromList([]), 0x00);
+    var response = await ch.sendAPDU(
+      CLA,
+      CoresInstruction.INS_GET_PUB_KEY,
+      keyIndex,
+      0x00,
+      lc,
+      Uint8List.fromList([]),
+      0x00,
+    );
 
     Map<String, Uint8List> resMap = {};
 
@@ -224,31 +269,36 @@ class CoreApplet {
 
   // #6 Change PIN Code
   Future<Map<String, Uint8List>?> changePinCode(
-      String? puk, String? pin) async {
+    CodeType oldCodeType,
+    String oldCode,
+    CodeType newCodeType,
+    String newCode,
+  ) async {
     await selectApplet();
 
     int p1 = 0;
     int lc = 0;
-    Uint8List code = Uint8List(0);
+    List<int> cdata = [];
 
     // Added validation for null and empty uint8List since not sure what wiStringll be passed
-    if (puk != null || puk != Uint8List(0)) {
-      p1 |= 0x02;
-      code.addAll(puk!.codeUnits);
-    }
+    p1 |= (CodeType.PUK == oldCodeType) ? 2 : 0;
+    p1 |= (CodeType.PUK == newCodeType) ? 1 : 0;
+    cdata.add(oldCode.length);
+    cdata.addAll(oldCode.codeUnits);
+    cdata.add(newCode.length);
+    cdata.addAll(newCode.codeUnits);
 
-    if (pin != null) {
-      p1 |= 0x01;
-      code.addAll(pin.codeUnits);
-    }
-
-    List<int> cdata = [];
-    cdata.add(code.length);
-    cdata.addAll(code);
     lc = cdata.length;
 
-    var response = await ch.sendAPDU(CLA, CoresInstruction.INS_CHANGE_PIN, p1,
-        0x00, lc, Uint8List.fromList(cdata), 0x00);
+    var response = await ch.sendAPDU(
+      CLA,
+      CoresInstruction.INS_CHANGE_PIN,
+      p1,
+      0x00,
+      lc,
+      Uint8List.fromList(cdata),
+      0x00,
+    );
 
     Map<String, Uint8List> resMap = {};
 
@@ -262,7 +312,8 @@ class CoreApplet {
     resMap["_SW"] = Channel.intToSW(sw);
     if (sw != 0x9000) {
       resMap["_ERROR_MSG"] = Uint8List.fromList(
-          (AppletSWResponse.getSWResponse(sw, resMap["_SW"]!)).codeUnits);
+        (AppletSWResponse.getSWResponse(sw, resMap["_SW"]!)).codeUnits,
+      );
       print(String.fromCharCodes(resMap["_ERROR_MSG"]!));
       return resMap;
     }
@@ -271,14 +322,21 @@ class CoreApplet {
   }
 
   // #7 Get Status
-  Future<Map<String, Uint8List>?> getstatus(String? pin) async {
+  Future<Map<String, Uint8List>?> getStatus(bool getPrivileged) async {
     await selectApplet();
 
     int lc = 0;
-    int p1 = (pin == null)? 0x00 : 0x01;
+    int p1 = (getPrivileged) ? 0x00 : 0x01;
 
-    var response = await ch.sendAPDU(CLA, CoresInstruction.INS_GET_STATUS, p1,
-        0x00, lc, Uint8List.fromList([]), 0x00);
+    var response = await ch.sendAPDU(
+      CLA,
+      CoresInstruction.INS_GET_STATUS,
+      p1,
+      0x00,
+      lc,
+      Uint8List.fromList([]),
+      0x00,
+    );
 
     Map<String, Uint8List> resMap = {};
 
@@ -288,18 +346,26 @@ class CoreApplet {
       return resMap;
     }
 
-    resMap = GetStatusResp.parseFromList(response, pin);
+    resMap = GetStatusResp.parseFromList(response);
 
     return resMap;
   }
 
   // #8 Card Authenticity Verification
   Future<Map<String, Uint8List>?> cardAuthVerification(
-      List<int> host_challenge) async {
+    List<int> host_challenge,
+  ) async {
     await selectApplet();
 
-    var response = await ch.sendAPDU(CLA, CoresInstruction.INS_CARD_AUTH_VERIFY,
-        0x00, 0x00, 0x64, Uint8List.fromList(host_challenge), 0x00);
+    var response = await ch.sendAPDU(
+      CLA,
+      CoresInstruction.INS_CARD_AUTH_VERIFY,
+      0x00,
+      0x00,
+      0x64,
+      Uint8List.fromList(host_challenge),
+      0x00,
+    );
 
     Map<String, Uint8List> resMap = {};
 
@@ -318,8 +384,15 @@ class CoreApplet {
   Future<Map<String, Uint8List>?> cardReset(List<int> PIN) async {
     await selectApplet();
 
-    var response = await ch.sendAPDU(CLA, CoresInstruction.INS_CARD_RESET, 0x00,
-        0x00, 0x00, Uint8List.fromList([]), 0x00);
+    var response = await ch.sendAPDU(
+      CLA,
+      CoresInstruction.INS_CARD_RESET,
+      0x00,
+      0x00,
+      0x00,
+      Uint8List.fromList([]),
+      0x00,
+    );
 
     Map<String, Uint8List> resMap = {};
 
@@ -337,13 +410,14 @@ class CoreApplet {
 
     int p1 = 0;
     var response = await ch.sendAPDU(
-        CLA,
-        CoresInstruction.INS_MANAGE_APPLETS_ACL,
-        0x00,
-        0x00,
-        0x00,
-        Uint8List.fromList([]),
-        0x00);
+      CLA,
+      CoresInstruction.INS_MANAGE_APPLETS_ACL,
+      0x00,
+      0x00,
+      0x00,
+      Uint8List.fromList([]),
+      0x00,
+    );
 
     Map<String, Uint8List> resMap = {};
 
@@ -359,8 +433,15 @@ class CoreApplet {
     cdata.addAll(pin.codeUnits);
     print("this is the lc $lc");
 
-    var response = await ch.sendAPDU(CLA, CoresInstruction.INS_VERIFY_PIN, 0x00,
-        0x00, lc, Uint8List.fromList(cdata), 0x00);
+    var response = await ch.sendAPDU(
+      CLA,
+      CoresInstruction.INS_VERIFY_PIN,
+      0x00,
+      0x00,
+      lc,
+      Uint8List.fromList(cdata),
+      0x00,
+    );
 
     Map<String, Uint8List> resMap = {};
 
@@ -368,7 +449,8 @@ class CoreApplet {
     resMap["_SW"] = Channel.intToSW(sw);
     if (sw != 0x9000) {
       resMap["_ERROR_MSG"] = Uint8List.fromList(
-          (AppletSWResponse.getSWResponse(sw, resMap["_SW"]!)).codeUnits);
+        (AppletSWResponse.getSWResponse(sw, resMap["_SW"]!)).codeUnits,
+      );
       print(String.fromCharCodes(resMap["_ERROR_MSG"]!));
       return resMap;
     }

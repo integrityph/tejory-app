@@ -20,6 +20,28 @@ enum CodeType {
     return CodeType.values.firstWhere((x) => x.value == i);
   }
 }
+enum VerifyPINResult {
+  OK(1),
+  InvalidPIN(2),
+  LockedPIN(3);
+
+  const VerifyPINResult(this.value);
+  final int value;
+
+  static VerifyPINResult getByValue(int i) {
+    return VerifyPINResult.values.firstWhere((x) => x.value == i);
+  }
+
+  static Map<VerifyPINResult, String> _names = {
+    OK:"OK",
+    InvalidPIN:"Invalid PIN",
+    LockedPIN:"Locked PIN",
+  };
+  
+  String toString() {
+    return _names[this]??"Unknown";
+  }
+}
 
 abstract class IWallet {
   IWallet({String pin = "", String puk = ""});
@@ -39,10 +61,10 @@ abstract class IWallet {
 
   Uint8List? getPublicKey(int keyID);
 
-  void changePINCode(CodeType oldCodeType, String oldCode, CodeType newCodeType,
+  Future<VerifyPINResult?> changePINCode(CodeType oldCodeType, String oldCode, CodeType newCodeType,
       String newCode);
 
-  WalletStatus? getStatus(bool getPrivileged);
+  Future<WalletStatus?> getStatus(bool getPrivileged);
 
   Medium getMedium();
   setMediumSession(dynamic session);
@@ -58,12 +80,13 @@ abstract class IWallet {
   Future<List<Uint8List>?> getPSTSignature(PST? pst, Tx? tx, String coinName,
       {CoinSigningOptions? coinOptions, Bip32KeyNetVersions? keyNetVersions});
 
-  Future<bool> verifyPIN(String pin);
+  Future<VerifyPINResult?> verifyPIN(String pin);
   Future<bool> startSession(
     BuildContext? context,
     NFCSessionCallbackFunction callback, {
     String? baseClassUI,
     List<int>? PIN,
+    List<int>? newPIN,
     bool isNewPIN = false,
     bool changePIN = false,
     String enterPINMessage = "Enter your PIN",

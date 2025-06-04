@@ -17,9 +17,9 @@ import 'package:tejory/wallets/wallet_status.dart';
 class SoftwareWallet implements IWallet {
   String _extendedPrivateKey = "";
   @override
-  void changePINCode(CodeType oldCodeType, String oldCode, CodeType newCodeType,
-      String newCode) {
-    return;
+  Future<VerifyPINResult?> changePINCode(CodeType oldCodeType, String oldCode, CodeType newCodeType,
+      String newCode) async {
+    return null;
   }
 
   @override
@@ -156,7 +156,7 @@ class SoftwareWallet implements IWallet {
   }
 
   @override
-  WalletStatus? getStatus(bool getPrivileged) {
+  Future<WalletStatus?> getStatus(bool getPrivileged) {
     // TODO: implement getStatus
     throw UnimplementedError();
   }
@@ -193,7 +193,7 @@ class SoftwareWallet implements IWallet {
   }
 
   @override
-  Future<bool> verifyPIN(String pin) {
+  Future<VerifyPINResult> verifyPIN(String pin) {
     // TODO: implement verifyPIN
     throw UnimplementedError();
   }
@@ -212,6 +212,7 @@ class SoftwareWallet implements IWallet {
     NFCSessionCallbackFunction callback, {
     String? baseClassUI,
     List<int>? PIN,
+    List<int>? newPIN,
     bool isNewPIN = false,
     bool changePIN = false,
     String enterPINMessage = "Enter your PIN",

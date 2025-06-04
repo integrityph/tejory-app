@@ -11,6 +11,7 @@ import 'package:tejory/comms/nfc.dart';
 import 'package:tejory/crypto-helper/hd_wallet.dart';
 import 'package:tejory/wallets/coin_signing_options.dart';
 import 'package:tejory/wallets/iwallet.dart';
+import 'package:tejory/wallets/tejorycard/applet/applet_sw_response.dart';
 import 'package:tejory/wallets/tejorycard/bitcoin_applet.dart';
 import 'package:tejory/wallets/tejorycard/coin_applet.dart';
 import 'package:tejory/wallets/tejorycard/core.dart';
@@ -41,13 +42,40 @@ class TejoryCard implements IWallet {
   }
 
   @override
-  void changePINCode(
+  Future<VerifyPINResult?> changePINCode(
     CodeType oldCodeType,
     String oldCode,
     CodeType newCodeType,
     String newCode,
-  ) {
-    // TODO: implement changePINCode
+  ) async {
+    Map<String, Uint8List>? res;
+    try {
+      res = await core.changePinCode( oldCodeType,
+     oldCode,
+     newCodeType,
+     newCode);
+    } catch (e) {
+      return null;
+    }
+
+    if (res == null) {
+      return null;
+    }
+
+    if (isError(res)) {
+      if (res["_SW"] == null) {
+        return null;
+      }
+      var sw = Channel.swToInt(res["_SW"]);
+      if (sw == AppletSWResponse.SW_INVALID_PIN) {
+        return VerifyPINResult.InvalidPIN;
+      } else if (sw == AppletSWResponse.SW_LOCKED_PIN) {
+        return VerifyPINResult.LockedPIN;
+      }
+      return null;
+    }
+
+    return VerifyPINResult.OK;
   }
 
   @override
@@ -57,9 +85,41 @@ class TejoryCard implements IWallet {
   }
 
   @override
-  WalletStatus? getStatus(bool getPrivileged) {
-    // TODO: implement getStatus
-    throw UnimplementedError();
+  Future<WalletStatus?> getStatus(bool getPrivileged) async {
+    Map<String, Uint8List>? res;
+    try {
+      res = await core.getStatus(getPrivileged);
+    } catch (e) {
+      return null;
+    }
+
+    if (res == null) {
+      return null;
+    }
+
+    if (res["SETUP_COMPLETED"] == null) {
+      return null;
+    }
+    if (res["PIN_REMAINING_TRIES"] == null) {
+      return null;
+    }
+    if (res["PUK_REMAINING_TRIES"] == null) {
+      return null;
+    }
+
+    WalletStatus resObj = WalletStatus();
+    resObj.setupCompleted = res["SETUP_COMPLETED"]![0] == 0x01;
+    resObj.pinRemainingTries = res["PIN_REMAINING_TRIES"]![0];
+    resObj.pukRemainingTries = res["PUK_REMAINING_TRIES"]![0];
+
+    // if unprvileged, then return the result
+    if (!getPrivileged) {
+      return resObj;
+    }
+
+    //TODO: add the extra coding for privileged requests
+
+    return resObj;
   }
 
   @override
@@ -334,24 +394,34 @@ class TejoryCard implements IWallet {
     return res["SIGNATURE"];
   }
 
-  Future<bool> verifyPIN(String pin) async {
+  Future<VerifyPINResult?> verifyPIN(String pin) async {
     Map<String, Uint8List>? res;
     try {
       res = await core.verifyPin(pin);
-    } catch (Exception) {
-      return false;
+    } catch (e) {
+      print("TejoryCard.verifyPIN error. ${e}");
+      return null;
     }
 
     if (res == null) {
-      return false;
+      return null;
     }
 
     if (isError(res)) {
-      return false;
+      if (res["_SW"] == null) {
+        return null;
+      }
+      var sw = Channel.swToInt(res["_SW"]);
+      if (sw == AppletSWResponse.SW_INVALID_PIN) {
+        return VerifyPINResult.InvalidPIN;
+      } else if (sw == AppletSWResponse.SW_LOCKED_PIN) {
+        return VerifyPINResult.LockedPIN;
+      }
+      return null;
     }
 
     pinVerified = true;
-    return true;
+    return VerifyPINResult.OK;
   }
 
   bool isError(Map<String, Uint8List> response) {
@@ -375,6 +445,7 @@ class TejoryCard implements IWallet {
     NFCSessionCallbackFunction callback, {
     String? baseClassUI,
     List<int>? PIN,
+    List<int>? newPIN,
     bool isNewPIN = false,
     bool changePIN = false,
     String enterPINMessage = "Enter your PIN",
@@ -385,6 +456,7 @@ class TejoryCard implements IWallet {
       callback,
       baseClassUI: baseClassUI,
       PIN: PIN,
+      newPIN: newPIN,
       isNewPIN: isNewPIN,
       changePIN: changePIN,
       enterPINMessage: enterPINMessage,

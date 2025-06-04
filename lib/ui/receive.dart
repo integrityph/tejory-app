@@ -304,7 +304,7 @@ class _ReceiverState extends State<Receiver> {
             },
             items: () {
               List<DropdownMenuItem<String>> x = Singleton
-                  .assetList.assetListState.assets
+                  .assetList.assetListState.filteredAssets
                   .map<DropdownMenuItem<String>>((Asset _asset) {
                 return DropdownMenuItem<String>(
                     value: _asset.id,

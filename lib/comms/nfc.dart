@@ -63,7 +63,6 @@ class NFC implements Medium {
           },
         );
       },
-      useRootNavigator: false,
     );
   }
 
@@ -77,6 +76,7 @@ class NFC implements Medium {
     NFCSessionCallbackFunction callback, {
     String? baseClassUI,
     List<int>? PIN,
+    List<int>? newPIN,
     bool isNewPIN = false,
     bool changePIN = false,
     String enterPINMessage = "Enter your PIN",
@@ -84,7 +84,7 @@ class NFC implements Medium {
   }) async {
     print("NFC starting session");
     bool? successful;
-    List<int>? pinCodeNew;
+    List<int>? pinCodeNew = newPIN;
     if (context != null && PIN == null) {
       PINCodeDialog pinDialog = PINCodeDialog();
       print("show PIN dialog");

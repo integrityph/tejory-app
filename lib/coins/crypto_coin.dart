@@ -113,6 +113,10 @@ abstract class CryptoCoin with ChangeNotifier {
 
   String getTrackingURL(String txHash);
 
+  void callInternalFunction(String method, Map<String, dynamic> params) {
+
+  }
+
   void receiveResponse(Map<String, dynamic> message) {
     if (message["command"] is String) {
       switch (message["command"]) {
