@@ -101,6 +101,7 @@ class _AssetListState extends State<AssetList> with ChangeNotifier {
     Singleton.loaded!.then((bool val) async {
       if (Singleton.assetList.assetListState.walletList.isEmpty) {
         if (!mounted) {
+          print("assetList.initState ERROR. context not mounted");
           return; // Widget is gone, do nothing more from this callback.
         }
         FadeNavigator(context).navigateTo(StartSetup());
@@ -129,23 +130,22 @@ class _AssetListState extends State<AssetList> with ChangeNotifier {
   }
 
   postCreationProcess(bool? easyImport, int walletId) {
-    Singleton.assetList.assetListState.updateWalletList(
-      online: true,
-      awaitWorkers: false,
-    ).then((_) async {
-      if (easyImport ?? false) {
-      for (var asset in Singleton.assetList.assetListState.assets) {
-        await asset.isolate!.ready();
-        var coin = asset.getCoinByWalletId(walletId);
-        if (coin == null) {
-          continue;
-        }
-        coin.setupTransactionsForPathChildren(
-          coin.getInitialEasyImportPaths(),
-        );
-      }
-    }
-    });
+    Singleton.assetList.assetListState
+        .updateWalletList(online: true, awaitWorkers: false)
+        .then((_) async {
+          if (easyImport ?? false) {
+            for (var asset in Singleton.assetList.assetListState.assets) {
+              await asset.isolate!.ready();
+              var coin = asset.getCoinByWalletId(walletId);
+              if (coin == null) {
+                continue;
+              }
+              coin.setupTransactionsForPathChildren(
+                coin.getInitialEasyImportPaths(),
+              );
+            }
+          }
+        });
   }
 
   Future<void> updatePrices({
@@ -165,7 +165,9 @@ class _AssetListState extends State<AssetList> with ChangeNotifier {
             return;
           }
           Singleton.assetList.assetListState.filteredAssets =
-              Singleton.assetList.assetListState.assets.where((Asset asset)=>asset.active).toList();
+              Singleton.assetList.assetListState.assets
+                  .where((Asset asset) => asset.active)
+                  .toList();
           for (
             int i = 0;
             i < Singleton.assetList.assetListState.assets.length;
@@ -184,7 +186,9 @@ class _AssetListState extends State<AssetList> with ChangeNotifier {
           }
 
           Singleton.assetList.assetListState.filteredAssets =
-              Singleton.assetList.assetListState.assets.where((Asset asset)=>asset.active).toList();
+              Singleton.assetList.assetListState.assets
+                  .where((Asset asset) => asset.active)
+                  .toList();
           if (rebuildList) {
             notifyListeners();
             Singleton.assetList.assetListState.futureData!.then((v) {
@@ -217,104 +221,22 @@ class _AssetListState extends State<AssetList> with ChangeNotifier {
     widget.searchController.dispose();
   }
 
+  void streamPriceCallback(String symbol, double price) {
+    assets
+        .where((asset) {
+          return asset.yahooFinance == symbol;
+        })
+        .forEach((asset) async {
+          asset.updateUsdPrice(price);
+        });
+  }
+
   void streamPrices() async {
     Set<String> symbolList = {};
     assets.forEach((v) {
       symbolList.add(v.yahooFinance);
     });
-    coindesk.streamPrices(symbolList.toList(), (String symbol, double price){
-      assets
-          .where((asset) {
-            return asset.yahooFinance == symbol;
-          })
-          .forEach((asset) async {
-            asset.updateUsdPrice(price);
-          });
-    });
-    // // build asset list for the API
-    // Set<String> symbolList = {};
-    // assets.forEach((v) {
-    //   symbolList.add(v.yahooFinance);
-    // });
-    // var URL = Uri.parse(
-    //   "wss://data-streamer.cryptocompare.com/?api_key=${coindesk.API_KEY}",
-    // );
-
-    // final channel = WebSocketChannel.connect(URL);
-    // channel.ready
-    //     .then((val) {
-    //       channel.stream.listen(
-    //         (msg) {
-    //           Map<String, dynamic> obj = {};
-    //           try {
-    //             obj = jsonDecode(msg);
-    //           } catch (e) {
-    //             return;
-    //           }
-    //           if (!obj.containsKey("TYPE")) {
-    //             return;
-    //           }
-    //           if (obj["TYPE"] == "4000") {
-    //             // subscribe
-    //             Map<String, dynamic> sendObj = {
-    //               "action": "SUBSCRIBE",
-    //               "type": "index_cc_v1_latest_tick",
-    //               "groups": ["VALUE"],
-    //               "market": "cadli",
-    //               "instruments": symbolList.toList(),
-    //             };
-    //             String sendMsg = json.encode(sendObj);
-    //             channel.sink.add(sendMsg);
-    //             return;
-    //           }
-    //           if (obj["TYPE"] != "1101") {
-    //             return;
-    //           }
-    //           if (!obj.containsKey("INSTRUMENT")) {
-    //             return;
-    //           }
-    //           if (!obj.containsKey("VALUE")) {
-    //             return;
-    //           }
-    //           double? newPrice = obj["VALUE"];
-    //           String symbol = obj["INSTRUMENT"];
-
-    //           if (newPrice != null) {
-    //             assets
-    //                 .where((asset) {
-    //                   return asset.yahooFinance == symbol;
-    //                 })
-    //                 .forEach((asset) async {
-    //                   asset.updateUsdPrice(newPrice);
-    //                 });
-    //           }
-    //         },
-    //         onError: (v) {
-    //           try {
-    //             channel.sink.close(status.goingAway);
-    //           } catch (e) {}
-    //           // retry again after 5 seconds
-    //           Future.delayed(Duration(seconds: 5)).then((v) {
-    //             streamPrices();
-    //           });
-    //         },
-    //         onDone: () {
-    //           try {
-    //             channel.sink.close(status.goingAway);
-    //           } catch (e) {}
-    //           // retry again after 5 seconds
-    //           Future.delayed(Duration(seconds: 5)).then((v) {
-    //             streamPrices();
-    //           });
-    //         },
-    //       );
-    //     })
-    //     .onError((e, s) {
-    //       // retry again after 5 seconds
-    //       Future.delayed(Duration(seconds: 5)).then((v) {
-    //         streamPrices();
-    //       });
-    //     });
+    coindesk.streamPrices(symbolList.toList(), Singleton.assetList.assetListState.streamPriceCallback);
   }
 
   Future<void> initCoinData() async {
@@ -355,7 +277,8 @@ class _AssetListState extends State<AssetList> with ChangeNotifier {
       coin.contractHash = initialAssets.assets[i].contractHash;
       coin.template = initialAssets.assets[i].template;
       coin.active = initialAssets.assets[i].active;
-      coin.workerIsolateRequired = initialAssets.assets[i].workerIsolateRequired;
+      coin.workerIsolateRequired =
+          initialAssets.assets[i].workerIsolateRequired;
       int coinId = await coin.save();
 
       if (coin.blockZeroHash != null && coin.blockZeroHash!.isNotEmpty) {
@@ -455,8 +378,8 @@ class _AssetListState extends State<AssetList> with ChangeNotifier {
       asset.contractHash = coin.contractHash;
       asset.template = coin.template;
       asset.priceUsd = coin.usdPrice ?? 0.0;
-      asset.active = coin.active??true;
-      asset.workerIsolateRequired = coin.workerIsolateRequired??false;
+      asset.active = coin.active ?? true;
+      asset.workerIsolateRequired = coin.workerIsolateRequired ?? false;
       asset.walletId = myWalletId;
       asset.assetIndex = i;
       asset.initCoin(allWallets);
@@ -466,7 +389,7 @@ class _AssetListState extends State<AssetList> with ChangeNotifier {
       }
       assets.add(asset);
     }
-    filteredAssets = assets.where((Asset asset)=>asset.active).toList();
+    filteredAssets = assets.where((Asset asset) => asset.active).toList();
 
     notifyListeners();
 
@@ -500,7 +423,7 @@ class _AssetListState extends State<AssetList> with ChangeNotifier {
         asset.addListener(listener);
       }
     }
-    filteredAssets = assets.where((Asset asset)=>asset.active).toList();
+    filteredAssets = assets.where((Asset asset) => asset.active).toList();
     notifyListeners();
     if (awaitWorkers) {
       return Future.wait(assets.map((asset) => asset.isolate!.ready()));
@@ -644,11 +567,13 @@ class _AssetListState extends State<AssetList> with ChangeNotifier {
                               style: TextStyle(fontWeight: FontWeight.w500),
                             ),
                             Text(
-                              privacy? "∗∗∗∗" : asset
-                                  .getDecimalAmountInDouble(
-                                    asset.getBalance(notify: false),
-                                  )
-                                  .toStringAsFixed(8),
+                              privacy
+                                  ? "∗∗∗∗"
+                                  : asset
+                                      .getDecimalAmountInDouble(
+                                        asset.getBalance(notify: false),
+                                      )
+                                      .toStringAsFixed(8),
                             ),
                           ],
                         ),
@@ -673,7 +598,9 @@ class _AssetListState extends State<AssetList> with ChangeNotifier {
                                   ),
                                 ),
                                 Text(
-                                  privacy? "∗∗∗∗" : '~ ${widget.humanizeMoney((asset.priceUsd) * (asset.getDecimalAmountInDouble(asset.getBalance(notify: false))), isFiat: true)}',
+                                  privacy
+                                      ? "∗∗∗∗"
+                                      : '~ ${widget.humanizeMoney((asset.priceUsd) * (asset.getDecimalAmountInDouble(asset.getBalance(notify: false))), isFiat: true)}',
                                 ),
                               ],
                             ),
