@@ -135,7 +135,7 @@ class _AssetListState extends State<AssetList> with ChangeNotifier {
         .then((_) async {
           if (easyImport ?? false) {
             for (var asset in Singleton.assetList.assetListState.assets) {
-              await asset.isolate!.ready();
+              await asset.isolate?.ready();
               var coin = asset.getCoinByWalletId(walletId);
               if (coin == null) {
                 continue;
