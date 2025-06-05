@@ -748,7 +748,7 @@ class ERC20 extends CryptoCoin {
       tx.verified = true;
       tx.wallet = walletId;
       await tx.save();
-      if (showNotifications) {
+      if (showNotifications && !Singleton.initialSetup) {
         // Singleton.sendNotification(
         //   "${tx.isDeposit! ? "Received" : "Sent"} ${symbol()} Transaction",
         //   "${getDecimalAmount(BigInt.from(tx.amount!))} ${symbol()} transaction was completed successfully. Your new balance is ${getDecimalAmount(getBalance())}",

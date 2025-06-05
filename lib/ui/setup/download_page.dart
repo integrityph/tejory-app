@@ -479,6 +479,7 @@ class _DownloadPageState extends State<DownloadPage> {
         keyObj.pubKey = keyData['pubKeyHex'];
         keyObj.chainCode = keyData['chainCodeHex'];
         dbKeyList.add(keyObj);
+        await keyObj.save();
       }
     }();
 
