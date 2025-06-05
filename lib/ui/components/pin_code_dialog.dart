@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:tejory/keypad/keypad.dart';
 
 class PINCodeDialog {
-  _getPINContainer(String data) {
+  _getPINContainer(String data, BuildContext context) {
     print("_getPINContainer ${data}");
     return Container(
       child: Text(
@@ -14,9 +14,9 @@ class PINCodeDialog {
           fontWeight: FontWeight.bold,
         ),
       ),
-      padding: EdgeInsetsGeometry.only(top: 3, right: 15, left: 15, bottom: 9),
+      padding: EdgeInsetsGeometry.only(top: 8, right: 15, left: 15, bottom: 0),
       decoration: BoxDecoration(
-        border: BoxBorder.all(),
+        border: BoxBorder.all(color: Theme.of(context).colorScheme.primary),
         borderRadius: BorderRadiusGeometry.all(Radius.circular(5)),
       ),
     );
@@ -83,7 +83,7 @@ class PINCodeDialog {
                     PIN.clear();
                     pinController.text.codeUnits.forEachIndexed((index, digit) {
                       PIN.add(pinController.text.codeUnits[index] - 48);
-                      PINText[index] = "●";
+                      PINText[index] = "*";
                     });
                   });
                 });
@@ -100,10 +100,10 @@ class PINCodeDialog {
                           mainAxisAlignment: MainAxisAlignment.center,
                           spacing: 20,
                           children: [
-                            _getPINContainer(PINText[0]),
-                            _getPINContainer(PINText[1]),
-                            _getPINContainer(PINText[2]),
-                            _getPINContainer(PINText[3]),
+                            _getPINContainer(PINText[0], context),
+                            _getPINContainer(PINText[1], context),
+                            _getPINContainer(PINText[2], context),
+                            _getPINContainer(PINText[3], context),
                           ],
                         ),
                       ),
