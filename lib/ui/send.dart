@@ -892,7 +892,7 @@ class _SenderState extends State<Sender> {
         print('Signed TX: ${hex.encode(signedBytes)}');
 
         // asset = Singleton.assetList.assetListState.findAsset(selectedToken);
-        // asset!.transmitTxBytes(signedBytes);
+        asset!.transmitTxBytes(signedBytes);
 
         Tx signedTx = tx.fromTxBytes(signedBytes);
         var txHash = signedTx.getHashHex();
