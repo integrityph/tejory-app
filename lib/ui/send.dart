@@ -1,8 +1,10 @@
 import 'dart:io';
+import 'dart:math';
 import 'package:blockchain_utils/hex/hex.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:tejory/coins/tx.dart';
+import 'package:tejory/collections/tx.dart';
 import 'package:tejory/collections/walletDB.dart';
 import 'package:tejory/comms/nfc.dart';
 import 'package:tejory/crypto-helper/other_helpers.dart';
@@ -72,10 +74,11 @@ class _SenderState extends State<Sender> {
     balance = asset?.getBalance() ?? BigInt.zero;
     balanceStr = asset?.getDecimalAmount(balance) ?? "0.00000000";
     balanceFiatStr = OtherHelpers.humanizeMoney(
-        (asset?.getDecimalAmountInDouble(balance) ?? 0.0) *
-            (asset?.priceUsd ?? 0.0),
-        isFiat: true,
-        addFiatSymbol: false);
+      (asset?.getDecimalAmountInDouble(balance) ?? 0.0) *
+          (asset?.priceUsd ?? 0.0),
+      isFiat: true,
+      addFiatSymbol: false,
+    );
     amountDouble = OtherHelpers.humanizeMoney(0.0);
     feeAmountDouble = OtherHelpers.humanizeMoney(0.0);
     feeAmountFiatDouble = OtherHelpers.humanizeMoney(0.0, isFiat: true);
@@ -145,10 +148,11 @@ class _SenderState extends State<Sender> {
       balance = asset!.getBalance();
       balanceStr = asset?.getDecimalAmount(balance) ?? "0.00000000";
       balanceFiatStr = OtherHelpers.humanizeMoney(
-          (asset?.getDecimalAmountInDouble(balance) ?? 0.0) *
-              (asset?.priceUsd ?? 0.0),
-          isFiat: true,
-          addFiatSymbol: false);
+        (asset?.getDecimalAmountInDouble(balance) ?? 0.0) *
+            (asset?.priceUsd ?? 0.0),
+        isFiat: true,
+        addFiatSymbol: false,
+      );
       symbol = asset!.symbol;
       var cryptoAmount = asset!.getDecimalAmount(amount);
       amountController.text = cryptoAmount;
@@ -162,10 +166,12 @@ class _SenderState extends State<Sender> {
         setState(() {
           feeAmountDouble = OtherHelpers.humanizeMoney(feeDouble);
           feeAmountFiatDouble = OtherHelpers.humanizeMoney(
-              feeDouble * asset!.priceUsd,
-              isFiat: true);
-          totalAmountDouble =
-              OtherHelpers.humanizeMoney(amountDouble + feeDouble);
+            feeDouble * asset!.priceUsd,
+            isFiat: true,
+          );
+          totalAmountDouble = OtherHelpers.humanizeMoney(
+            amountDouble + feeDouble,
+          );
         });
       }();
     });
@@ -177,8 +183,9 @@ class _SenderState extends State<Sender> {
       amount = double.parse(amountFiatController.text.replaceAll(",", ""));
       amount /= asset!.priceUsd * Singleton.currentCurrency.usdMultiplier;
       amountController.removeListener(updateAmounts);
-      amountController.text =
-          asset!.getDecimalAmount(asset!.getBaseAmount(amount));
+      amountController.text = asset!.getDecimalAmount(
+        asset!.getBaseAmount(amount),
+      );
       amountController.addListener(updateAmounts);
     } catch (e) {
       // TODO; show some error
@@ -206,35 +213,44 @@ class _SenderState extends State<Sender> {
     try {
       amount = double.parse(amountStr);
       sendAmount = asset!.getBaseAmount(amount);
-      sendFee = await asset!
-          .calculateFee(addressController.text, sendAmount, noChange: _isMax);
+      sendFee = await asset!.calculateFee(
+        addressController.text,
+        sendAmount,
+        noChange: _isMax,
+      );
       amountDouble = asset!.getDecimalAmount(sendAmount);
       feeAmountDouble = feeAsset!.getDecimalAmount(sendFee);
       feeAmountFiatDouble = OtherHelpers.humanizeMoney(
-          feeAsset.getDecimalAmountInDouble(sendFee) * feeAsset.priceUsd,
-          isFiat: true);
+        feeAsset.getDecimalAmountInDouble(sendFee) * feeAsset.priceUsd,
+        isFiat: true,
+      );
 
       BigInt total = sendAmount;
       if (feeSymbol == asset!.symbol) {
         total += sendFee;
       }
       print(
-          "sendFee: $sendFee,  sendAmount: $sendAmount, total: $total,  balance: $balance, _isMax: $_isMax");
+        "sendFee: $sendFee,  sendAmount: $sendAmount, total: $total,  balance: $balance, _isMax: $_isMax",
+      );
       if (total > balance) {
         _isMax = true;
         amountStr = balanceStr;
         amount = double.parse(amountStr);
         sendAmount = asset!.getBaseAmount(amount);
-        sendFee = await asset!
-            .calculateFee(addressController.text, sendAmount, noChange: _isMax);
+        sendFee = await asset!.calculateFee(
+          addressController.text,
+          sendAmount,
+          noChange: _isMax,
+        );
         if (feeSymbol == asset!.symbol) {
           sendAmount -= sendFee;
         }
         amountDouble = asset!.getDecimalAmount(sendAmount);
         feeAmountDouble = feeAsset.getDecimalAmount(sendFee);
         feeAmountFiatDouble = OtherHelpers.humanizeMoney(
-            feeAsset.getDecimalAmountInDouble(sendFee) * feeAsset.priceUsd,
-            isFiat: true);
+          feeAsset.getDecimalAmountInDouble(sendFee) * feeAsset.priceUsd,
+          isFiat: true,
+        );
         total = sendAmount;
         if (feeSymbol == asset!.symbol) {
           total += sendFee;
@@ -248,17 +264,19 @@ class _SenderState extends State<Sender> {
       if (updateFiat) {
         amountFiatController.removeListener(updateFiatAmounts);
         amountFiatController.text = OtherHelpers.humanizeMoney(
-            amount * asset!.priceUsd,
-            isFiat: true,
-            addFiatSymbol: false);
+          amount * asset!.priceUsd,
+          isFiat: true,
+          addFiatSymbol: false,
+        );
         amountFiatController.addListener(updateFiatAmounts);
       } else {
         if (_isMax) {
           amountFiatController.removeListener(updateFiatAmounts);
           amountFiatController.text = OtherHelpers.humanizeMoney(
-              amount * asset!.priceUsd,
-              isFiat: true,
-              addFiatSymbol: false);
+            amount * asset!.priceUsd,
+            isFiat: true,
+            addFiatSymbol: false,
+          );
           amountFiatController.addListener(updateFiatAmounts);
         }
       }
@@ -278,9 +296,10 @@ class _SenderState extends State<Sender> {
         sendFee = BigInt.zero;
         feeAmountDouble = feeAsset?.getDecimalAmount(sendFee) ?? "0.00000000";
         feeAmountFiatDouble = OtherHelpers.humanizeMoney(
-            (feeAsset?.getDecimalAmountInDouble(sendFee) ?? 0.0) *
-                (feeAsset?.priceUsd ?? 0.0),
-            isFiat: true);
+          (feeAsset?.getDecimalAmountInDouble(sendFee) ?? 0.0) *
+              (feeAsset?.priceUsd ?? 0.0),
+          isFiat: true,
+        );
         BigInt total = sendFee + sendAmount;
         totalAmountDouble = asset?.getDecimalAmount(total) ?? "0.00000000";
       });
@@ -299,10 +318,11 @@ class _SenderState extends State<Sender> {
       balance = asset!.getBalance();
       balanceStr = asset?.getDecimalAmount(balance) ?? "0.00000000";
       balanceFiatStr = OtherHelpers.humanizeMoney(
-          (asset?.getDecimalAmountInDouble(balance) ?? 0.0) *
-              (asset?.priceUsd ?? 0.0),
-          isFiat: true,
-          addFiatSymbol: false);
+        (asset?.getDecimalAmountInDouble(balance) ?? 0.0) *
+            (asset?.priceUsd ?? 0.0),
+        isFiat: true,
+        addFiatSymbol: false,
+      );
       symbol = asset!.symbol;
 
       amountDouble = OtherHelpers.humanizeMoney(0.0);
@@ -348,8 +368,9 @@ class _SenderState extends State<Sender> {
                 ),
               ),
               Padding(
-                  padding: const EdgeInsets.only(top: 5),
-                  child: _estimatedFee()),
+                padding: const EdgeInsets.only(top: 5),
+                child: _estimatedFee(),
+              ),
               Padding(
                 padding: const EdgeInsets.only(top: 8.0),
                 child: Row(
@@ -367,7 +388,10 @@ class _SenderState extends State<Sender> {
 
   Widget _dropIndicator() {
     return Container(
-        width: 200, height: 5, decoration: BoxDecoration(color: Colors.blue));
+      width: 200,
+      height: 5,
+      decoration: BoxDecoration(color: Colors.blue),
+    );
   }
 
   Widget _sendToken() {
@@ -387,29 +411,35 @@ class _SenderState extends State<Sender> {
       icon: Icon(Icons.arrow_drop_down),
       underline: Container(
         height: 0.5,
-        color: Theme.of(context).brightness == Brightness.dark
-            ? Colors.white
-            : Colors.black54,
+        color:
+            Theme.of(context).brightness == Brightness.dark
+                ? Colors.white
+                : Colors.black54,
       ),
-      onChanged: (selectedNetworkObj?.requiresAmount ?? false)
-          ? null
-          : handleTokenChange,
+      onChanged:
+          (selectedNetworkObj?.requiresAmount ?? false)
+              ? null
+              : handleTokenChange,
       items: () {
-        List<DropdownMenuItem<String>> x = Singleton
-            .assetList.assetListState.filteredAssets
-            .map<DropdownMenuItem<String>>((Asset _asset) {
-          return DropdownMenuItem<String>(
-              value: _asset.id,
-              child: Text("${_asset.symbol} (${_asset.name})"));
-        }).toList();
+        List<DropdownMenuItem<String>> x =
+            Singleton.assetList.assetListState.filteredAssets
+                .map<DropdownMenuItem<String>>((Asset _asset) {
+                  return DropdownMenuItem<String>(
+                    value: _asset.id,
+                    child: Text("${_asset.symbol} (${_asset.name})"),
+                  );
+                })
+                .toList();
         x.insert(
-            0,
-            DropdownMenuItem<String>(
-                value: "",
-                child: Text(
-                  "Select Token",
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900),
-                )));
+          0,
+          DropdownMenuItem<String>(
+            value: "",
+            child: Text(
+              "Select Token",
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900),
+            ),
+          ),
+        );
         return x;
       }(),
     );
@@ -426,14 +456,16 @@ class _SenderState extends State<Sender> {
               enabled: !(selectedNetworkObj?.requiresAmount ?? false),
               enableIMEPersonalizedLearning: false,
               enableInteractiveSelection: false,
-              onTap: (Platform.operatingSystem == "ios")
-                  ? () {
-                      numpad.state.openKeyboard(amountController);
-                    }
-                  : null,
-              keyboardType: (Platform.operatingSystem == "ios")
-                  ? TextInputType.none
-                  : TextInputType.number,
+              onTap:
+                  (Platform.operatingSystem == "ios")
+                      ? () {
+                        numpad.state.openKeyboard(amountController);
+                      }
+                      : null,
+              keyboardType:
+                  (Platform.operatingSystem == "ios")
+                      ? TextInputType.none
+                      : TextInputType.number,
               inputFormatters: [
                 FilteringTextInputFormatter.allow(RegExp(r'^[0-9\]+[\.0-9]*')),
               ],
@@ -441,8 +473,10 @@ class _SenderState extends State<Sender> {
               decoration: InputDecoration(
                 contentPadding: EdgeInsets.zero,
                 labelText: 'Enter Amount',
-                labelStyle:
-                    TextStyle(fontSize: 12, fontWeight: FontWeight.w900),
+                labelStyle: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w900,
+                ),
               ),
             ),
           ),
@@ -456,9 +490,7 @@ class _SenderState extends State<Sender> {
               ),
             ),
           ),
-          SizedBox(
-            width: 10,
-          ),
+          SizedBox(width: 10),
           SizedBox(
             width: 48,
             child: TextButton(
@@ -467,22 +499,27 @@ class _SenderState extends State<Sender> {
                 padding: EdgeInsets.all(7),
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
-              onPressed: (selectedNetworkObj?.requiresAmount ?? false)
-                  ? null
-                  : () {
-                      amountController.removeListener(updateAmounts);
-                      amountController.text = balanceStr;
-                      amountController.addListener(updateAmounts);
-                      _isMax = true;
-                      updateAmounts();
-                    },
-              child: Text("Max",
-                  style: TextStyle(
-                      color: !(selectedNetworkObj?.requiresAmount ?? false)
+              onPressed:
+                  (selectedNetworkObj?.requiresAmount ?? false)
+                      ? null
+                      : () {
+                        amountController.removeListener(updateAmounts);
+                        amountController.text = balanceStr;
+                        amountController.addListener(updateAmounts);
+                        _isMax = true;
+                        updateAmounts();
+                      },
+              child: Text(
+                "Max",
+                style: TextStyle(
+                  color:
+                      !(selectedNetworkObj?.requiresAmount ?? false)
                           ? Colors.blueAccent
                           : Colors.grey,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w900)),
+                  fontSize: 15,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
             ),
           ),
         ],
@@ -501,14 +538,16 @@ class _SenderState extends State<Sender> {
               enabled: !(selectedNetworkObj?.requiresAmount ?? false),
               enableIMEPersonalizedLearning: false,
               enableInteractiveSelection: false,
-              onTap: (Platform.operatingSystem == "ios")
-                  ? () {
-                      numpad.state.openKeyboard(amountFiatController);
-                    }
-                  : null,
-              keyboardType: (Platform.operatingSystem == "ios")
-                  ? TextInputType.none
-                  : TextInputType.number,
+              onTap:
+                  (Platform.operatingSystem == "ios")
+                      ? () {
+                        numpad.state.openKeyboard(amountFiatController);
+                      }
+                      : null,
+              keyboardType:
+                  (Platform.operatingSystem == "ios")
+                      ? TextInputType.none
+                      : TextInputType.number,
               inputFormatters: [
                 FilteringTextInputFormatter.allow(RegExp(r'^[0-9\]+[\.0-9]*')),
               ],
@@ -516,8 +555,10 @@ class _SenderState extends State<Sender> {
               decoration: InputDecoration(
                 contentPadding: EdgeInsets.zero,
                 labelText: 'Enter Amount',
-                labelStyle:
-                    TextStyle(fontSize: 12, fontWeight: FontWeight.w900),
+                labelStyle: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w900,
+                ),
               ),
             ),
           ),
@@ -531,32 +572,36 @@ class _SenderState extends State<Sender> {
               ),
             ),
           ),
-          SizedBox(
-            width: 10,
-          ),
+          SizedBox(width: 10),
           SizedBox(
             width: 48,
             child: TextButton(
               style: TextButton.styleFrom(
-                  minimumSize: Size.zero,
-                  padding: EdgeInsets.all(7),
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap),
-              onPressed: (selectedNetworkObj?.requiresAmount ?? false)
-                  ? null
-                  : () {
-                      amountFiatController.removeListener(updateFiatAmounts);
-                      amountFiatController.text = balanceFiatStr;
-                      amountFiatController.addListener(updateFiatAmounts);
-                      _isMax = true;
-                      updateFiatAmounts();
-                    },
-              child: Text("Max",
-                  style: TextStyle(
-                      color: !(selectedNetworkObj?.requiresAmount ?? false)
+                minimumSize: Size.zero,
+                padding: EdgeInsets.all(7),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              onPressed:
+                  (selectedNetworkObj?.requiresAmount ?? false)
+                      ? null
+                      : () {
+                        amountFiatController.removeListener(updateFiatAmounts);
+                        amountFiatController.text = balanceFiatStr;
+                        amountFiatController.addListener(updateFiatAmounts);
+                        _isMax = true;
+                        updateFiatAmounts();
+                      },
+              child: Text(
+                "Max",
+                style: TextStyle(
+                  color:
+                      !(selectedNetworkObj?.requiresAmount ?? false)
                           ? Colors.blueAccent
                           : Colors.grey,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w900)),
+                  fontSize: 15,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
             ),
           ),
         ],
@@ -599,35 +644,44 @@ class _SenderState extends State<Sender> {
       icon: Icon(Icons.arrow_drop_down),
       underline: Container(
         height: 0.5,
-        color: Theme.of(context).brightness == Brightness.dark
-            ? Colors.white
-            : Colors.black54,
+        color:
+            Theme.of(context).brightness == Brightness.dark
+                ? Colors.white
+                : Colors.black54,
       ),
-      onChanged: (selectedNetworkObj?.requiresAmount ?? false)
-          ? null
-          : (String? value) {
-              setState(() {
-                selectedNetwork = value ?? "";
-                selectedNetworkObj =
-                    networkList[selectedToken]?.firstWhere((net) {
-                  return net.networkSymbol == selectedNetwork;
+      onChanged:
+          (selectedNetworkObj?.requiresAmount ?? false)
+              ? null
+              : (String? value) {
+                setState(() {
+                  selectedNetwork = value ?? "";
+                  selectedNetworkObj = networkList[selectedToken]?.firstWhere((
+                    net,
+                  ) {
+                    return net.networkSymbol == selectedNetwork;
+                  });
                 });
-              });
-            },
+              },
       items: () {
-        List<DropdownMenuItem<String>> x = widget
-            .networkList[asset?.symbol ?? ""]!
-            .map<DropdownMenuItem<String>>((Network network) {
-          return DropdownMenuItem<String>(
-              value: network.networkSymbol, child: Text(network.networkName));
-        }).toList();
+        List<DropdownMenuItem<String>> x =
+            widget.networkList[asset?.symbol ?? ""]!
+                .map<DropdownMenuItem<String>>((Network network) {
+                  return DropdownMenuItem<String>(
+                    value: network.networkSymbol,
+                    child: Text(network.networkName),
+                  );
+                })
+                .toList();
         x.insert(
-            0,
-            DropdownMenuItem<String>(
-              value: "",
-              child: Text("Select Network",
-                  style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15)),
-            ));
+          0,
+          DropdownMenuItem<String>(
+            value: "",
+            child: Text(
+              "Select Network",
+              style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15),
+            ),
+          ),
+        );
         return x;
       }(),
     );
@@ -650,8 +704,9 @@ class _SenderState extends State<Sender> {
             suffixIcon: IconButton(
               icon: Icon(Icons.center_focus_weak),
               onPressed: () {
-                var result = Navigator.of(context)
-                    .push(MaterialPageRoute(builder: (context) => Qrscanner()));
+                var result = Navigator.of(
+                  context,
+                ).push(MaterialPageRoute(builder: (context) => Qrscanner()));
 
                 result.then((val) {
                   if (val == null) {
@@ -673,48 +728,51 @@ class _SenderState extends State<Sender> {
   Widget _estimatedFee() {
     return Container(
       decoration: BoxDecoration(
-          border: Border.all(
-              color: Colors.transparent, style: BorderStyle.solid, width: 0.5),
-          borderRadius: BorderRadius.circular(5)),
+        border: Border.all(
+          color: Colors.transparent,
+          style: BorderStyle.solid,
+          width: 0.5,
+        ),
+        borderRadius: BorderRadius.circular(5),
+      ),
       child: Padding(
         padding: EdgeInsets.only(left: 10.0, right: 10),
-        child: Column(children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('Estimated Fee:'),
-              Text('${feeAmountDouble} ${asset?.getFeeSymbol() ?? ""}')
-            ],
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('Estimated Fee (${Singleton.currentCurrency.isoName}):'),
-              Text(feeAmountFiatDouble)
-            ],
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [Text('Estimated time: '), Text('10 - 60 minutes')],
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('Total Amount:'),
-              Text('$totalAmountDouble ${asset?.symbol ?? ""}')
-            ],
-          )
-        ]),
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Estimated Fee:'),
+                Text('${feeAmountDouble} ${asset?.getFeeSymbol() ?? ""}'),
+              ],
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Estimated Fee (${Singleton.currentCurrency.isoName}):'),
+                Text(feeAmountFiatDouble),
+              ],
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [Text('Estimated time: '), Text('10 - 60 minutes')],
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Total Amount:'),
+                Text('$totalAmountDouble ${asset?.symbol ?? ""}'),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _cancelButton() {
     return ElevatedButton(
-      child: Text(
-        'Cancel',
-        style: TextStyle(color: Colors.red),
-      ),
+      child: Text('Cancel', style: TextStyle(color: Colors.red)),
       onPressed: () => Navigator.pop(context),
     );
   }
@@ -735,19 +793,14 @@ class _SenderState extends State<Sender> {
 
   Widget _sendButton() {
     return ElevatedButton(
-      child: Text(
-        'Send',
-        style: TextStyle(color: Colors.blue),
-      ),
+      child: Text('Send', style: TextStyle(color: Colors.blue)),
       onPressed: () async {
         asset = Singleton.assetList.assetListState.findAsset(selectedToken);
         if (asset == null) {
           showDialog(
             context: context,
             builder: (context) {
-              return AlertDialog(
-                content: Text('Select a Token'),
-              );
+              return AlertDialog(content: Text('Select a Token'));
             },
           );
           return null;
@@ -757,9 +810,7 @@ class _SenderState extends State<Sender> {
           showDialog(
             context: context,
             builder: (context) {
-              return AlertDialog(
-                content: Text('Input a number'),
-              );
+              return AlertDialog(content: Text('Input a number'));
             },
           );
           return;
@@ -769,9 +820,7 @@ class _SenderState extends State<Sender> {
           showDialog(
             context: context,
             builder: (context) {
-              return AlertDialog(
-                content: Text('Input a valid address'),
-              );
+              return AlertDialog(content: Text('Input a valid address'));
             },
           );
           return;
@@ -782,8 +831,10 @@ class _SenderState extends State<Sender> {
         var amountStr = amountController.text;
         var amount = double.parse(amountStr);
         Tx? tx = await asset!.makeTransaction(
-            address, asset!.getBaseAmount(amount),
-            noChange: _isMax);
+          address,
+          asset!.getBaseAmount(amount),
+          noChange: _isMax,
+        );
         if (tx == null) {
           showDialog(
             context: context,
@@ -800,13 +851,13 @@ class _SenderState extends State<Sender> {
         Uint8List? signedBytes;
         PST pst = asset!.makePST(tx);
         String? ErrorMsg;
-        try{
+        try {
           if (asset!.getWalletType() == WalletType.tejoryCard) {
             signedBytes = await signTxNFC(pst, tx);
           } else {
             signedBytes = await signTxPhone(pst, tx);
           }
-        } catch(e) {
+        } catch (e) {
           ErrorMsg = e.toString().replaceFirst("Exception: ", "");
         }
 
@@ -815,13 +866,21 @@ class _SenderState extends State<Sender> {
             context: context,
             builder: (context) {
               return AlertDialog(
-                icon: Icon(Icons.error_outline, color: Colors.red, size:36),
+                icon: Icon(Icons.error_outline, color: Colors.red, size: 36),
                 content: Column(
                   mainAxisSize: MainAxisSize.min,
                   spacing: 5,
                   children: [
-                    Text("Transaction Failed", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                    Text('${ErrorMsg==null?"Unknown error in signing transaction":ErrorMsg}'),
+                    Text(
+                      "Transaction Failed",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      '${ErrorMsg == null ? "Unknown error in signing transaction" : ErrorMsg}',
+                    ),
                   ],
                 ),
               );
@@ -848,73 +907,91 @@ class _SenderState extends State<Sender> {
           builder: (context) {
             return AlertDialog(
               content: Column(
-								crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Center(
-										child: Padding(
-																				padding: const EdgeInsets.only(bottom:10.0),
-																				child: Text('Transaction Sent Successfully',
-																						style: TextStyle(fontWeight: FontWeight.bold)),
-																			),
-									),
-									Center(child: Padding(
-																			padding: const EdgeInsets.only(bottom:10.0),
-																			child: Icon(Icons.check_circle, color: Colors.green, size:46),
-																		)),
-                  Text("Recipient:",
-                      style: TextStyle(fontWeight: FontWeight.bold)),
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 10.0),
+                      child: Text(
+                        'Transaction Sent Successfully',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                  Center(
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 10.0),
+                      child: Icon(
+                        Icons.check_circle,
+                        color: Colors.green,
+                        size: 46,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    "Recipient:",
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
                   Text(
                     addressController.text,
-                    style:
-                        TextStyle(fontSize: 12, fontWeight: FontWeight.w400),
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w400),
                     // overflow: TextOverflow.ellipsis,
                   ),
-									SizedBox(height: 10),
-                  Text("Amount:",
-                      style: TextStyle(fontWeight: FontWeight.bold)),
+                  SizedBox(height: 10),
+                  Text(
+                    "Amount:",
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
                   Text(
                     "${amountController.text} ${asset!.symbol}",
                     style: TextStyle(fontSize: 14, fontWeight: FontWeight.w400),
                   ),
-									Text(
+                  Text(
                     "${amountFiatController.text} ${Singleton.currentCurrency.isoName}",
                     style: TextStyle(fontSize: 14, fontWeight: FontWeight.w400),
                   ),
-									SizedBox(height: 10),
-                  Text("Tx Hash:",
-                      style: TextStyle(fontWeight: FontWeight.bold)),
+                  SizedBox(height: 10),
+                  Text(
+                    "Tx Hash:",
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
                   Text(
                     txHash,
-                    style:
-                        TextStyle(fontSize: 12, fontWeight: FontWeight.w400),
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w400),
                     // overflow: TextOverflow.ellipsis,
                   ),
                   Center(
-										child: Padding(
-											padding: EdgeInsets.only(bottom: 10.0),
-											child: IconButton(
-												icon: Icon(Icons.copy),
-												onPressed: () => copyText(context, txHash),
-												tooltip: 'Copy to clipboard',
-											),
-										),
-									),
+                    child: Padding(
+                      padding: EdgeInsets.only(bottom: 10.0),
+                      child: IconButton(
+                        icon: Icon(Icons.copy),
+                        onPressed: () => copyText(context, txHash),
+                        tooltip: 'Copy to clipboard',
+                      ),
+                    ),
+                  ),
                   (URL != "")
                       ? Center(
-												child: TextButton(
-														style: ButtonStyle(
-																backgroundColor:
-																		WidgetStateProperty.all(Colors.blue)),
-														onPressed: () {
-															urlOpen(URL);
-														},
-														child: Text("Track Transaction",
-																style: TextStyle(
-																		fontWeight: FontWeight.bold,
-																		color: Colors.white))),
-											)
-                      : Container()
+                        child: TextButton(
+                          style: ButtonStyle(
+                            backgroundColor: WidgetStateProperty.all(
+                              Colors.blue,
+                            ),
+                          ),
+                          onPressed: () {
+                            urlOpen(URL);
+                          },
+                          child: Text(
+                            "Track Transaction",
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      )
+                      : Container(),
                 ],
               ),
             );
@@ -939,13 +1016,14 @@ class _SenderState extends State<Sender> {
         builder: (context) {
           return AlertDialog(
             content: Text(
-                'NFC is disabled. Please enable it to sign the transaction'),
+              'NFC is disabled. Please enable it to sign the transaction',
+            ),
           );
         },
       );
       return null;
     }
-    
+
     Uint8List? signedBytes = await asset!.signTx(pst, tx, context);
 
     return signedBytes;

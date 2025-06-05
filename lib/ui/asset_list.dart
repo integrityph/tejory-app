@@ -644,7 +644,7 @@ class _AssetListState extends State<AssetList> with ChangeNotifier {
                               style: TextStyle(fontWeight: FontWeight.w500),
                             ),
                             Text(
-                              privacy? "****" : asset
+                              privacy? "∗∗∗∗" : asset
                                   .getDecimalAmountInDouble(
                                     asset.getBalance(notify: false),
                                   )
@@ -673,7 +673,7 @@ class _AssetListState extends State<AssetList> with ChangeNotifier {
                                   ),
                                 ),
                                 Text(
-                                  privacy? "****" : '~ ${widget.humanizeMoney((asset.priceUsd) * (asset.getDecimalAmountInDouble(asset.getBalance(notify: false))), isFiat: true)}',
+                                  privacy? "∗∗∗∗" : '~ ${widget.humanizeMoney((asset.priceUsd) * (asset.getDecimalAmountInDouble(asset.getBalance(notify: false))), isFiat: true)}',
                                 ),
                               ],
                             ),

@@ -14,7 +14,7 @@ class PINCodeDialog {
           fontWeight: FontWeight.bold,
         ),
       ),
-      padding: EdgeInsetsGeometry.only(top: 8, right: 15, left: 15),
+      padding: EdgeInsetsGeometry.only(top: 3, right: 15, left: 15, bottom: 9),
       decoration: BoxDecoration(
         border: BoxBorder.all(),
         borderRadius: BorderRadiusGeometry.all(Radius.circular(5)),
@@ -83,7 +83,7 @@ class PINCodeDialog {
                     PIN.clear();
                     pinController.text.codeUnits.forEachIndexed((index, digit) {
                       PIN.add(pinController.text.codeUnits[index] - 48);
-                      PINText[index] = "*";
+                      PINText[index] = "●";
                     });
                   });
                 });

@@ -374,6 +374,7 @@ class BTCLN extends CryptoCoin {
         Singleton.sendNotification(
           "Error in Send Transaction",
           "${amountDouble} BTCLN transaction failed. $errMsg",
+          groupKey: "BTCLN",
         );
         return null;
       }
@@ -635,14 +636,16 @@ class BTCLN extends CryptoCoin {
       tx.wallet = walletId;
       await tx.save();
 
-      var amountDouble = getDecimalAmount(BigInt.from(tx.amount ?? 0));
-      var balanceDouble = getDecimalAmount(balance);
+      // var amountDouble = getDecimalAmount(BigInt.from(tx.amount ?? 0));
+      // var balanceDouble = getDecimalAmount(balance);
 
       if (showNotifications) {
-        Singleton.sendNotification(
-          "${tx.isDeposit! ? "Receive" : "Send"} Transaction Completed",
-          "$amountDouble BTCLN transaction was completed successfully. Your new balance is $balanceDouble",
-        );
+        // Singleton.sendNotification(
+        //   "${tx.isDeposit! ? "Received" : "Sent"} BTCLN Transaction",
+        //   "$amountDouble BTCLN transaction was completed successfully. Your new balance is $balanceDouble",
+        //   groupKey: "BTCLN",
+        // );
+        sendNotification(tx);
       }
     }
   }

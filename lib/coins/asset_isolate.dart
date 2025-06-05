@@ -71,7 +71,7 @@ class AssetIsolate {
     dynamic message,
     dynamic coinId,
     int workerIndex,
-  ) {
+  ) async {
     if (message is SendPort) {
       sendPorts[workerIndex] = message;
       final RootIsolateToken? rootIsolateToken = RootIsolateToken.instance;
@@ -89,6 +89,16 @@ class AssetIsolate {
     } else if (message is String && message == "READY") {
       _isolatesReady[workerIndex].complete();
       print("isolate ${coins[workerIndex].symbol()}.$workerIndex is ready");
+    } else if (message is Map<String, dynamic> && message.containsKey("params")) {
+      switch (message["command"]) {
+        case "sendNotification":
+        try {
+          await coins[workerIndex].sendNotification(message["params"]["tx"]);
+        } catch(e) {
+          print("isolate UI error. $e");
+        }
+        
+      }
     } else if (message is Map<String, dynamic>) {
       coins[workerIndex].receiveResponse(message);
     }
@@ -134,6 +144,7 @@ class AssetIsolate {
         coin = Asset.fromConfig(coinConfig);
         // configure the coin for worker isolate
         coin!.isUIInstance = false;
+        coin!.sendPort = sendPort;
         coin!.addListener((){
           // send notify listeners changes:
           sendPort.send(coin!.getState());

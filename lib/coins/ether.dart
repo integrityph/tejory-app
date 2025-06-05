@@ -101,7 +101,7 @@ class Ether extends CryptoCoin {
 
     connect();
     () async {
-      getTxListFromAPI();
+      getTxListFromAPI(showNotifications: !Singleton.initialSetup);
       await getFeeFromAPI();
       await getNonceFromAPI();
       ready = true;
@@ -688,7 +688,7 @@ class Ether extends CryptoCoin {
     balanceDB.save();
   }
 
-  Future<void> getTxListFromAPI() async {
+  Future<void> getTxListFromAPI({bool showNotifications=true}) async {
     String address = await getReceivingAddress();
     var URL = Uri.parse(
       'https://${API_SERVER}/v2/api?chainid=${CHAIN_ID}&module=account&action=txlist&address=${address}&startblock=0&endblock=99999999&page=1&offset=1000&sort=asc&apikey=${APIKeys.getAPIKey("etherscan")}',
@@ -733,6 +733,14 @@ class Ether extends CryptoCoin {
       tx.verified = true;
       tx.wallet = walletId;
       await tx.save();
+      if (showNotifications) {
+        // Singleton.sendNotification(
+        //   "${tx.isDeposit! ? "Received" : "Sent"} ETH Transaction",
+        //   "${getDecimalAmount(BigInt.from(tx.amount!))} ETH transaction was completed successfully. Your new balance is ${getDecimalAmount(getBalance())}",
+        //   groupKey: "ETH",
+        // );
+        sendNotification(tx);
+      }
     }
   }
 

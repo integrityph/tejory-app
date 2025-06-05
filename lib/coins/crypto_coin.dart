@@ -9,6 +9,7 @@ import 'package:tejory/collections/balance.dart';
 import 'package:tejory/collections/block.dart';
 import 'package:tejory/collections/tx.dart';
 import 'package:tejory/collections/walletDB.dart';
+import 'package:tejory/crypto-helper/other_helpers.dart';
 import 'package:tejory/singleton.dart';
 
 abstract class CryptoCoin with ChangeNotifier {
@@ -34,6 +35,7 @@ abstract class CryptoCoin with ChangeNotifier {
   int assetIndex=0;
   int coinIndex=0;
   String? template;
+  SendPort? sendPort;
 
   CryptoCoin(
       {required this.walletId,
@@ -117,6 +119,33 @@ abstract class CryptoCoin with ChangeNotifier {
 
   }
 
+  double getDecimalAmountInDouble(BigInt val){
+    return double.parse(getDecimalAmount(val));
+  }
+
+  Future<void> sendNotification(TxDB tx) async {
+    if (!isUIInstance) {
+      getAssetIsolatePort().send(<String, dynamic>{
+        "command": "sendNotification",
+        "params": {"tx": tx},
+      });
+      return;
+    }
+    final notificationAmount =
+            "${tx.isDeposit! ? "" : "-"}${getDecimalAmount(BigInt.from(tx.amount!))}";
+        final notificationFiatAmount =
+            "${tx.isDeposit! ? "" : "-"}${OtherHelpers.humanizeMoney(getDecimalAmountInDouble(BigInt.from(tx.amount!)) * Singleton.assetList.assetListState.assets[assetIndex].priceUsd, isFiat: true, addFiatSymbol: true)}";
+        final notificationBalance =
+            "${getDecimalAmount(getBalance())}";
+        final notificationFiatBalance =
+            "${OtherHelpers.humanizeMoney(getDecimalAmountInDouble(getBalance()) * Singleton.assetList.assetListState.assets[assetIndex].priceUsd, isFiat: true, addFiatSymbol: true)}";
+        await Singleton.sendNotification(
+          "${tx.isDeposit! ? "Received" : "Sent"} ${symbol()}",
+          "$notificationAmount ${symbol()} ($notificationFiatAmount). New balance is $notificationBalance ${symbol()} ($notificationFiatBalance)",
+          groupKey: "${symbol()}",
+        );
+  }
+
   void receiveResponse(Map<String, dynamic> message) {
     if (message["command"] is String) {
       switch (message["command"]) {
@@ -141,8 +170,9 @@ abstract class CryptoCoin with ChangeNotifier {
   }
 
   SendPort getAssetIsolatePort() {
-    return getAssetIsolate().sendPorts[coinIndex]!;
+    return sendPort??getAssetIsolate().sendPorts[coinIndex]!;
   }
+
 
   Map<String, dynamic> toConfigMap() {
     return {

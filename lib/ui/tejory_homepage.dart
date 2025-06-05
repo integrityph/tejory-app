@@ -170,7 +170,7 @@ class _HomePageState extends State<HomePage>
                 ),
 
                 Text(
-                  (Singleton.assetList.assetListState.privacy) ? "****": balance,
+                  (Singleton.assetList.assetListState.privacy) ? "∗∗∗∗": balance,
                   style: TextStyle(
                     fontSize: 35,
                     fontWeight: FontWeight.w500,

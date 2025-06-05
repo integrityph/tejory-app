@@ -2837,6 +2837,7 @@ class Bitcoin extends CryptoCoin {
         failed: false,
         txTimeStamp: btctx.timestamp,
         blkHash: lastBlockHash,
+        showNotifications: false,
       );
     }
 
@@ -2872,10 +2873,6 @@ class Bitcoin extends CryptoCoin {
       utxoSet['${txdb.hash!}${hex.encode(buf)}'] = utxo;
       utxoSetChanged = true;
     });
-
-    // for (final key in utxoSet.keys) {
-    //   print("$key: ${utxoSet[key]!.value} ${utxoSet[key]!.spent}");
-    // }
 
     final balance =
         Balance()
@@ -2963,6 +2960,7 @@ class Bitcoin extends CryptoCoin {
     bool failed = false,
     DateTime? txTimeStamp,
     String? blkHash,
+    bool showNotifications=true,
   }) async {
     BitcoinTx btctx = tx as BitcoinTx;
 
@@ -3071,6 +3069,14 @@ class Bitcoin extends CryptoCoin {
       await txList[i].save();
       // print("TX saved: ${txHash}");
       changed = true;
+      if (showNotifications) {
+        // Singleton.sendNotification(
+        //   "${txList[i].isDeposit! ? "Received" : "Sent"} BTC Transaction",
+        //   "${getDecimalAmount(BigInt.from(txList[i].amount!))} BTC transaction was completed successfully. Your new balance is ${getDecimalAmount(getBalance())}",
+        //   groupKey: "BTC",
+        // );
+        sendNotification(txList[i]);
+      }
     }
 
     if (changed) {
