@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:tejory/custom_icons_icons.dart';
 import 'package:tejory/singleton.dart';
 import 'package:tejory/ui/ramp.dart';

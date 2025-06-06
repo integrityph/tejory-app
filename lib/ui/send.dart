@@ -1,10 +1,8 @@
 import 'dart:io';
-import 'dart:math';
 import 'package:blockchain_utils/hex/hex.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:tejory/coins/tx.dart';
-import 'package:tejory/collections/tx.dart';
 import 'package:tejory/collections/walletDB.dart';
 import 'package:tejory/comms/nfc.dart';
 import 'package:tejory/crypto-helper/other_helpers.dart';
@@ -1002,7 +1000,7 @@ class _SenderState extends State<Sender> {
   }
 
   Future<Uint8List?> signTxPhone(PST pst, Tx tx) async {
-    var signedPST = asset!.coins[0].signPST(pst, tx, context);
+    var signedPST = asset!.coins[0].signTx(pst, tx, context);
 
     return signedPST;
   }
