@@ -4,7 +4,6 @@ import 'package:tejory/keypad/keypad.dart';
 
 class PINCodeDialog {
   _getPINContainer(String data, BuildContext context) {
-    print("_getPINContainer ${data}");
     return Container(
       child: Text(
         data,
@@ -32,32 +31,24 @@ class PINCodeDialog {
     TextEditingController pinController = TextEditingController();
     bool listening = false;
     Numpad numpad = Numpad(
-          autoShow: true,
-          keyboardController: pinController,
-          onEditingCompleteKeyboard: (NumpadState numpadState) {
-            numpadState.setVisible(false);
-            Navigator.of(context).pop(PIN);
-          },
-        );
-    Stopwatch watch = Stopwatch()..start();
-
-    print("ready to show PIN dialog ${watch.elapsedMilliseconds}");
+      autoShow: true,
+      keyboardController: pinController,
+      onEditingCompleteKeyboard: (NumpadState numpadState) {
+        numpadState.setVisible(false);
+        Navigator.of(context).pop(PIN);
+      },
+    );
     var dialogFuture = showDialog<List<int>?>(
       context: context,
       barrierDismissible: false,
       useRootNavigator: true,
       builder: (BuildContext context) {
-        print("showDialog.builder ${watch.elapsedMilliseconds}");        
         return Dialog.fullscreen(
           child: StatefulBuilder(
             builder: (BuildContext context, StateSetter setState) {
-              print(
-                "showDialog.builder.StatefulBuilder.builder ${watch.elapsedMilliseconds}",
-              );
               if (!listening) {
                 listening = true;
                 pinController.addListener(() {
-                  print("pinController.addListener ${pinController.text}");
                   // check the input is a number
                   if (pinController.text.length != 0) {
                     if (pinController.text.codeUnits.last < 48 ||
@@ -79,7 +70,6 @@ class PINCodeDialog {
 
                   setState(() {
                     PINText = [" ", " ", " ", " "];
-                    print("pinController.text ${pinController.text}");
                     PIN.clear();
                     pinController.text.codeUnits.forEachIndexed((index, digit) {
                       PIN.add(pinController.text.codeUnits[index] - 48);
