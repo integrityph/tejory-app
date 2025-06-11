@@ -8,7 +8,7 @@ import 'package:tejory/coins/visual_tx.dart';
 import 'package:tejory/collections/balance.dart';
 import 'package:tejory/collections/block.dart';
 import 'package:tejory/collections/tx.dart';
-import 'package:tejory/collections/walletDB.dart';
+import 'package:tejory/collections/wallet_db.dart';
 import 'package:tejory/crypto-helper/other_helpers.dart';
 import 'package:tejory/singleton.dart';
 
@@ -63,7 +63,7 @@ abstract class CryptoCoin with ChangeNotifier {
 
   PST makePST(Tx tx);
 
-  Tx? makeTransaction(String toAddress, BigInt amount, {noChange = false});
+  Future<Tx?> makeTransaction(String toAddress, BigInt amount, {noChange = false});
 
   // use first
   void transmitTxBytes(Uint8List buf);
@@ -83,7 +83,7 @@ abstract class CryptoCoin with ChangeNotifier {
   // Update the balance from the blockchain
   Future<void> updateBalance();
 
-  void initCoin({List<Block>? blocks, List<TxDB>? txList, Balance? balanceDB});
+  Future<void> initCoin({List<Block>? blocks, List<TxDB>? txList, Balance? balanceDB});
   Future<Uint8List?> signPST(PST? pst, Tx? tx, BuildContext? context);
   Future<Uint8List?> signTx(PST? pst, Tx? tx, BuildContext? context);
   List<String> getInitialDerivationPaths();

@@ -13,13 +13,7 @@ void main() async {
   await LibSecp256k1FFI.init();
   const APP_MODE = String.fromEnvironment('APP_MODE', defaultValue: '');
   if (APP_MODE == "benchmark") {
-    // await benchmarkMnemonicsToSeedBU(25);
-    await benchmarkMnemonicsToSeedCrypto(25);
-    // await benchmarkMasterHDFromSeed(25);
-    await benchmarkMasterHDFromSeedFFI(25);
-    // await benchmarkKeyDerivation(5);
-    // await benchmarkKeyDerivationB44(100);
-    await benchmarkKeyDerivationFFI(5);
+    await runBenchmarks();
     return;
   }
   // initialize API keys

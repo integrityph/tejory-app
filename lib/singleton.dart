@@ -14,7 +14,7 @@ import 'package:tejory/collections/key.dart';
 import 'package:tejory/collections/lp.dart';
 import 'package:tejory/collections/next_key.dart';
 import 'package:tejory/collections/tx.dart';
-import 'package:tejory/collections/walletDB.dart';
+import 'package:tejory/collections/wallet_db.dart';
 import 'package:tejory/objectbox/objectbox.dart';
 import 'package:tejory/swap/swap.dart';
 import 'package:tejory/ui/asset_list.dart';

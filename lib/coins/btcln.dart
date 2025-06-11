@@ -17,7 +17,8 @@ import 'package:tejory/collections/balance.dart';
 import 'package:tejory/collections/block.dart';
 import 'package:tejory/collections/key.dart' as keyCollection;
 import 'package:tejory/collections/tx.dart';
-import 'package:tejory/collections/walletDB.dart';
+import 'package:tejory/collections/wallet_db.dart';
+import 'package:tejory/isar_models.dart';
 import 'package:tejory/singleton.dart';
 import 'package:http/http.dart' as http;
 import 'package:web_socket_channel/web_socket_channel.dart';
@@ -65,7 +66,7 @@ class BTCLN extends CryptoCoin {
   }
 
   @override
-  void initCoin({List<Block>? blocks, List<TxDB>? txList, Balance? balanceDB}) {
+  Future<void> initCoin({List<Block>? blocks, List<TxDB>? txList, Balance? balanceDB}) async {
     if (balanceDB != null && balanceDB.coinBalance != null) {
       balance = BigInt.from(balanceDB.coinBalance!);
     }
@@ -144,9 +145,9 @@ class BTCLN extends CryptoCoin {
     return 0;
   }
 
-  Uint8List getPublicKey(String path, {bool compressed = false}) {
+  Future<Uint8List> getPublicKey(String path, {bool compressed = false}) async {
     var pathParts = path.split("/");
-    String parentPubKey = getExtendedPublicKey(
+    String parentPubKey = await getExtendedPublicKey(
       pathParts.sublist(0, pathParts.length - 1).join("/"),
     );
     var parentAccount = Bip32Slip10Secp256k1.fromExtendedKey(
@@ -163,19 +164,20 @@ class BTCLN extends CryptoCoin {
     return Uint8List.fromList(childKey.publicKey.uncompressed);
   }
 
-  String getExtendedPublicKey(String path) {
+  Future<String> getExtendedPublicKey(String path) async {
     // check if the key is already in the DB
-    var isar = Singleton.getDB();
-    keyCollection.Key? key = isar.keys.getByPathWalletCoinSync(
-      path,
-      walletId,
-      id,
-    );
+    // var isar = Singleton.getDB();
+    // keyCollection.Key? key = isar.keys.getByPathWalletCoinSync(
+    //   path,
+    //   walletId,
+    //   id,
+    // );
+    keyCollection.Key? key = await Models.key.getUnique(path, walletId, id);
     Bip32PublicKey pubkey;
 
     // if the key is not if the DB, create it and save it
     if (key == null) {
-      var hdw = getNearestParentKey(path);
+      var hdw = await getNearestParentKey(path);
       if (hdw == null) {
         return "";
       }
@@ -211,43 +213,46 @@ class BTCLN extends CryptoCoin {
     return pubkey.toExtended;
   }
 
-  String getClientPubkey() {
+  Future<String> getClientPubkey() async {
     // check if the key is already in the DB
-    var isar = Singleton.getDB();
-    keyCollection.Key? key = isar.keys.getByPathWalletCoinSync(
-      "m/9011'/0",
-      walletId,
-      id,
-    );
+    // var isar = Singleton.getDB();
+    // keyCollection.Key? key = isar.keys.getByPathWalletCoinSync(
+    //   "m/9011'/0",
+    //   walletId,
+    //   id,
+    // );
+    keyCollection.Key? key = await Models.key.getUnique("m/9011'/0", walletId, id);
     return key!.pubKey!;
   }
 
-  String getClientToken() {
+  Future<String> getClientToken() async {
     // check if the key is already in the DB
-    var isar = Singleton.getDB();
-    keyCollection.Key? key = isar.keys.getByPathWalletCoinSync(
-      "m/9011'/0",
-      walletId,
-      id,
-    );
+    // var isar = Singleton.getDB();
+    // keyCollection.Key? key = isar.keys.getByPathWalletCoinSync(
+    //   "m/9011'/0",
+    //   walletId,
+    //   id,
+    // );
+    keyCollection.Key? key = await Models.key.getUnique("m/9011'/0", walletId, id);
     return key!.chainCode!;
   }
 
   Future<void> setClientToken(String token) async {
     // check if the key is already in the DB
-    var isar = Singleton.getDB();
-    keyCollection.Key? key = isar.keys.getByPathWalletCoinSync(
-      "m/9011'/0",
-      walletId,
-      id,
-    );
+    // var isar = Singleton.getDB();
+    // keyCollection.Key? key = isar.keys.getByPathWalletCoinSync(
+    //   "m/9011'/0",
+    //   walletId,
+    //   id,
+    // );
+    keyCollection.Key? key = await Models.key.getUnique("m/9011'/0", walletId, id);
     key!.chainCode = token;
     await key.save();
     print("btcln token saved to DB");
     return;
   }
 
-  Bip32Slip10Secp256k1? getNearestParentKey(String path) {
+  Future<Bip32Slip10Secp256k1?> getNearestParentKey(String path) async {
     if (extendedPrivateKey != null) {
       final hdw = Bip32Slip10Secp256k1.fromExtendedKey(
         extendedPrivateKey!,
@@ -260,8 +265,9 @@ class BTCLN extends CryptoCoin {
     var pathParts = path.split("/");
     for (int i = pathParts.length - 1; i >= 0; i--) {
       var tempPath = pathParts.sublist(0, i).join("/");
-      var isar = Singleton.getDB();
-      key = isar.keys.getByPathWalletCoinSync(tempPath, walletId, id);
+      // var isar = Singleton.getDB();
+      // key = isar.keys.getByPathWalletCoinSync(tempPath, walletId, id);
+      key = await Models.key.getUnique(tempPath, walletId, id);
       if (key != null) {
         break;
       }
@@ -347,7 +353,7 @@ class BTCLN extends CryptoCoin {
   }
 
   @override
-  Tx? makeTransaction(String toAddress, BigInt amount, {noChange = false}) {
+  Future<Tx?> makeTransaction(String toAddress, BigInt amount, {noChange = false}) async {
     var tx = BitcoinTx();
     var out = BitcoinTxOut();
     out.scriptPubKey = Uint8List.fromList(toAddress.codeUnits);
@@ -392,13 +398,13 @@ class BTCLN extends CryptoCoin {
   }
 
   Future<void> createNewWallet() async {
-    var privKeyHex = getClientToken();
+    var privKeyHex = await getClientToken();
     if (privKeyHex.length != 64) {
       return;
     }
 
     print("btcln creating new wallet");
-    var pubkeyHex = getClientPubkey();
+    var pubkeyHex = await getClientPubkey();
     var privKey = ECPrivate.fromHex(privKeyHex);
     var msgHash = hex.decode(pubkeyHex);
     var sig = privKey.signMessage(msgHash, messagePrefix: "\x18Lightning");
@@ -535,8 +541,8 @@ class BTCLN extends CryptoCoin {
     Map<String, String> headers;
     if (customHeader == null) {
       headers = <String, String>{
-        "pubkey": getClientPubkey(),
-        "token": getClientToken(),
+        "pubkey": await getClientPubkey(),
+        "token": await getClientToken(),
       };
     } else {
       headers = customHeader;
@@ -589,9 +595,10 @@ class BTCLN extends CryptoCoin {
     }
   }
 
-  void saveBalance() {
-    var isar = Singleton.getDB();
-    var balanceDB = isar.balances.getByCoinWalletSync(id, walletId);
+  Future<void> saveBalance() async {
+    // var isar = Singleton.getDB();
+    // var balanceDB = isar.balances.getByCoinWalletSync(id, walletId);
+    var balanceDB = await Models.balance.getUnique(id, walletId);
     if (balanceDB == null) {
       balanceDB = Balance();
       balanceDB.coin = id;
@@ -609,13 +616,14 @@ class BTCLN extends CryptoCoin {
       return;
     }
 
-    var isar = Singleton.getDB();
+    // var isar = Singleton.getDB();
     TxDB? tx;
     if (response["transactions"] == null) {
       return;
     }
     for (final txObj in response["transactions"]) {
-      tx = await isar.txDBs.getByHashCoinOutputIndex(txObj["TxHash"], id, 0);
+      // tx = await isar.txDBs.getByHashCoinOutputIndex(txObj["TxHash"], id, 0);
+      tx = await Models.txDB.getUnique(txObj["TxHash"], id, 0);
       if (tx != null) {
         continue;
       }
@@ -654,8 +662,8 @@ class BTCLN extends CryptoCoin {
     if (!online) {
       return;
     }
-    String pubkey = getClientPubkey();
-    String token = getClientToken();
+    String pubkey = await getClientPubkey();
+    String token = await getClientToken();
     String APIServer = rpcServer[0];
     List<String> protocols = [pubkey, token];
     var URL = Uri.parse('wss://${APIServer}/streamevents');

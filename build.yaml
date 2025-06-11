@@ -1,0 +1,39 @@
+builders:
+  boxmodel_builder:
+    import: 'package:tejory/codegen/box_model/builder.dart'
+    builder_factories: ['boxModelBuilder']
+    build_extensions: {'.dart': ['.model.g.dart']}
+    auto_apply: dependents
+    build_to: source
+
+  boxcollector_builder:
+    import: 'package:tejory/codegen/box_model/builder.dart'
+    builder_factories: ['boxCollectorBuilder']
+    build_extensions: {'.dart': ['.model.meta.json']}
+    auto_apply: dependents
+    build_to: cache
+
+  boxaggregator_builder:
+    import: 'package:tejory/codegen/box_model/builder.dart'
+    builder_factories: ['boxAggregatorBuilder'] # A new entrypoint in builder.dart
+    # This runs on the output of the collector
+    build_extensions: {'$lib$': ['box_models.g.dart']}
+    auto_apply: root_package
+    build_to: source
+
+targets:
+  $default:
+    builders:
+      tejory|boxmodel_builder:
+        enabled: true
+
+      tejory|boxcollector_builder:
+        enabled: true
+
+      tejory|boxaggregator_builder:
+        enabled: true
+
+      source_gen|part_cleanup:
+        enabled: true
+        options:
+          remove_part_file_extension: .model.g.dart

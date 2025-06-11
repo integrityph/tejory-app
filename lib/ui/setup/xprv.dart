@@ -5,7 +5,7 @@ import 'package:collection/collection.dart';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
 import 'package:tejory/coins/wallet.dart';
-import 'package:tejory/collections/walletDB.dart';
+import 'package:tejory/collections/wallet_db.dart';
 import 'package:tejory/comms/nfc.dart';
 import 'package:base58check/base58.dart' as base58;
 import 'package:tejory/crypto-helper/hd_wallet.dart';

@@ -1,0 +1,3 @@
+class BoxModel {
+  const BoxModel();
+}

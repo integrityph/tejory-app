@@ -15,7 +15,8 @@ import 'package:tejory/coins/wallet.dart';
 import 'package:tejory/collections/balance.dart';
 import 'package:tejory/collections/coin.dart';
 import 'package:tejory/collections/tx.dart';
-import 'package:tejory/collections/walletDB.dart';
+import 'package:tejory/collections/wallet_db.dart';
+import 'package:tejory/isar_models.dart';
 import 'package:tejory/singleton.dart';
 
 class Asset with ChangeNotifier {
@@ -114,24 +115,6 @@ class Asset with ChangeNotifier {
     );
   }
 
-  // void updatePrice(Asset asset) {
-  //   lastChange = asset.priceUsd - priceUsd;
-  //   if (priceUsd != asset.priceUsd) {
-  //     priceUsd = asset.priceUsd;
-  //     notifyListeners();
-  //   }
-
-  //   changePercent24Hr = asset.changePercent24Hr;
-
-  //   if (!rateSaved) {
-  //     Future<Coin?> coinFtr = Singleton.getDB().coins.filter().idEqualTo(coinId!).findFirst();
-  //     coinFtr.then((Coin? coin) {
-  //       coin!.usdPrice = priceUsd;
-  //       coin.save();
-  //     });
-  //   }
-  // }
-
   void updatePrice(Asset newPriceData) {
     bool priceActuallyChanged = (this.priceUsd != newPriceData.priceUsd);
     this.lastChange = newPriceData.priceUsd - this.priceUsd;
@@ -144,8 +127,9 @@ class Asset with ChangeNotifier {
     if (!this.initialRateSaved) {
       // Check if we've already done the initial save
       this.initialRateSaved = true;
-      Future<Coin?> coinFtr =
-          Singleton.getDB().coins.filter().idEqualTo(this.coinId!).findFirst();
+      // Future<Coin?> coinFtr =
+      //     Singleton.getDB().coins.filter().idEqualTo(this.coinId!).findFirst();
+      Future<Coin?> coinFtr = Models.coin.getById(this.coinId!);
       coinFtr
           .then((Coin? coin) {
             if (coin != null) {
@@ -210,8 +194,8 @@ class Asset with ChangeNotifier {
     return isolate!.ready();
   }
 
-  void initCoin(List<WalletDB> wallets, {bool online = true}) {
-    var isar = Singleton.getDB();
+  Future<void> initCoin(List<WalletDB> wallets, {bool online = true}) async {
+    // var isar = Singleton.getDB();
     Map<String, dynamic> configMap = {
       "symbol": symbol,
       "walletId": 0,
@@ -248,24 +232,29 @@ class Asset with ChangeNotifier {
     }
 
     // initialize workers and initialize coins after that
-    initWorker().then((_) {
+    await initWorker().then((_) async {
       for (int i = 0; i < coins.length; i++) {
         // Load tx
-        Future<List<TxDB>> txListFtr =
-            isar.txDBs
-                .filter()
-                .coinEqualTo(coinId)
-                .walletEqualTo(wallets[i].id)
-                .findAll();
+        // Future<List<TxDB>> txListFtr =
+        //     isar.txDBs
+        //         .filter()
+        //         .coinEqualTo(coinId)
+        //         .walletEqualTo(wallets[i].id)
+        //         .findAll();
+        Future<List<TxDB>?> txListFtr = Models.txDB.find(q:FilterGroup.and([
+          FilterCondition.equalTo(property: "coin", value: coinId),
+        ]));
 
-        Future<Balance?> balanceFtr = isar.balances.getByCoinWallet(
-          coinId,
-          coins[i].walletId,
-        );
-        Future.wait([txListFtr, balanceFtr]).then((values) {
+        // Future<Balance?> balanceFtr = isar.balances.getByCoinWallet(
+        //   coinId,
+        //   coins[i].walletId,
+        // );
+        Future<Balance?> balanceFtr = Models.balance.getUnique(coinId, coins[i].walletId);
+        
+        await Future.wait([txListFtr, balanceFtr]).then(await (values) async {
           List<TxDB> txList = values[0] as List<TxDB>;
           Balance? balance = values[1] as Balance?;
-          coins[i].initCoin(blocks: null, txList: txList, balanceDB: balance);
+          await coins[i].initCoin(blocks: null, txList: txList, balanceDB: balance);
         });
       }
     });
@@ -381,9 +370,10 @@ class Asset with ChangeNotifier {
     return usedWalletId!;
   }
 
-  Wallet getWallet() {
+  Future<Wallet> getWallet() async {
     int tempWalletId = getWalletId();
     Wallet wallet = Wallet(id: tempWalletId);
+    await wallet.loaded.future;
     return wallet;
   }
 
@@ -404,7 +394,7 @@ class Asset with ChangeNotifier {
     return null;
   }
 
-  Tx? makeTransaction(String toAddress, BigInt amount, {noChange = false}) {
+  Future<Tx?> makeTransaction(String toAddress, BigInt amount, {noChange = false}) async {
     int usedWalletId = getWalletId();
     CryptoCoin? usedCoin = getCoinByWalletId(usedWalletId);
     return usedCoin?.makeTransaction(toAddress, amount, noChange: noChange);

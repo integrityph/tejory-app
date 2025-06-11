@@ -1,0 +1,3 @@
+class UniqueIndex {
+  const UniqueIndex();
+}

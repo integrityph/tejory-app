@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'walletDB.dart';
+part of 'wallet_db.dart';
 
 // **************************************************************************
 // IsarCollectionGenerator

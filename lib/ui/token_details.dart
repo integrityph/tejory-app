@@ -5,6 +5,7 @@ import 'package:syncfusion_flutter_charts/charts.dart';
 import 'package:tejory/coins/visual_tx.dart';
 import 'package:tejory/collections/tx.dart';
 import 'package:tejory/crypto-helper/other_helpers.dart';
+import 'package:tejory/isar_models.dart';
 import 'package:tejory/singleton.dart';
 import 'package:tejory/ui/network.dart';
 import 'package:tejory/ui/receive.dart';
@@ -38,11 +39,18 @@ class _TokenDetails extends State<TokenDetails> with TickerProviderStateMixin {
   }
 
   Future<List<VisualTx>> getTxDbList() async {
-    var txDBList =
-        await Singleton.getDB().txDBs
-            .filter()
-            .coinEqualTo(asset.coinId)
-            .findAll();
+    // var txDBList =
+    //     await Singleton.getDB().txDBs
+    //         .filter()
+    //         .coinEqualTo(asset.coinId)
+    //         .findAll();
+    var txDBList = await Models.txDB.find(q:FilterGroup.and([
+      FilterCondition.equalTo(property: "coin", value: asset.coinId),
+    ]));
+
+    if (txDBList==null) {
+      return [];
+    }
 
     List<VisualTx> vTxList = asset.getVisualTxList(txDBList);
 
@@ -167,20 +175,23 @@ class _TokenDetails extends State<TokenDetails> with TickerProviderStateMixin {
               listenable: Singleton.assetList.assetListState.assets[assetIndex],
               builder: (context, w) {
                 return SliverToBoxAdapter(
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Text(
-                        "${(asset.lastChange >= 0) ? "▲" : "▼"}${OtherHelpers.humanizeMoney(asset.priceUsd, isFiat: true, addFiatSymbol: true)}",
-                        style: TextStyle(
-                          fontSize: 24,
-                          color:
-                              (asset.lastChange >= 0)
-                                  ? Colors.green
-                                  : Colors.red,
+                  child: Padding(
+                    padding: const EdgeInsets.only(left:8.0),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text(
+                          "${(asset.lastChange >= 0) ? "▲" : "▼"}${OtherHelpers.humanizeMoney(asset.priceUsd, isFiat: true, addFiatSymbol: true)}",
+                          style: TextStyle(
+                            fontSize: 24,
+                            color:
+                                (asset.lastChange >= 0)
+                                    ? Colors.green
+                                    : Colors.red,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 );
               },
@@ -385,7 +396,7 @@ class _TokenDetails extends State<TokenDetails> with TickerProviderStateMixin {
                   );
                 }
                 return SliverPadding(
-                  padding: EdgeInsetsGeometry.zero,
+                  padding: EdgeInsetsGeometry.only(right: 8, left:8),
                   sliver: SliverList(
                     delegate: SliverChildBuilderDelegate((
                       BuildContext context,

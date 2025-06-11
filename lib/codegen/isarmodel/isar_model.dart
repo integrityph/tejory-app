@@ -1,0 +1,3 @@
+class IsarModel {
+  const IsarModel();
+}

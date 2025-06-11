@@ -5,7 +5,7 @@ import 'package:tejory/coins/crypto_coin.dart';
 import 'package:tejory/coins/psbt.dart';
 import 'package:tejory/coins/pst.dart';
 import 'package:tejory/coins/tx.dart';
-import 'package:tejory/collections/walletDB.dart';
+import 'package:tejory/collections/wallet_db.dart';
 import 'package:tejory/comms/nfc.dart';
 import 'package:tejory/crypto-helper/other_helpers.dart';
 import 'package:tejory/singleton.dart';
@@ -531,9 +531,9 @@ class _SwapPage extends State<SwapPage> with ChangeNotifier {
                 "The selected token pair is not unlocked for swaps. We will have to unlock them first. You will have to sign ${txList.length} transaction(s) to unlock the tokens for swap");
             for (final tx in txList) {
               Uint8List? signedBytes;
-              if (asset0!.getWallet().type == WalletType.phone) {
+              if ((await asset0!.getWallet()).type == WalletType.phone) {
                 signedBytes = await signTxPhone(PSBT(), tx);
-              } else if (asset0!.getWallet().type == WalletType.tejoryCard) {
+              } else if ((await asset0!.getWallet()).type == WalletType.tejoryCard) {
                 signedBytes = await signTxNFC(PSBT(), tx);
               } else {
                 _errorDialogBuilder(context,
@@ -568,9 +568,9 @@ class _SwapPage extends State<SwapPage> with ChangeNotifier {
             return;
           }
           Uint8List? signedBytes;
-          if (asset0!.getWallet().type == WalletType.phone) {
+          if ((await asset0!.getWallet()).type == WalletType.phone) {
             signedBytes = await signTxPhone(PSBT(), tx);
-          } else if (asset0!.getWallet().type == WalletType.tejoryCard) {
+          } else if ((await asset0!.getWallet()).type == WalletType.tejoryCard) {
             signedBytes = await signTxNFC(PSBT(), tx);
           }
           if (signedBytes == null) {

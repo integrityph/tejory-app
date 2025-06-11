@@ -8,9 +8,10 @@ import 'package:tejory/collections/block.dart';
 import 'package:tejory/collections/coin.dart';
 import 'package:tejory/collections/data_version.dart';
 import 'package:tejory/collections/lp.dart';
-import 'package:tejory/collections/walletDB.dart';
+import 'package:tejory/collections/wallet_db.dart';
 import 'package:tejory/crypto-helper/blockchain_api.dart';
 import 'package:tejory/crypto-helper/other_helpers.dart';
+import 'package:tejory/isar_models.dart';
 import 'package:tejory/singleton.dart';
 import 'package:tejory/swap/liquidity_pool.dart';
 import 'package:tejory/ui/currency.dart';
@@ -248,17 +249,18 @@ class _AssetListState extends State<AssetList> with ChangeNotifier {
 
     AssetsData initialAssets = AssetsData.fromJson(jsonMap);
 
-    Isar isar = Singleton.getDB();
-
-    DataVersion? coinsVersion = await isar.dataVersions.getByName("coins");
+    // Isar isar = Singleton.getDB();
+    // DataVersion? coinsVersion = await isar.dataVersions.getByName("coins");
+    DataVersion? coinsVersion = await Models.dataVersion.getUnique("coins");
 
     if ((coinsVersion?.counter ?? 0) >= initialAssets.version) {
       return;
     }
 
     for (int i = 0; i < initialAssets.assets.length; i++) {
-      Coin coin =
-          await isar.coins.getByName(initialAssets.assets[i].name) ?? Coin();
+      // Coin coin =
+      //     await isar.coins.getByName(initialAssets.assets[i].name) ?? Coin();
+      Coin coin = await Models.coin.getUnique(initialAssets.assets[i].name) ?? Coin();
       coin.hrpBech32 = initialAssets.assets[i].getBech32HRP();
       coin.decimals = initialAssets.assets[i].decimals;
       coin.image = "assets/${initialAssets.assets[i].symbol.toLowerCase()}.png";
@@ -282,8 +284,11 @@ class _AssetListState extends State<AssetList> with ChangeNotifier {
       int coinId = await coin.save();
 
       if (coin.blockZeroHash != null && coin.blockZeroHash!.isNotEmpty) {
-        int blockCount = await isar.blocks.filter().coinEqualTo(coinId).count();
-        if (blockCount == 0) {
+        // int blockCount = await isar.blocks.filter().coinEqualTo(coinId).count();
+        int? blockCount = await Models.block.count(q:FilterGroup.and([
+          FilterCondition.equalTo(property: "coin", value: coinId),
+        ]));
+        if (blockCount == null || blockCount == 0) {
           Block block = Block();
           block.coin = coinId;
           block.hash = coin.blockZeroHash;
@@ -310,21 +315,25 @@ class _AssetListState extends State<AssetList> with ChangeNotifier {
 
     LiquidityPoolData initialLPs = LiquidityPoolData.fromJson(jsonMap);
 
-    Isar isar = Singleton.getDB();
+    // Isar isar = Singleton.getDB();
 
-    DataVersion? lpsVersion = await isar.dataVersions.getByName("lps");
+    // DataVersion? lpsVersion = await isar.dataVersions.getByName("lps");
+    DataVersion? lpsVersion = await Models.dataVersion.getUnique("lps");
 
     if ((lpsVersion?.counter ?? 0) >= initialLPs.version) {
       return;
     }
 
     for (int i = 0; i < initialLPs.pools.length; i++) {
-      LP lp =
-          await isar.lPs.getByCurrency0Currency1(
-            initialLPs.pools[i].currency0.name(),
-            initialLPs.pools[i].currency1.name(),
-          ) ??
-          LP();
+      // LP lp =
+      //     await isar.lPs.getByCurrency0Currency1(
+      //       initialLPs.pools[i].currency0.name(),
+      //       initialLPs.pools[i].currency1.name(),
+      //     ) ??
+      //     LP();
+      LP lp = await Models.lP.getUnique(
+        initialLPs.pools[i].currency0.name(),
+        initialLPs.pools[i].currency1.name()) ?? LP();
       lp.currency0 = initialLPs.pools[i].currency0.name();
       lp.currency1 = initialLPs.pools[i].currency1.name();
       lp.fee = initialLPs.pools[i].fee.toInt();
@@ -346,14 +355,16 @@ class _AssetListState extends State<AssetList> with ChangeNotifier {
   Future<void> getInitialAssets() async {
     await initCoinData();
 
-    Isar isar = Singleton.getDB();
-    final allCoins = await isar.coins.where().findAll();
-    final allWallets = await isar.walletDBs.where().findAll();
-    walletList = allWallets;
+    // Isar isar = Singleton.getDB();
+    // final allCoins = await isar.coins.where().findAll();
+    final allCoins = await Models.coin.find();
+    // final allWallets = await isar.walletDBs.where().findAll();
+    final allWallets = await Models.walletDB.find();
+    walletList = allWallets ?? [];
 
     assets = [];
-    for (int i = 0; i < allCoins.length; i++) {
-      Coin coin = allCoins[i];
+    for (int i = 0; i < (allCoins?.length??0); i++) {
+      Coin coin = allCoins![i];
       Asset asset = Asset(
         id: coin.symbol!.toLowerCase(),
         name: coin.name!,
@@ -382,7 +393,7 @@ class _AssetListState extends State<AssetList> with ChangeNotifier {
       asset.workerIsolateRequired = coin.workerIsolateRequired ?? false;
       asset.walletId = myWalletId;
       asset.assetIndex = i;
-      asset.initCoin(allWallets);
+      asset.initCoin(walletList);
 
       for (final listener in listeners) {
         asset.addListener(listener);
@@ -395,9 +406,10 @@ class _AssetListState extends State<AssetList> with ChangeNotifier {
 
     await initLPData();
 
-    final allLPs = await isar.lPs.where().findAll();
-    for (int i = 0; i < allLPs.length; i++) {
-      LiquidityPool pool = LiquidityPool.fromLP(allLPs[i]);
+    // final allLPs = await isar.lPs.where().findAll();
+    final allLPs = await Models.lP.find();
+    for (int i = 0; i < (allLPs?.length??0); i++) {
+      LiquidityPool pool = LiquidityPool.fromLP(allLPs![i]);
 
       if (!Singleton.swap.lpList.containsKey(pool.dex)) {
         Singleton.swap.lpList[pool.dex] = [];
@@ -410,14 +422,15 @@ class _AssetListState extends State<AssetList> with ChangeNotifier {
     bool online = true,
     bool awaitWorkers = false,
   }) async {
-    Isar isar = Singleton.getDB();
+    // Isar isar = Singleton.getDB();
 
-    final allWallets = await isar.walletDBs.where().findAll();
-    walletList = allWallets;
+    // final allWallets = await isar.walletDBs.where().findAll();
+    final allWallets = await Models.walletDB.find();
+    walletList = allWallets??[];
 
     for (var asset in assets) {
       asset.walletId = myWalletId;
-      asset.initCoin(allWallets, online: online);
+      asset.initCoin(walletList, online: online);
 
       for (final listener in listeners) {
         asset.addListener(listener);

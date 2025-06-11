@@ -16,9 +16,10 @@ import 'package:tejory/collections/balance.dart';
 import 'package:tejory/collections/block.dart';
 import 'package:tejory/collections/key.dart' as keyCollection;
 import 'package:tejory/collections/tx.dart';
-import 'package:tejory/collections/walletDB.dart';
+import 'package:tejory/collections/wallet_db.dart';
 import 'package:tejory/crypto-helper/ethscan.dart';
 import 'package:tejory/crypto-helper/keccak.dart';
+import 'package:tejory/isar_models.dart';
 import 'package:tejory/singleton.dart';
 import 'package:http/http.dart' as http;
 import 'package:tejory/wallets/iwallet.dart';
@@ -94,7 +95,7 @@ class Ether extends CryptoCoin {
   }
 
   @override
-  void initCoin({List<Block>? blocks, List<TxDB>? txList, Balance? balanceDB}) {
+  Future<void> initCoin({List<Block>? blocks, List<TxDB>? txList, Balance? balanceDB}) async {
     if (balanceDB != null && balanceDB.coinBalance != null) {
       balance = BigInt.from(balanceDB.coinBalance!);
     }
@@ -182,32 +183,11 @@ class Ether extends CryptoCoin {
 
   int getNextIndex(String path) {
     return 0;
-    // var isar = Singleton.getDB();
-    // NextKey? nextKey =
-    //     isar.nextKeys.getByPathCoinWalletSync(path, id, walletId);
-
-    // int nextKeyIndex = (nextKey?.nextKey ?? 0);
-
-    // // save the next key in a separate thread
-    // () async {
-    //   if (nextKey == null) {
-    //     nextKey = NextKey();
-    //     nextKey!.coin = id;
-    //     nextKey!.wallet = walletId;
-    //     nextKey!.path = path;
-    //   }
-    //   nextKey!.nextKey = nextKeyIndex + 1;
-    //   await nextKey!.save();
-
-    //   // TOD: update address list
-    // }();
-
-    // return nextKeyIndex;
   }
 
-  Uint8List getPublicKey(String path, {bool compressed = false}) {
+  Future<Uint8List> getPublicKey(String path, {bool compressed = false}) async {
     var pathParts = path.split("/");
-    String parentPubKey = getExtendedPublicKey(
+    String parentPubKey = await getExtendedPublicKey(
       pathParts.sublist(0, pathParts.length - 1).join("/"),
     );
     var parentAccount = Bip32Slip10Secp256k1.fromExtendedKey(
@@ -224,19 +204,20 @@ class Ether extends CryptoCoin {
     return Uint8List.fromList(childKey.publicKey.uncompressed);
   }
 
-  String getExtendedPublicKey(String path) {
+  Future<String> getExtendedPublicKey(String path) async {
     // check if the key is already in the DB
-    var isar = Singleton.getDB();
-    keyCollection.Key? key = isar.keys.getByPathWalletCoinSync(
-      path,
-      walletId,
-      id,
-    );
+    // var isar = Singleton.getDB();
+    // keyCollection.Key? key = isar.keys.getByPathWalletCoinSync(
+    //   path,
+    //   walletId,
+    //   id,
+    // );
+    keyCollection.Key? key = await Models.key.getUnique(path, walletId, id);
     Bip32PublicKey pubkey;
 
     // if the key is not if the DB, create it and save it
     if (key == null) {
-      var hdw = getNearestParentKey(path);
+      var hdw = await getNearestParentKey(path);
       if (hdw == null) {
         return "";
       }
@@ -272,7 +253,7 @@ class Ether extends CryptoCoin {
     return pubkey.toExtended;
   }
 
-  Bip32Slip10Secp256k1? getNearestParentKey(String path) {
+  Future<Bip32Slip10Secp256k1?> getNearestParentKey(String path) async {
     if (extendedPrivateKey != null) {
       final hdw = Bip32Slip10Secp256k1.fromExtendedKey(
         extendedPrivateKey!,
@@ -285,8 +266,9 @@ class Ether extends CryptoCoin {
     var pathParts = path.split("/");
     for (int i = pathParts.length - 1; i >= 0; i--) {
       var tempPath = pathParts.sublist(0, i).join("/");
-      var isar = Singleton.getDB();
-      key = isar.keys.getByPathWalletCoinSync(tempPath, walletId, id);
+      // var isar = Singleton.getDB();
+      // key = isar.keys.getByPathWalletCoinSync(tempPath, walletId, id);
+      key = await Models.key.getUnique(tempPath, walletId, id);
       if (key != null) {
         break;
       }
@@ -341,7 +323,7 @@ class Ether extends CryptoCoin {
     String path = "m/44'/60'/${account}'/0/0";
     // int nextIndex = getNextIndex(path);
     // path += "/${nextIndex}";
-    var pubKey = getPublicKey(path, compressed: false);
+    var pubKey = await getPublicKey(path, compressed: false);
     var address = getAddress(pubKey);
     // Convert the RIPEMD-160 hash to a binary string
     var returnAddress = getAddressFromBytes(address);
@@ -386,7 +368,7 @@ class Ether extends CryptoCoin {
   }
 
   @override
-  Tx? makeTransaction(String toAddress, BigInt amount, {noChange = false}) {
+  Future<Tx?> makeTransaction(String toAddress, BigInt amount, {noChange = false}) async {
     var tx = new EtherTx();
     tx.type = DEFAULT_TX_TYPE;
     tx.chainId = Constants.ETHER_CHAIN_ID;
@@ -529,7 +511,7 @@ class Ether extends CryptoCoin {
       sig![1] = sig!.length - 2;
     }
 
-    var pubKey = getPublicKey(path);
+    var pubKey = await getPublicKey(path);
     ethTx.setSignature(Uint8List.fromList(sig!), pubKey);
 
     return ethTx.getRawTX();
@@ -675,9 +657,10 @@ class Ether extends CryptoCoin {
     }
   }
 
-  void saveBalance() {
-    var isar = Singleton.getDB();
-    var balanceDB = isar.balances.getByCoinWalletSync(id, walletId);
+  Future<void> saveBalance() async {
+    // var isar = Singleton.getDB();
+    // var balanceDB = isar.balances.getByCoinWalletSync(id, walletId);
+    var balanceDB = await Models.balance.getUnique(id, walletId);
     if (balanceDB == null) {
       balanceDB = Balance();
       balanceDB.coin = id;
@@ -707,10 +690,11 @@ class Ether extends CryptoCoin {
     if (resultObj.result == null) {
       return;
     }
-    var isar = Singleton.getDB();
+    // var isar = Singleton.getDB();
     TxDB? tx;
     for (var result in resultObj.result!) {
-      tx = await isar.txDBs.getByHashCoinOutputIndex(result.hash, id, 0);
+      // tx = await isar.txDBs.getByHashCoinOutputIndex(result.hash, id, 0);
+      tx = await Models.txDB.getUnique(result.hash, id, 0);
       if (tx != null) {
         continue;
       }

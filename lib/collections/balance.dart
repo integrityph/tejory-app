@@ -1,4 +1,5 @@
 import 'package:isar/isar.dart';
+import 'package:tejory/collections/block.dart';
 import 'package:tejory/collections/tx.dart';
 import 'package:tejory/singleton.dart';
 part 'balance.g.dart';
@@ -26,25 +27,64 @@ class Balance {
 
     return currentId;
   }
+}
 
-  Future<BigInt> getFromUTXORecords() async {
-    BigInt balance = BigInt.zero;
+class BalanceModel {
+  const BalanceModel();
+  Future<Balance?> getById(int id) async {
+    Isar isar = Singleton.getDB();
+    return isar.balances.get(id);
+  }
 
-    List<TxDB> utxoSet = Singleton.getDB()
-        .txDBs
-        .filter()
-        .coinEqualTo(coin)
-        .walletEqualTo(wallet)
-        .findAllSync();
+  Future<Balance?> getUnique(int? coin, int? wallet) async {
+    Isar isar = Singleton.getDB();
+    return isar.balances.getByCoinWallet(coin, wallet);
+  }
 
-    for (int i = 0; i < utxoSet.length; i++) {
-      if (utxoSet[i].spent! || !utxoSet[i].isDeposit!) {
-        continue;
-      }
-
-      balance += BigInt.from(utxoSet[i].amount!);
+  Future<List<Balance>?> find({
+    FilterOperation? q,
+    SortProperty? order,
+    bool ascending = true,
+    int? limit,
+  }) async {
+    Isar isar = Singleton.getDB();
+    
+    Query<Balance> query = isar.balances.buildQuery(filter:q, sortBy:[if (order!= null) order], whereSort:ascending?Sort.asc:Sort.desc, limit: limit);
+    try {
+      return await query.findAll();
+    } catch (e) {
+      print("ERROR: Balance.find ${e}");
+      return null;
     }
+  }
 
-    return balance;
+  Future<int?> count({
+    FilterOperation? q,
+    SortProperty? order,
+    bool ascending = true,
+  }) async {
+    Isar isar = Singleton.getDB();
+    
+    Query<Balance> query = isar.balances.buildQuery(filter:q, sortBy:[if (order!= null) order], whereSort:ascending?Sort.asc:Sort.desc);
+    try {
+      return await query.count();
+    } catch (e) {
+      print("ERROR: Balance.find ${e}");
+      return null;
+    }
+  }
+
+  Future<int?> delete({
+    FilterOperation? q,
+  }) async {
+    Isar isar = Singleton.getDB();
+    
+    Query<Balance> query = isar.balances.buildQuery(filter:q);
+    try {
+      return await query.deleteAll();
+    } catch (e) {
+      print("ERROR: Balance.find ${e}");
+      return null;
+    }
   }
 }

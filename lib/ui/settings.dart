@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tejory/coins/btcln.dart';
-import 'package:tejory/collections/walletDB.dart';
+import 'package:tejory/collections/wallet_db.dart';
 import 'package:tejory/singleton.dart';
 import 'package:tejory/ui/components/pin_code_dialog.dart';
 import 'package:tejory/ui/currency.dart';
@@ -417,8 +417,8 @@ class _SettingsPageState extends State<SettingsPage> with ChangeNotifier {
                                           .coins[0]
                                       as BTCLN;
                               Map<String, String> headers = <String, String>{
-                                "pubkey": btcln.getClientPubkey(),
-                                "token": btcln.getClientToken(),
+                                "pubkey": await btcln.getClientPubkey(),
+                                "token": await btcln.getClientToken(),
                               };
                               Map<String, dynamic> body = {
                                 "terminal_name": terminalNameController.text,
@@ -1102,7 +1102,7 @@ class _SettingsPageState extends State<SettingsPage> with ChangeNotifier {
       return errorMsg;
     }
     var wallet =
-        Singleton.assetList.assetListState.assets[0].getWallet().signingWallet!;
+        (await Singleton.assetList.assetListState.assets[0].getWallet()).signingWallet!;
     var success = await wallet.startSession(
       context,
       await (
@@ -1183,7 +1183,7 @@ class _SettingsPageState extends State<SettingsPage> with ChangeNotifier {
       return errorMsg;
     }
     var wallet =
-        Singleton.assetList.assetListState.assets[0].getWallet().signingWallet!;
+        (await Singleton.assetList.assetListState.assets[0].getWallet()).signingWallet!;
     var success = await wallet.startSession(
       context,
       await (

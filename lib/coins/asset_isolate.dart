@@ -172,7 +172,7 @@ class AssetIsolate {
           break;
         case "initCoin":
           try {
-            coin!.initCoin(blocks: msgMap["params"]["blocks"], txList: msgMap["params"]["txList"], balanceDB: msgMap["params"]["balanceDB"]);
+            await coin!.initCoin(blocks: msgMap["params"]["blocks"], txList: msgMap["params"]["txList"], balanceDB: msgMap["params"]["balanceDB"]);
           } catch (e) {
             error = e;
           }

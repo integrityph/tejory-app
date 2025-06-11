@@ -48,11 +48,8 @@ class DerivationBIP32Key {
       throw ArgumentError("Seed length must be between 16 and 64 bytes. got ${seedBytes.length}");
     }
 
-    // 1. Perform HMAC-SHA512
-    // Using package:cryptography for HMAC-SHA512
     final hmacSha512 = crypto.Hmac(crypto.Sha512());
     final secretKey = crypto.SecretKeyData(utf8.encode(hmacKeyString));
-    // final mac = hmacSha512.calculateMac(seedBytes, secretKey: secretKey);
     final mac = hmacSha512.toSync().calculateMacSync(
       seedBytes,
       secretKeyData: secretKey,
@@ -60,15 +57,8 @@ class DerivationBIP32Key {
     );
     final I = mac.bytes; // 64-byte output
 
-    // 2. Split I into master private key (IL) and master chain code (IR)
     final List<int> masterPrivateKeyBytes = I.sublist(0, 32);
     final List<int> masterChainCodeBytes = I.sublist(32);
-
-    // 3. Validate the master private key (must be > 0 and < N, where N is curve order)
-    //    libsecp256k1's secp256k1_ec_seckey_verify can do this.
-    //    If using LibSecp256k1.isValidSeckey(masterPrivateKeyBytes) -> returns bool
-    //    For simplicity, this check is often implicitly handled by pubkey_create failing.
-    //    A quick check: ensure it's not all zeros.
     bool isZero = masterPrivateKeyBytes.every((byte) => byte == 0);
     // A full check against curve order N is more robust. libsecp256k1_ec_seckey_verify does this.
     // If you don't have an FFI for seckey_verify, this step is harder to do perfectly here.
@@ -197,7 +187,6 @@ class DerivationBIP32Key {
     if (result == null) {
       return null;
     }
-    // DerivationBIP32Key newKey = DerivationBIP32Key();
     DerivationBIP32Key newKey = DerivationBIP32Key(
       chainCode: Bip32ChainCode(result.item2),
       depth: key.depth!.increase(),
@@ -207,16 +196,6 @@ class DerivationBIP32Key {
       publicKey: result.item1
     );
     return newKey;
-    // return Bip32Slip10Secp256k1._(
-    //     keyData: Bip32KeyData(
-    //       chainCode: Bip32ChainCode(result.item2),
-    //       depth: key.depth.increase(),
-    //       index: index,
-    //       parentFingerPrint: key.fingerPrint,
-    //     ),
-    //     keyNetVer: key.keyNetVersions,
-    //     privKey: null,
-    //     pubKey: result.item1);
   }
 
   Tuple<List<int>, List<int>> ckdPriv(
@@ -234,23 +213,14 @@ class DerivationBIP32Key {
     } else {
       dataBytes = List<int>.from([...key.publicKey, ...index.toBytes()]);
     }
-    // final hmacHalves = QuickCrypto.hmacSha512HashHalves(
-    //     privKey.chainCode.toBytes(), dataBytes);
-
     final hmacHalves = crypto.Hmac.sha512().toSync().calculateMacSync(
       dataBytes,
       secretKeyData: crypto.SecretKeyData(key.chainCode!.toBytes()),
       nonce: [],
     );
-    // QuickCrypto.hmacSha512HashHalves(privKey.chainCode.toBytes(), dataBytes);
 
     final ilBytes = hmacHalves.bytes.sublist(0, 32);
     final irBytes = hmacHalves.bytes.sublist(32, 64);
-    // final scalar = _addScalar(
-    //   privKeyBytes: privKeyBytes,
-    //   newScalar: ilBytes,
-    //   type: type,
-    // );
     final scalar = LibSecp256k1FFI.addScalar(
       privKeyBytes: key.privateKey!,
       newScalarBytes: ilBytes,

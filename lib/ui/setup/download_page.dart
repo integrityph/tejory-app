@@ -8,7 +8,7 @@ import 'package:tejory/bip32/derivation_bip32_key.dart';
 import 'package:tejory/coins/wallet.dart';
 import 'package:tejory/collections/balance.dart';
 import 'package:tejory/collections/block.dart';
-import 'package:tejory/collections/walletDB.dart';
+import 'package:tejory/collections/wallet_db.dart';
 import 'package:tejory/collections/key.dart' as keyCollection;
 import 'package:tejory/crypto-helper/hd_wallet.dart';
 import 'package:tejory/libsecp256k1ffi/libsecp256k1ffi.dart';

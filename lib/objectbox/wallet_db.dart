@@ -1,0 +1,32 @@
+import 'package:tejory/codegen/box_model/box_model.dart';
+import 'package:tejory/codegen/box_model/unique_index.dart';
+import 'package:tejory/objectbox.g.dart';
+import 'package:tejory/objectbox/objectbox.dart';
+import 'package:tejory/singleton.dart';
+// ignore: unnecessary_import
+import 'package:objectbox/objectbox.dart';
+
+part 'wallet_db.model.g.dart';
+
+enum WalletType { unknown, phone, tejoryCard }
+
+@Entity()
+@BoxModel()
+class WalletDB {
+  @Id(assignable: true)
+  int id = 0;
+  String? name;
+  @Transient()
+  WalletType type = WalletType.unknown;
+  int get dbType => type.index;
+  set dbType(int value) {
+    type = WalletType.values[value];
+  }
+  String? fingerPrint;
+  String? extendedPrivKey;
+  bool? easyImport;
+  @Property(type: PropertyType.date)
+  DateTime? startYear;
+  @Index()
+  String? serialNumber;
+}

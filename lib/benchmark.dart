@@ -10,6 +10,16 @@ import 'package:tejory/bip32/derivation_bip32_key.dart';
 import 'package:tejory/ui/setup/seed_dropdown.dart';
 import 'package:tejory/ui/setup/word_list.dart';
 
+Future<void> runBenchmarks() async {
+  // await benchmarkMnemonicsToSeedBU(25);
+    await benchmarkMnemonicsToSeedCrypto(25);
+    // await benchmarkMasterHDFromSeed(25);
+    await benchmarkMasterHDFromSeedFFI(25);
+    // await benchmarkKeyDerivation(5);
+    // await benchmarkKeyDerivationB44(100);
+    await benchmarkKeyDerivationFFI(5);
+}
+
 // Future<void> benchmarkMnemonicsToSeed(int iterations) async {
 //   print("=============================");
 //   print("Benchmarking Mnemonic to Seed");
