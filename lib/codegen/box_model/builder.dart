@@ -2,6 +2,7 @@ import 'package:build/build.dart';
 import 'package:source_gen/source_gen.dart';
 import 'package:tejory/codegen/box_model/generators/count_generator.dart';
 import 'package:tejory/codegen/box_model/generators/find_generator.dart';
+import 'package:tejory/codegen/box_model/generators/from_isar_generator.dart';
 import 'package:tejory/codegen/box_model/generators/get_by_id_generator.dart';
 import 'package:tejory/codegen/box_model/generators/get_unique_generator.dart';
 import 'package:tejory/codegen/box_model/generators/extention_generator.dart';
@@ -24,6 +25,7 @@ Builder boxModelBuilder(BuilderOptions options) {
       UniqueConditionGenerator(),
       GetUniqueGenerator(),
       UpsertGenerator(),
+      FromIsarGenerator(),
     ])
   ], '.model.g.dart');
 }

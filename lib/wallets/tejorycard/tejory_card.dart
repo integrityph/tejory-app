@@ -5,7 +5,6 @@ import 'package:tejory/apdu/channel.dart';
 import 'package:tejory/bip32/derivation_bip32_key.dart';
 import 'package:tejory/coins/pst.dart';
 import 'package:tejory/coins/tx.dart';
-import 'package:tejory/collections/wallet_db.dart';
 import 'package:tejory/comms/medium.dart';
 import 'package:tejory/comms/nfc.dart';
 import 'package:tejory/crypto-helper/hd_wallet.dart';
@@ -18,6 +17,7 @@ import 'package:tejory/wallets/tejorycard/core.dart';
 import 'package:tejory/wallets/tejorycard/ether_applet.dart';
 import 'package:tejory/wallets/wallet_setup_response.dart';
 import 'package:tejory/wallets/wallet_status.dart';
+import 'package:tejory/wallets/wallet_type.dart';
 
 class TejoryCard implements IWallet {
   WalletType type = WalletType.unknown;

@@ -16,7 +16,7 @@ extension BalanceBoxModelHelpers on Balance {
 // StaticModelGenerator
 // **************************************************************************
 
-class BalanceModel {
+class BalanceModel extends BaseBoxModel<Balance, isar.Balance> {
   const BalanceModel();
 
   Future<List<Balance>?> find({
@@ -105,5 +105,19 @@ class BalanceModel {
 
       return store.box<Balance>().put(balance);
     }, balance);
+  }
+
+  Balance fromIsar(isar.Balance src) {
+    Balance val = Balance();
+    val.id = src.id;
+    val.coin = src.coin;
+    val.wallet = src.wallet;
+    val.coinBalance = src.coinBalance;
+    val.usdBalance = src.usdBalance;
+    val.fiatBalanceDC = src.fiatBalanceDC;
+    val.lastUpdate = src.lastUpdate;
+    val.lastBlockUpdate = src.lastBlockUpdate;
+
+    return val;
   }
 }

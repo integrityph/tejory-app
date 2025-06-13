@@ -16,7 +16,7 @@ extension BlockBoxModelHelpers on Block {
 // StaticModelGenerator
 // **************************************************************************
 
-class BlockModel {
+class BlockModel extends BaseBoxModel<Block, isar.Block> {
   const BlockModel();
 
   Future<List<Block>?> find({
@@ -100,5 +100,18 @@ class BlockModel {
 
       return store.box<Block>().put(block);
     }, block);
+  }
+
+  Block fromIsar(isar.Block src) {
+    Block val = Block();
+    val.id = src.id;
+    val.coin = src.coin;
+    val.hash = src.hash;
+    val.height = src.height;
+    val.time = src.time;
+    val.filePath = src.filePath;
+    val.previousHash = src.previousHash;
+
+    return val;
   }
 }

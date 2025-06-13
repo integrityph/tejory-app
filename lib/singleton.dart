@@ -1,9 +1,12 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:collection/collection.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:isar/isar.dart';
+import 'package:objectbox/objectbox.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:tejory/collections/balance.dart';
@@ -15,6 +18,7 @@ import 'package:tejory/collections/lp.dart';
 import 'package:tejory/collections/next_key.dart';
 import 'package:tejory/collections/tx.dart';
 import 'package:tejory/collections/wallet_db.dart';
+import 'package:tejory/updates/db_migration.dart';
 import 'package:tejory/objectbox/objectbox.dart';
 import 'package:tejory/swap/swap.dart';
 import 'package:tejory/ui/asset_list.dart';
@@ -27,6 +31,7 @@ class Singleton {
   static String? QRAddress = null;
   static Future<bool>? loaded;
   static bool initialSetup = false;
+  static Admin? boxAdmin;
   static Map<String, dynamic> settings = {
     "WalletViewMode": "aggregated", // "aggregated", "separated"
     "DefaultWalletId": "1",
@@ -69,8 +74,8 @@ class Singleton {
       brightness: Brightness.light,
       colorScheme: ColorScheme.light(
         primary: Color.fromARGB(255, 65, 65, 65),
-        secondary: Color.fromARGB(255, 241, 241, 241),
-        tertiary: Color.fromARGB(255, 209, 209, 209),
+        secondary: Color.fromARGB(255, 227, 227, 227),
+        tertiary: Color.fromARGB(255, 207, 207, 207),
         surface: Color(0xfff7f7f7),
       ),
       appBarTheme: AppBarTheme(
@@ -113,7 +118,7 @@ class Singleton {
       colorScheme: ColorScheme.dark(
         primary: Color.fromARGB(255, 235, 235, 235),
         secondary: Color.fromARGB(255, 28, 28, 28),
-        tertiary: Color.fromARGB(255, 46, 46, 46),
+        tertiary: Color.fromARGB(255, 48, 48, 48),
         surface: Color.fromARGB(255, 8, 8, 8),
       ),
       scaffoldBackgroundColor: Color.fromARGB(255, 8, 8, 8),
@@ -169,8 +174,17 @@ class Singleton {
     return isar!;
   }
 
-  static Future<void> initObjectBoxDB() async {
-    objectbox = await ObjectBox.create();
+  static Future<void> initObjectBoxDB({ByteData? fromBytes}) async {
+    // FOR DEBUG ONLY. This should be removed before the switch to ObjectBox
+    if (fromBytes == null && kDebugMode) {
+      await ObjectBox.deleteDbFiles();
+    }
+
+    objectbox = await ObjectBox.create(fromBytes:fromBytes);
+    if (Admin.isAvailable() && fromBytes != null && kDebugMode) {
+      // Keep a reference until no longer needed or manually closed.
+      boxAdmin = Admin(objectbox!.getStore());
+    }
   }
 
   static ObjectBox getObjectBoxDB() {

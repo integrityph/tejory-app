@@ -11,6 +11,7 @@ import 'package:tejory/collections/tx.dart';
 import 'package:tejory/collections/wallet_db.dart';
 import 'package:tejory/crypto-helper/other_helpers.dart';
 import 'package:tejory/singleton.dart';
+import 'package:tejory/wallets/wallet_type.dart';
 
 abstract class CryptoCoin with ChangeNotifier {
   String? _name;

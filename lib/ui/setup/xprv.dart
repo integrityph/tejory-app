@@ -9,6 +9,7 @@ import 'package:tejory/collections/wallet_db.dart';
 import 'package:tejory/comms/nfc.dart';
 import 'package:base58check/base58.dart' as base58;
 import 'package:tejory/crypto-helper/hd_wallet.dart';
+import 'package:tejory/wallets/wallet_type.dart';
 
 NFC nfc = NFC();
 

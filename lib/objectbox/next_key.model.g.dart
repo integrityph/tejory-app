@@ -16,7 +16,7 @@ extension NextKeyBoxModelHelpers on NextKey {
 // StaticModelGenerator
 // **************************************************************************
 
-class NextKeyModel {
+class NextKeyModel extends BaseBoxModel<NextKey, isar.NextKey> {
   const NextKeyModel();
 
   Future<List<NextKey>?> find({
@@ -105,5 +105,16 @@ class NextKeyModel {
 
       return store.box<NextKey>().put(nextKey);
     }, nextKey);
+  }
+
+  NextKey fromIsar(isar.NextKey src) {
+    NextKey val = NextKey();
+    val.id = src.id;
+    val.wallet = src.wallet;
+    val.coin = src.coin;
+    val.path = src.path;
+    val.nextKey = src.nextKey;
+
+    return val;
   }
 }

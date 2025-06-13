@@ -16,7 +16,7 @@ extension CoinBoxModelHelpers on Coin {
 // StaticModelGenerator
 // **************************************************************************
 
-class CoinModel {
+class CoinModel extends BaseBoxModel<Coin, isar.Coin> {
   const CoinModel();
 
   Future<List<Coin>?> find({
@@ -98,5 +98,32 @@ class CoinModel {
 
       return store.box<Coin>().put(coin);
     }, coin);
+  }
+
+  Coin fromIsar(isar.Coin src) {
+    Coin val = Coin();
+    val.id = src.id;
+    val.name = src.name;
+    val.hdCode = src.hdCode;
+    val.symbol = src.symbol;
+    val.image = src.image;
+    val.yahooFinance = src.yahooFinance;
+    val.decimals = src.decimals;
+    val.hrpBech32 = src.hrpBech32;
+    val.webId = src.webId;
+    val.peerSeedType = src.peerSeedType;
+    val.peerSource = src.peerSource;
+    val.defaultPort = src.defaultPort;
+    val.magic = src.magic;
+    val.blockZeroHash = src.blockZeroHash;
+    val.netVersionPublicHex = src.netVersionPublicHex;
+    val.netVersionPrivateHex = src.netVersionPrivateHex;
+    val.contractHash = src.contractHash;
+    val.template = src.template;
+    val.usdPrice = src.usdPrice;
+    val.active = src.active;
+    val.workerIsolateRequired = src.workerIsolateRequired;
+
+    return val;
   }
 }

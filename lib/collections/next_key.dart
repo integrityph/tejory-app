@@ -4,7 +4,7 @@ part 'next_key.g.dart';
 
 @Collection()
 class NextKey {
-  Id? id = Isar.autoIncrement;
+  Id id = Isar.autoIncrement;
   int? wallet;
   int? coin;
   @Index(

@@ -16,7 +16,7 @@ extension LPBoxModelHelpers on LP {
 // StaticModelGenerator
 // **************************************************************************
 
-class LPModel {
+class LPModel extends BaseBoxModel<LP, isar.LP> {
   const LPModel();
 
   Future<List<LP>?> find({
@@ -105,5 +105,18 @@ class LPModel {
 
       return store.box<LP>().put(lP);
     }, lP);
+  }
+
+  LP fromIsar(isar.LP src) {
+    LP val = LP();
+    val.id = src.id;
+    val.currency0 = src.currency0;
+    val.currency1 = src.currency1;
+    val.fee = src.fee;
+    val.tickSpacing = src.tickSpacing;
+    val.address = src.address;
+    val.dex = src.dex;
+
+    return val;
   }
 }

@@ -16,7 +16,7 @@ extension TxDBBoxModelHelpers on TxDB {
 // StaticModelGenerator
 // **************************************************************************
 
-class TxDBModel {
+class TxDBModel extends BaseBoxModel<TxDB, isar.TxDB> {
   const TxDBModel();
 
   Future<List<TxDB>?> find({
@@ -98,5 +98,30 @@ class TxDBModel {
 
       return store.box<TxDB>().put(txDB);
     }, txDB);
+  }
+
+  TxDB fromIsar(isar.TxDB src) {
+    TxDB val = TxDB();
+    val.id = src.id;
+    val.wallet = src.wallet;
+    val.coin = src.coin;
+    val.time = src.time;
+    val.amount = src.amount;
+    val.usdAmount = src.usdAmount;
+    val.isDeposit = src.isDeposit;
+    val.hash = src.hash;
+    val.spendingTxHash = src.spendingTxHash;
+    val.blockHash = src.blockHash;
+    val.fee = src.fee;
+    val.spent = src.spent;
+    val.confirmed = src.confirmed;
+    val.verified = src.verified;
+    val.failed = src.failed;
+    val.lockingScript = src.lockingScript;
+    val.lockingScriptType = src.lockingScriptType;
+    val.hdPath = src.hdPath;
+    val.outputIndex = src.outputIndex;
+
+    return val;
   }
 }

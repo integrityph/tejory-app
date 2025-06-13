@@ -11,6 +11,7 @@ import 'package:tejory/keypad/keypad.dart';
 import 'package:tejory/ui/asset.dart';
 import 'package:tejory/ui/qrscanner.dart';
 import 'package:tejory/coins/pst.dart';
+import 'package:tejory/wallets/wallet_type.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'network.dart';
 

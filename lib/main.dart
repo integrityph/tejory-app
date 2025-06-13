@@ -4,6 +4,9 @@ import 'package:tejory/benchmark.dart';
 import 'package:tejory/libsecp256k1ffi/libsecp256k1ffi.dart';
 import 'package:tejory/singleton.dart';
 import 'package:tejory/ui/login.dart';
+import 'package:tejory/updates/db_migration.dart';
+import 'package:tejory/updates/update.dart';
+import 'package:tejory/updates/update_ui.dart';
 
 final RouteObserver<ModalRoute<void>> routeObserver =
     RouteObserver<ModalRoute<void>>();
@@ -21,7 +24,23 @@ void main() async {
   await openIsar();
   await openObjectBox();
 
-  runApp(const MyApp());
+  // Add a list of active updates
+  List<Update> activeUpdates = [
+    DBMigration(),
+  ];
+  List<Update> requiredUpdates = [];
+
+  activeUpdates.forEach((update) {
+    if (update.required()) {
+      requiredUpdates.add(update);
+    }
+  });
+
+  if (requiredUpdates.length != 0) {
+    runApp(MyApp(requiredUpdates:requiredUpdates));
+  } else {
+    runApp(const MyApp());
+  }
 }
 
 Future<Null> openIsar() async {
@@ -41,7 +60,8 @@ Future<Null> openObjectBox() async {
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final List<Update>? requiredUpdates;
+  const MyApp({super.key, this.requiredUpdates});
 
   // This widget is the root of your application.
   @override
@@ -51,7 +71,7 @@ class MyApp extends StatelessWidget {
       theme: Singleton.getBrightTheme(),
       darkTheme: Singleton.getDarkTheme(),
       themeMode: ThemeMode.system,
-      home: Login(),
+      home: (requiredUpdates==null) ? Login() : UpdateUI(requiredUpdates!),
       navigatorObservers: [routeObserver],
     );
   }

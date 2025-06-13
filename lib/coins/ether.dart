@@ -23,6 +23,7 @@ import 'package:tejory/isar_models.dart';
 import 'package:tejory/singleton.dart';
 import 'package:http/http.dart' as http;
 import 'package:tejory/wallets/iwallet.dart';
+import 'package:tejory/wallets/wallet_type.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:web_socket_channel/status.dart' as status;
 

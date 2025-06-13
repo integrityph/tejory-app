@@ -14,6 +14,7 @@ import 'package:tejory/crypto-helper/hd_wallet.dart';
 import 'package:tejory/libsecp256k1ffi/libsecp256k1ffi.dart';
 import 'package:tejory/singleton.dart';
 import 'package:tejory/wallets/wallet_setup_response.dart';
+import 'package:tejory/wallets/wallet_type.dart';
 
 class DownloadPage extends StatefulWidget {
   final List<int> entropy;

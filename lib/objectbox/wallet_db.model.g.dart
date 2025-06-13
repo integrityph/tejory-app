@@ -16,7 +16,7 @@ extension WalletDBBoxModelHelpers on WalletDB {
 // StaticModelGenerator
 // **************************************************************************
 
-class WalletDBModel {
+class WalletDBModel extends BaseBoxModel<WalletDB, isar.WalletDB> {
   const WalletDBModel();
 
   Future<List<WalletDB>?> find({
@@ -98,5 +98,19 @@ class WalletDBModel {
 
       return store.box<WalletDB>().put(walletDB);
     }, walletDB);
+  }
+
+  WalletDB fromIsar(isar.WalletDB src) {
+    WalletDB val = WalletDB();
+    val.id = src.id;
+    val.name = src.name;
+    val.type = src.type;
+    val.fingerPrint = src.fingerPrint;
+    val.extendedPrivKey = src.extendedPrivKey;
+    val.easyImport = src.easyImport;
+    val.startYear = src.startYear;
+    val.serialNumber = src.serialNumber;
+
+    return val;
   }
 }

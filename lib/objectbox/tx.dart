@@ -1,6 +1,8 @@
 import 'package:tejory/codegen/box_model/box_model.dart';
+import 'package:tejory/collections/tx.dart' as isar;
 import 'package:tejory/crypto-helper/blockchain_api.dart';
 import 'package:tejory/objectbox.g.dart';
+import 'package:tejory/objectbox/base_box_model.dart';
 import 'package:tejory/objectbox/next_key.dart';
 import 'package:tejory/objectbox/objectbox.dart';
 import 'package:tejory/singleton.dart';

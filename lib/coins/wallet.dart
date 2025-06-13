@@ -10,6 +10,7 @@ import 'package:tejory/singleton.dart';
 import 'package:tejory/wallets/iwallet.dart';
 import 'package:tejory/wallets/softwarewallet/software_wallet.dart';
 import 'package:tejory/wallets/tejorycard/tejory_card.dart';
+import 'package:tejory/wallets/wallet_type.dart';
 
 class Wallet {
   int? id;

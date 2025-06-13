@@ -1,3 +1,6 @@
+import 'dart:io';
+import 'dart:typed_data';
+
 import 'package:path_provider/path_provider.dart';
 import 'package:tejory/objectbox.g.dart';
 import 'package:tejory/objectbox/balance.dart';
@@ -14,7 +17,7 @@ import 'package:tejory/objectbox/wallet_db.dart';
 
 class ObjectBox {
   // The Store of this app.
-  late final Store _store;
+  late Store _store;
 
   // A Box of notes.
   late final Box<Balance> balanceBox;
@@ -44,39 +47,31 @@ class ObjectBox {
     return _store;
   }
 
+
+  static Future<void> deleteDbFiles() async {
+    try {
+      Directory docDir = await getApplicationDocumentsDirectory();
+      Directory dbDir = Directory(docDir.path + '/obx-db');
+      if (dbDir.existsSync()) {
+        dbDir.delete(recursive: true);
+      }
+    } catch(e) {}
+  }
+
   // Create an instance of ObjectBox to use throughout the app.
-  static Future<ObjectBox> create() async {
-    final store = await openStore(
-      directory: p.join(
-        (await getApplicationDocumentsDirectory()).path,
-        "obx-db",
-      ),
-    );
+  static Future<ObjectBox> create({ByteData? fromBytes}) async {
+    Store store;
+    if (fromBytes != null) {
+      store = Store.fromReference(getObjectBoxModel(), fromBytes);
+    } else {
+      store = await openStore(
+        directory: p.join(
+          (await getApplicationDocumentsDirectory()).path,
+          "obx-db",
+        ),
+      );
+    }
+
     return ObjectBox._create(store);
   }
-
-  Stream<List<Balance>> getBalances() {
-    // Query for all notes, sorted by their date.
-    // https://docs.objectbox.io/queries
-    final builder = balanceBox.query().order(
-      Balance_.id,
-      flags: Order.descending,
-    );
-    // Build and watch the query,
-    // set triggerImmediately to emit the query immediately on listen.
-    return builder
-        .watch(triggerImmediately: true)
-        // Map it to a list of notes to be used by a StreamBuilder.
-        .map((query) => query.find());
-  }
-
-  /// Add a note.
-  ///
-  /// To avoid frame drops, run ObjectBox operations that take longer than a
-  /// few milliseconds, e.g. putting many objects, asynchronously.
-  /// For this example only a single object is put which would also be fine if
-  /// done using [Box.put].
-  Future<void> addBalance(String text) => balanceBox.putAsync(Balance());
-
-  Future<void> removeBalance(int id) => balanceBox.removeAsync(id);
 }

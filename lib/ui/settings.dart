@@ -12,6 +12,7 @@ import 'package:tejory/ui/setup/page_animation.dart';
 import 'package:tejory/ui/setup/seed_dropdown.dart';
 import 'package:tejory/ui/setup/seedphrase.dart';
 import 'package:tejory/wallets/iwallet.dart';
+import 'package:tejory/wallets/wallet_type.dart';
 
 class SettingsPage extends StatefulWidget {
   @override

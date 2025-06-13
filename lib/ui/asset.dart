@@ -18,6 +18,7 @@ import 'package:tejory/collections/tx.dart';
 import 'package:tejory/collections/wallet_db.dart';
 import 'package:tejory/isar_models.dart';
 import 'package:tejory/singleton.dart';
+import 'package:tejory/wallets/wallet_type.dart';
 
 class Asset with ChangeNotifier {
   final String id;

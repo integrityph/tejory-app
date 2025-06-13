@@ -4,10 +4,7 @@ import 'package:source_gen/source_gen.dart';
 
 import '../box_model.dart';
 
-class StaticModelGenerator extends GeneratorForAnnotation<BoxModel> {
-  final List<GeneratorForAnnotation<BoxModel>> generators;
-
-  StaticModelGenerator(this.generators);
+class FromIsarGenerator extends GeneratorForAnnotation<BoxModel> {
 
   @override
   String generateForAnnotatedElement(
@@ -23,12 +20,19 @@ class StaticModelGenerator extends GeneratorForAnnotation<BoxModel> {
     }
 
     final className = element.name;
-    final generatedCode = '''
-    class ${className}Model extends BaseBoxModel<$className, isar.$className> {
-      const ${className}Model();
 
-      ${generators.map((gen)=>gen.generateForAnnotatedElement(element, annotation, buildStep)).join("\n")}
-    }
+    String fields = element.fields.where((field)=>!field.isSynthetic).map((field){
+      return '    val.${field.name} = src.${field.name};';
+    }).toList().join("\n");
+
+
+    final generatedCode = '''
+      $className fromIsar(isar.$className src) {
+         $className val = $className();
+         ${fields}
+
+         return val;
+      }
   ''';
 
     return generatedCode;

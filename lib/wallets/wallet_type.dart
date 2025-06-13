@@ -1,0 +1,1 @@
+enum WalletType { unknown, phone, tejoryCard }

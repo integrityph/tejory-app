@@ -16,7 +16,7 @@ extension DataVersionBoxModelHelpers on DataVersion {
 // StaticModelGenerator
 // **************************************************************************
 
-class DataVersionModel {
+class DataVersionModel extends BaseBoxModel<DataVersion, isar.DataVersion> {
   const DataVersionModel();
 
   Future<List<DataVersion>?> find({
@@ -101,5 +101,15 @@ class DataVersionModel {
 
       return store.box<DataVersion>().put(dataVersion);
     }, dataVersion);
+  }
+
+  DataVersion fromIsar(isar.DataVersion src) {
+    DataVersion val = DataVersion();
+    val.id = src.id;
+    val.name = src.name;
+    val.hash = src.hash;
+    val.counter = src.counter;
+
+    return val;
   }
 }

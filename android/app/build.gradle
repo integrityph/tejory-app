@@ -11,6 +11,14 @@ if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
 }
 
+// Tell Gradle to exclude the Android library (without Admin)
+// that is added by the objectbox_flutter_libs package for debug builds.
+configurations {
+    debugImplementation {
+        exclude group: 'io.objectbox', module: 'objectbox-android'
+    }
+}
+
 android {
     namespace = "ph.integritynet.tejory"
     // compileSdk = flutter.compileSdkVersion
@@ -80,6 +88,11 @@ dependencies {
 	implementation 'androidx.window:window:1.0.0'
 	implementation 'androidx.window:window-java:1.0.0'
   coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'
+	// Add the Android library with ObjectBox Admin only for debug builds.
+	// Note: when the objectbox package updates, check if the Android
+	// library below needs to be updated as well.
+	// TODO Replace <version> with the one noted in the release notes (https://github.com/objectbox/objectbox-dart/releases)
+	debugImplementation("io.objectbox:objectbox-android-objectbrowser:4.1.0")
 }
 
 flutter {

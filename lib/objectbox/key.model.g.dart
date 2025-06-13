@@ -16,7 +16,7 @@ extension KeyBoxModelHelpers on Key {
 // StaticModelGenerator
 // **************************************************************************
 
-class KeyModel {
+class KeyModel extends BaseBoxModel<Key, isar.Key> {
   const KeyModel();
 
   Future<List<Key>?> find({
@@ -104,5 +104,17 @@ class KeyModel {
 
       return store.box<Key>().put(key);
     }, key);
+  }
+
+  Key fromIsar(isar.Key src) {
+    Key val = Key();
+    val.id = src.id;
+    val.wallet = src.wallet;
+    val.coin = src.coin;
+    val.path = src.path;
+    val.pubKey = src.pubKey;
+    val.chainCode = src.chainCode;
+
+    return val;
   }
 }

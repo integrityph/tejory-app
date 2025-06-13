@@ -1,8 +1,7 @@
 import 'package:isar/isar.dart';
 import 'package:tejory/singleton.dart';
+import 'package:tejory/wallets/wallet_type.dart';
 part 'wallet_db.g.dart';
-
-enum WalletType { unknown, phone, tejoryCard }
 
 @Collection()
 class WalletDB {

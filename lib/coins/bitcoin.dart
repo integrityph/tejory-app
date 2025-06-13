@@ -32,6 +32,7 @@ import 'package:tejory/isar_models.dart';
 import 'package:tejory/singleton.dart';
 import 'package:tejory/wallets/iwallet.dart';
 import 'package:tejory/wallets/tejorycard/bitcoin_applet.dart';
+import 'package:tejory/wallets/wallet_type.dart';
 import 'crypto_coin.dart';
 import 'package:bitcoin_base/bitcoin_base.dart';
 import 'package:blockchain_utils/blockchain_utils.dart';

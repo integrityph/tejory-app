@@ -12,6 +12,7 @@ import 'package:tejory/singleton.dart';
 import 'package:tejory/keypad/keypad.dart';
 import 'package:tejory/ui/asset.dart';
 import 'package:tejory/ui/network.dart';
+import 'package:tejory/wallets/wallet_type.dart';
 
 class SwapPage extends StatefulWidget {
   final String initialToken;
