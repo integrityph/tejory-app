@@ -38,11 +38,27 @@ class WalletDBModel extends BaseBoxModel<WalletDB, isar.WalletDB> {
       query.limit = limit;
     }
     try {
-      final result = await query.findAsync();
+      final result = query.find();
       query.close();
       return result;
     } catch (e) {
       print("ERROR: WalletDB.find ${e}");
+      return null;
+    }
+  }
+
+  Future<int?> delete({
+    Condition<WalletDB>? q,
+  }) async {
+    final objectbox = Singleton.getObjectBoxDB();
+    var queryBuilder = objectbox.walletDBBox.query(q);
+    final query = queryBuilder.build();
+    try {
+      final result = query.remove();
+      query.close();
+      return result;
+    } catch (e) {
+      print("ERROR: WalletDB.delete ${e}");
       return null;
     }
   }
@@ -61,8 +77,11 @@ class WalletDBModel extends BaseBoxModel<WalletDB, isar.WalletDB> {
   }
 
   Future<WalletDB?> getById(int id) async {
+    if (id == 0) {
+      return null;
+    }
     final objectbox = Singleton.getObjectBoxDB();
-    return objectbox.walletDBBox.getAsync(id);
+    return objectbox.walletDBBox.get(id);
   }
 
   Condition<WalletDB> uniqueCondition(int id) {
@@ -72,7 +91,7 @@ class WalletDBModel extends BaseBoxModel<WalletDB, isar.WalletDB> {
   Future<WalletDB?> getUnique(int id) async {
     ObjectBox box = Singleton.getObjectBoxDB();
     final query = box.walletDBBox.query(uniqueCondition(id)).build();
-    final result = await query.findFirstAsync();
+    final result = query.findFirst();
     query.close();
     return result;
   }
@@ -81,13 +100,10 @@ class WalletDBModel extends BaseBoxModel<WalletDB, isar.WalletDB> {
     final box = Singleton.getObjectBoxDB();
 
     if (walletDB.id != 0) {
-      return box.walletDBBox.putAsync(walletDB);
+      return box.walletDBBox.put(walletDB);
     }
 
-    return box.getStore().runInTransactionAsync(TxMode.write, (
-      Store store,
-      WalletDB walletDB,
-    ) {
+    return box.getStore().runInTransaction(TxMode.write, () {
       final query = box.walletDBBox.query(uniqueCondition(walletDB.id)).build();
       final existingId = query.findIds();
       query.close();
@@ -96,8 +112,8 @@ class WalletDBModel extends BaseBoxModel<WalletDB, isar.WalletDB> {
         walletDB.id = existingId[0];
       }
 
-      return store.box<WalletDB>().put(walletDB);
-    }, walletDB);
+      return box.walletDBBox.put(walletDB);
+    });
   }
 
   WalletDB fromIsar(isar.WalletDB src) {

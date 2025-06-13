@@ -83,7 +83,7 @@ class TxDBModel {
     return isar.txDBs.get(id);
   }
 
-  Future<TxDB?> getUnique(String? hash, int? coin, int? outputIndex) async {
+  Future<TxDB?> getUnique(int? coin, String? hash, int? outputIndex) async {
     Isar isar = Singleton.getDB();
     return isar.txDBs.getByHashCoinOutputIndex(hash, coin, outputIndex);
   }

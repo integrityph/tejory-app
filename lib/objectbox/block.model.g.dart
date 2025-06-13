@@ -38,11 +38,27 @@ class BlockModel extends BaseBoxModel<Block, isar.Block> {
       query.limit = limit;
     }
     try {
-      final result = await query.findAsync();
+      final result = query.find();
       query.close();
       return result;
     } catch (e) {
       print("ERROR: Block.find ${e}");
+      return null;
+    }
+  }
+
+  Future<int?> delete({
+    Condition<Block>? q,
+  }) async {
+    final objectbox = Singleton.getObjectBoxDB();
+    var queryBuilder = objectbox.blockBox.query(q);
+    final query = queryBuilder.build();
+    try {
+      final result = query.remove();
+      query.close();
+      return result;
+    } catch (e) {
+      print("ERROR: Block.delete ${e}");
       return null;
     }
   }
@@ -61,8 +77,11 @@ class BlockModel extends BaseBoxModel<Block, isar.Block> {
   }
 
   Future<Block?> getById(int id) async {
+    if (id == 0) {
+      return null;
+    }
     final objectbox = Singleton.getObjectBoxDB();
-    return objectbox.blockBox.getAsync(id);
+    return objectbox.blockBox.get(id);
   }
 
   Condition<Block> uniqueCondition(int? coin, String? hash) {
@@ -73,7 +92,7 @@ class BlockModel extends BaseBoxModel<Block, isar.Block> {
   Future<Block?> getUnique(int? coin, String? hash) async {
     ObjectBox box = Singleton.getObjectBoxDB();
     final query = box.blockBox.query(uniqueCondition(coin, hash)).build();
-    final result = await query.findFirstAsync();
+    final result = query.findFirst();
     query.close();
     return result;
   }
@@ -82,13 +101,10 @@ class BlockModel extends BaseBoxModel<Block, isar.Block> {
     final box = Singleton.getObjectBoxDB();
 
     if (block.id != 0) {
-      return box.blockBox.putAsync(block);
+      return box.blockBox.put(block);
     }
 
-    return box.getStore().runInTransactionAsync(TxMode.write, (
-      Store store,
-      Block block,
-    ) {
+    return box.getStore().runInTransaction(TxMode.write, () {
       final query =
           box.blockBox.query(uniqueCondition(block.coin, block.hash)).build();
       final existingId = query.findIds();
@@ -98,8 +114,8 @@ class BlockModel extends BaseBoxModel<Block, isar.Block> {
         block.id = existingId[0];
       }
 
-      return store.box<Block>().put(block);
-    }, block);
+      return box.blockBox.put(block);
+    });
   }
 
   Block fromIsar(isar.Block src) {

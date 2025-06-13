@@ -83,6 +83,7 @@ class AssetIsolate {
         'command': '_initialize_isolate',
         'isolate_root_token': rootIsolateToken,
         'api_keys': APIKeys.keys,
+        'box': Singleton.getObjectBoxDB().getStore().reference,
         'coin_config': coins[workerIndex].toConfigMap(),
       };
       sendPorts[workerIndex]!.send(initialIsolateConfig);
@@ -113,7 +114,7 @@ class AssetIsolate {
 
     // listen to incoming commands
     receivePort.listen((dynamic msg) async {
-      
+      print("Isolate received a message: ${msg}");
       // Handle control messages
       if (msg is String && msg == "KILL") {
         // Handle special KILL command
@@ -131,11 +132,13 @@ class AssetIsolate {
         // assign the coin instance which is a copy of the main isolate instance
         RootIsolateToken rootIsolateToken = msgMap['isolate_root_token'];
         Map<String, String> apiKey = msgMap['api_keys'];
+        ByteData boxBytes = msgMap['box'];
         Map<String, dynamic> coinConfig = msgMap['coin_config'];
         
         // initialize DB
         BackgroundIsolateBinaryMessenger.ensureInitialized(rootIsolateToken);
-        await Singleton.initDB();
+        // await Singleton.initDB();
+        await Singleton.initObjectBoxDB(fromBytes: boxBytes);
 
         // initialize API keys
         APIKeys.keys = apiKey;
@@ -179,7 +182,7 @@ class AssetIsolate {
           break;
         case "setupTransactionsForPathChildren":
           try {
-            coin!.setupTransactionsForPathChildren(msgMap["params"]["paths"]);
+            await coin!.setupTransactionsForPathChildren(msgMap["params"]["paths"]);
           } catch (e) {
             error = e;
           }

@@ -33,12 +33,10 @@ class UpsertGenerator extends GeneratorForAnnotation<BoxModel> {
         final box = Singleton.getObjectBoxDB();
 
         if ($classVariableName.id != 0) {
-          return box.$boxName.putAsync($classVariableName);
+          return box.$boxName.put($classVariableName);
         }
 
-        return box.getStore().runInTransactionAsync(TxMode.write, (
-          Store store,
-          $className $classVariableName,
+        return box.getStore().runInTransaction(TxMode.write, (
         ) {
           final query = box.$boxName.query(uniqueCondition($fieldNames)).build();
           final existingId = query.findIds();
@@ -48,8 +46,8 @@ class UpsertGenerator extends GeneratorForAnnotation<BoxModel> {
             $classVariableName.id = existingId[0];
           }
 
-          return store.box<$className>().put($classVariableName);
-        }, $classVariableName);
+          return box.$boxName.put($classVariableName);
+        });
       }
     ''';
   }

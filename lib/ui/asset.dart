@@ -12,11 +12,12 @@ import 'package:tejory/coins/pst.dart';
 import 'package:tejory/coins/tx.dart';
 import 'package:tejory/coins/visual_tx.dart';
 import 'package:tejory/coins/wallet.dart';
-import 'package:tejory/collections/balance.dart';
-import 'package:tejory/collections/coin.dart';
-import 'package:tejory/collections/tx.dart';
-import 'package:tejory/collections/wallet_db.dart';
-import 'package:tejory/isar_models.dart';
+import 'package:tejory/objectbox.g.dart';
+import 'package:tejory/objectbox/balance.dart';
+import 'package:tejory/objectbox/coin.dart';
+import 'package:tejory/objectbox/tx.dart';
+import 'package:tejory/objectbox/wallet_db.dart';
+import 'package:tejory/box_models.g.dart';
 import 'package:tejory/singleton.dart';
 import 'package:tejory/wallets/wallet_type.dart';
 
@@ -242,9 +243,12 @@ class Asset with ChangeNotifier {
         //         .coinEqualTo(coinId)
         //         .walletEqualTo(wallets[i].id)
         //         .findAll();
-        Future<List<TxDB>?> txListFtr = Models.txDB.find(q:FilterGroup.and([
-          FilterCondition.equalTo(property: "coin", value: coinId),
-        ]));
+        // Future<List<TxDB>?> txListFtr = Models.txDB.find(q:FilterGroup.and([
+        //   FilterCondition.equalTo(property: "coin", value: coinId),
+        // ]));
+        Future<List<TxDB>?> txListFtr = Models.txDB.find(q:
+          TxDB_.coin.equals(coinId!),
+        );
 
         // Future<Balance?> balanceFtr = isar.balances.getByCoinWallet(
         //   coinId,

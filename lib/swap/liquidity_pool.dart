@@ -1,5 +1,5 @@
 import 'package:tejory/coins/crypto_coin.dart';
-import 'package:tejory/collections/lp.dart';
+import 'package:tejory/objectbox/lp.dart';
 import 'package:tejory/singleton.dart';
 
 class LiquidityPool {

@@ -1,4 +1,5 @@
 import 'package:tejory/codegen/box_model/box_model.dart';
+import 'package:tejory/codegen/box_model/unique_index.dart';
 import 'package:tejory/collections/tx.dart' as isar;
 import 'package:tejory/crypto-helper/blockchain_api.dart';
 import 'package:tejory/objectbox.g.dart';
@@ -18,6 +19,7 @@ class TxDB {
   int id = 0;
   int? wallet;
   @Index()
+  @UniqueIndex()
   int? coin;
   @Property(type: PropertyType.date)
   DateTime? time;
@@ -25,6 +27,7 @@ class TxDB {
   double? usdAmount;
   bool? isDeposit;
   @Index()
+  @UniqueIndex()
   String? hash;
   String? spendingTxHash;
   String? blockHash;
@@ -37,6 +40,7 @@ class TxDB {
   String? lockingScriptType;
   String? hdPath;
   @Index()
+  @UniqueIndex()
   int? outputIndex;
 
   Future<int> save() async {

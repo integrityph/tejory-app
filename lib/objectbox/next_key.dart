@@ -20,7 +20,7 @@ class NextKey {
   @Index()
   @UniqueIndex()
   int? coin;
-  @Index()
+  @Index(type: IndexType.value)
   @UniqueIndex()
   String? path;
   int? nextKey;

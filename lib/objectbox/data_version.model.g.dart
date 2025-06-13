@@ -38,11 +38,27 @@ class DataVersionModel extends BaseBoxModel<DataVersion, isar.DataVersion> {
       query.limit = limit;
     }
     try {
-      final result = await query.findAsync();
+      final result = query.find();
       query.close();
       return result;
     } catch (e) {
       print("ERROR: DataVersion.find ${e}");
+      return null;
+    }
+  }
+
+  Future<int?> delete({
+    Condition<DataVersion>? q,
+  }) async {
+    final objectbox = Singleton.getObjectBoxDB();
+    var queryBuilder = objectbox.dataVersionBox.query(q);
+    final query = queryBuilder.build();
+    try {
+      final result = query.remove();
+      query.close();
+      return result;
+    } catch (e) {
+      print("ERROR: DataVersion.delete ${e}");
       return null;
     }
   }
@@ -61,8 +77,11 @@ class DataVersionModel extends BaseBoxModel<DataVersion, isar.DataVersion> {
   }
 
   Future<DataVersion?> getById(int id) async {
+    if (id == 0) {
+      return null;
+    }
     final objectbox = Singleton.getObjectBoxDB();
-    return objectbox.dataVersionBox.getAsync(id);
+    return objectbox.dataVersionBox.get(id);
   }
 
   Condition<DataVersion> uniqueCondition(String? name) {
@@ -74,7 +93,7 @@ class DataVersionModel extends BaseBoxModel<DataVersion, isar.DataVersion> {
   Future<DataVersion?> getUnique(String? name) async {
     ObjectBox box = Singleton.getObjectBoxDB();
     final query = box.dataVersionBox.query(uniqueCondition(name)).build();
-    final result = await query.findFirstAsync();
+    final result = query.findFirst();
     query.close();
     return result;
   }
@@ -83,13 +102,10 @@ class DataVersionModel extends BaseBoxModel<DataVersion, isar.DataVersion> {
     final box = Singleton.getObjectBoxDB();
 
     if (dataVersion.id != 0) {
-      return box.dataVersionBox.putAsync(dataVersion);
+      return box.dataVersionBox.put(dataVersion);
     }
 
-    return box.getStore().runInTransactionAsync(TxMode.write, (
-      Store store,
-      DataVersion dataVersion,
-    ) {
+    return box.getStore().runInTransaction(TxMode.write, () {
       final query =
           box.dataVersionBox.query(uniqueCondition(dataVersion.name)).build();
       final existingId = query.findIds();
@@ -99,8 +115,8 @@ class DataVersionModel extends BaseBoxModel<DataVersion, isar.DataVersion> {
         dataVersion.id = existingId[0];
       }
 
-      return store.box<DataVersion>().put(dataVersion);
-    }, dataVersion);
+      return box.dataVersionBox.put(dataVersion);
+    });
   }
 
   DataVersion fromIsar(isar.DataVersion src) {

@@ -38,11 +38,27 @@ class CoinModel extends BaseBoxModel<Coin, isar.Coin> {
       query.limit = limit;
     }
     try {
-      final result = await query.findAsync();
+      final result = query.find();
       query.close();
       return result;
     } catch (e) {
       print("ERROR: Coin.find ${e}");
+      return null;
+    }
+  }
+
+  Future<int?> delete({
+    Condition<Coin>? q,
+  }) async {
+    final objectbox = Singleton.getObjectBoxDB();
+    var queryBuilder = objectbox.coinBox.query(q);
+    final query = queryBuilder.build();
+    try {
+      final result = query.remove();
+      query.close();
+      return result;
+    } catch (e) {
+      print("ERROR: Coin.delete ${e}");
       return null;
     }
   }
@@ -61,8 +77,11 @@ class CoinModel extends BaseBoxModel<Coin, isar.Coin> {
   }
 
   Future<Coin?> getById(int id) async {
+    if (id == 0) {
+      return null;
+    }
     final objectbox = Singleton.getObjectBoxDB();
-    return objectbox.coinBox.getAsync(id);
+    return objectbox.coinBox.get(id);
   }
 
   Condition<Coin> uniqueCondition(String? name) {
@@ -72,7 +91,7 @@ class CoinModel extends BaseBoxModel<Coin, isar.Coin> {
   Future<Coin?> getUnique(String? name) async {
     ObjectBox box = Singleton.getObjectBoxDB();
     final query = box.coinBox.query(uniqueCondition(name)).build();
-    final result = await query.findFirstAsync();
+    final result = query.findFirst();
     query.close();
     return result;
   }
@@ -81,13 +100,10 @@ class CoinModel extends BaseBoxModel<Coin, isar.Coin> {
     final box = Singleton.getObjectBoxDB();
 
     if (coin.id != 0) {
-      return box.coinBox.putAsync(coin);
+      return box.coinBox.put(coin);
     }
 
-    return box.getStore().runInTransactionAsync(TxMode.write, (
-      Store store,
-      Coin coin,
-    ) {
+    return box.getStore().runInTransaction(TxMode.write, () {
       final query = box.coinBox.query(uniqueCondition(coin.name)).build();
       final existingId = query.findIds();
       query.close();
@@ -96,8 +112,8 @@ class CoinModel extends BaseBoxModel<Coin, isar.Coin> {
         coin.id = existingId[0];
       }
 
-      return store.box<Coin>().put(coin);
-    }, coin);
+      return box.coinBox.put(coin);
+    });
   }
 
   Coin fromIsar(isar.Coin src) {

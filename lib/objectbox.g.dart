@@ -462,7 +462,7 @@ final _entities = <obx_int.ModelEntity>[
             id: const obx_int.IdUid(4, 338994265872071538),
             name: 'path',
             type: 9,
-            flags: 2048,
+            flags: 8,
             indexId: const obx_int.IdUid(32, 1260223012437357085)),
         obx_int.ModelProperty(
             id: const obx_int.IdUid(5, 6878414242343358738),

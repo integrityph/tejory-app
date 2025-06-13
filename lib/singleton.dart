@@ -9,16 +9,15 @@ import 'package:isar/isar.dart';
 import 'package:objectbox/objectbox.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:tejory/collections/balance.dart';
-import 'package:tejory/collections/block.dart';
-import 'package:tejory/collections/coin.dart';
-import 'package:tejory/collections/data_version.dart';
-import 'package:tejory/collections/key.dart';
-import 'package:tejory/collections/lp.dart';
-import 'package:tejory/collections/next_key.dart';
-import 'package:tejory/collections/tx.dart';
-import 'package:tejory/collections/wallet_db.dart';
-import 'package:tejory/updates/db_migration.dart';
+import 'package:tejory/collections/balance.dart' as isarmodel;
+import 'package:tejory/collections/block.dart' as isarmodel;
+import 'package:tejory/collections/coin.dart' as isarmodel;
+import 'package:tejory/collections/data_version.dart' as isarmodel;
+import 'package:tejory/collections/key.dart' as isarmodel;
+import 'package:tejory/collections/lp.dart' as isarmodel;
+import 'package:tejory/collections/next_key.dart' as isarmodel;
+import 'package:tejory/collections/tx.dart' as isarmodel;
+import 'package:tejory/collections/wallet_db.dart' as isarmodel;
 import 'package:tejory/objectbox/objectbox.dart';
 import 'package:tejory/swap/swap.dart';
 import 'package:tejory/ui/asset_list.dart';
@@ -74,9 +73,9 @@ class Singleton {
       brightness: Brightness.light,
       colorScheme: ColorScheme.light(
         primary: Color.fromARGB(255, 65, 65, 65),
-        secondary: Color.fromARGB(255, 227, 227, 227),
-        tertiary: Color.fromARGB(255, 207, 207, 207),
-        surface: Color(0xfff7f7f7),
+        secondary: Color.fromARGB(255, 242, 242, 242),
+        tertiary: Color.fromARGB(255, 224, 224, 224),
+        surface: Color.fromARGB(255, 247, 247, 247),
       ),
       appBarTheme: AppBarTheme(
         // backgroundColor: Color(0xfff7f7f7),
@@ -91,7 +90,7 @@ class Singleton {
         selectedItemColor: Color(0xff111111),
         unselectedItemColor: Color.fromARGB(255, 172, 166, 166),
       ),
-      cardTheme: CardThemeData(color: Color.fromARGB(255, 241, 241, 241)),
+      cardTheme: CardThemeData(color: Color.fromARGB(255, 242, 242, 242)),
       textTheme: textTheme.apply(bodyColor: Color(0xff4f4f4f)),
       primaryTextTheme: textTheme.apply(bodyColor: Color(0xff4f4f4f)),
     );
@@ -155,15 +154,15 @@ class Singleton {
     final dir = await getApplicationDocumentsDirectory();
     isar = await Isar.open(
       [
-        KeySchema,
-        TxDBSchema,
-        CoinSchema,
-        WalletDBSchema,
-        BalanceSchema,
-        NextKeySchema,
-        BlockSchema,
-        DataVersionSchema,
-        LPSchema,
+        isarmodel.KeySchema,
+        isarmodel.TxDBSchema,
+        isarmodel.CoinSchema,
+        isarmodel.WalletDBSchema,
+        isarmodel.BalanceSchema,
+        isarmodel.NextKeySchema,
+        isarmodel.BlockSchema,
+        isarmodel.DataVersionSchema,
+        isarmodel.LPSchema,
       ],
       inspector: showInspector,
       directory: dir.path,
@@ -176,9 +175,9 @@ class Singleton {
 
   static Future<void> initObjectBoxDB({ByteData? fromBytes}) async {
     // FOR DEBUG ONLY. This should be removed before the switch to ObjectBox
-    if (fromBytes == null && kDebugMode) {
-      await ObjectBox.deleteDbFiles();
-    }
+    // if (fromBytes == null && kDebugMode) {
+    //   await ObjectBox.deleteDbFiles();
+    // }
 
     objectbox = await ObjectBox.create(fromBytes:fromBytes);
     if (Admin.isAvailable() && fromBytes != null && kDebugMode) {

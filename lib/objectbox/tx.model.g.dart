@@ -38,11 +38,27 @@ class TxDBModel extends BaseBoxModel<TxDB, isar.TxDB> {
       query.limit = limit;
     }
     try {
-      final result = await query.findAsync();
+      final result = query.find();
       query.close();
       return result;
     } catch (e) {
       print("ERROR: TxDB.find ${e}");
+      return null;
+    }
+  }
+
+  Future<int?> delete({
+    Condition<TxDB>? q,
+  }) async {
+    final objectbox = Singleton.getObjectBoxDB();
+    var queryBuilder = objectbox.txDBBox.query(q);
+    final query = queryBuilder.build();
+    try {
+      final result = query.remove();
+      query.close();
+      return result;
+    } catch (e) {
+      print("ERROR: TxDB.delete ${e}");
       return null;
     }
   }
@@ -61,18 +77,26 @@ class TxDBModel extends BaseBoxModel<TxDB, isar.TxDB> {
   }
 
   Future<TxDB?> getById(int id) async {
+    if (id == 0) {
+      return null;
+    }
     final objectbox = Singleton.getObjectBoxDB();
-    return objectbox.txDBBox.getAsync(id);
+    return objectbox.txDBBox.get(id);
   }
 
-  Condition<TxDB> uniqueCondition(int id) {
-    return TxDB_.id.equals(id);
+  Condition<TxDB> uniqueCondition(int? coin, String? hash, int? outputIndex) {
+    return ((coin == null) ? TxDB_.coin.isNull() : TxDB_.coin.equals(coin)) &
+        ((hash == null) ? TxDB_.hash.isNull() : TxDB_.hash.equals(hash)) &
+        ((outputIndex == null)
+            ? TxDB_.outputIndex.isNull()
+            : TxDB_.outputIndex.equals(outputIndex));
   }
 
-  Future<TxDB?> getUnique(int id) async {
+  Future<TxDB?> getUnique(int? coin, String? hash, int? outputIndex) async {
     ObjectBox box = Singleton.getObjectBoxDB();
-    final query = box.txDBBox.query(uniqueCondition(id)).build();
-    final result = await query.findFirstAsync();
+    final query =
+        box.txDBBox.query(uniqueCondition(coin, hash, outputIndex)).build();
+    final result = query.findFirst();
     query.close();
     return result;
   }
@@ -81,14 +105,13 @@ class TxDBModel extends BaseBoxModel<TxDB, isar.TxDB> {
     final box = Singleton.getObjectBoxDB();
 
     if (txDB.id != 0) {
-      return box.txDBBox.putAsync(txDB);
+      return box.txDBBox.put(txDB);
     }
 
-    return box.getStore().runInTransactionAsync(TxMode.write, (
-      Store store,
-      TxDB txDB,
-    ) {
-      final query = box.txDBBox.query(uniqueCondition(txDB.id)).build();
+    return box.getStore().runInTransaction(TxMode.write, () {
+      final query = box.txDBBox
+          .query(uniqueCondition(txDB.coin, txDB.hash, txDB.outputIndex))
+          .build();
       final existingId = query.findIds();
       query.close();
 
@@ -96,8 +119,8 @@ class TxDBModel extends BaseBoxModel<TxDB, isar.TxDB> {
         txDB.id = existingId[0];
       }
 
-      return store.box<TxDB>().put(txDB);
-    }, txDB);
+      return box.txDBBox.put(txDB);
+    });
   }
 
   TxDB fromIsar(isar.TxDB src) {

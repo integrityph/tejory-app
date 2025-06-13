@@ -162,7 +162,8 @@ Future<void> streamPrices(List<String> symbolList, StreamPriceCallback callback)
   }
 // build asset list for the API
     var URL = Uri.parse(
-      "wss://data-streamer.cryptocompare.com/?api_key=${API_KEY}",
+      // "wss://data-streamer.cryptocompare.com/?api_key=${API_KEY}",
+      "wss://data-streamer.cryptocompare.com/",
     );
 
     final channel = WebSocketChannel.connect(URL);

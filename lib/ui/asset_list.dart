@@ -4,14 +4,15 @@ import 'dart:async';
 import 'package:http/http.dart' as http;
 import 'package:isar/isar.dart';
 import 'package:tejory/coindesk/api.dart' as coindesk;
-import 'package:tejory/collections/block.dart';
-import 'package:tejory/collections/coin.dart';
-import 'package:tejory/collections/data_version.dart';
-import 'package:tejory/collections/lp.dart';
-import 'package:tejory/collections/wallet_db.dart';
+import 'package:tejory/objectbox.g.dart';
+import 'package:tejory/objectbox/block.dart';
+import 'package:tejory/objectbox/coin.dart';
+import 'package:tejory/objectbox/data_version.dart';
+import 'package:tejory/objectbox/lp.dart';
+import 'package:tejory/objectbox/wallet_db.dart';
 import 'package:tejory/crypto-helper/blockchain_api.dart';
 import 'package:tejory/crypto-helper/other_helpers.dart';
-import 'package:tejory/isar_models.dart';
+import 'package:tejory/box_models.g.dart';
 import 'package:tejory/singleton.dart';
 import 'package:tejory/swap/liquidity_pool.dart';
 import 'package:tejory/ui/currency.dart';
@@ -281,13 +282,16 @@ class _AssetListState extends State<AssetList> with ChangeNotifier {
       coin.active = initialAssets.assets[i].active;
       coin.workerIsolateRequired =
           initialAssets.assets[i].workerIsolateRequired;
-      int coinId = await coin.save();
+      int? coinId = await coin.save();
 
       if (coin.blockZeroHash != null && coin.blockZeroHash!.isNotEmpty) {
         // int blockCount = await isar.blocks.filter().coinEqualTo(coinId).count();
-        int? blockCount = await Models.block.count(q:FilterGroup.and([
-          FilterCondition.equalTo(property: "coin", value: coinId),
-        ]));
+        // int? blockCount = await Models.block.count(q:FilterGroup.and([
+        //   FilterCondition.equalTo(property: "coin", value: coinId),
+        // ]));
+        int? blockCount = await Models.block.count(q:
+          Block_.coin.equals(coinId!),
+        );
         if (blockCount == null || blockCount == 0) {
           Block block = Block();
           block.coin = coinId;

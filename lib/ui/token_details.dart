@@ -3,9 +3,9 @@ import 'package:intl/intl.dart';
 import 'package:isar/isar.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 import 'package:tejory/coins/visual_tx.dart';
-import 'package:tejory/collections/tx.dart';
 import 'package:tejory/crypto-helper/other_helpers.dart';
-import 'package:tejory/isar_models.dart';
+import 'package:tejory/box_models.g.dart';
+import 'package:tejory/objectbox.g.dart';
 import 'package:tejory/singleton.dart';
 import 'package:tejory/ui/network.dart';
 import 'package:tejory/ui/receive.dart';
@@ -44,9 +44,9 @@ class _TokenDetails extends State<TokenDetails> with TickerProviderStateMixin {
     //         .filter()
     //         .coinEqualTo(asset.coinId)
     //         .findAll();
-    var txDBList = await Models.txDB.find(q:FilterGroup.and([
-      FilterCondition.equalTo(property: "coin", value: asset.coinId),
-    ]));
+    var txDBList = await Models.txDB.find(q:
+      TxDB_.coin.equals(asset.coinId!),
+    );
 
     if (txDBList==null) {
       return [];

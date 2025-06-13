@@ -43,7 +43,7 @@ class FindGenerator extends GeneratorForAnnotation<BoxModel> {
           query.limit = limit;
         }
         try {
-          final result = await query.findAsync();
+          final result = query.find();
           query.close();
           return result;
         } catch (e) {

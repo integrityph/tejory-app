@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tejory/coins/btcln.dart';
-import 'package:tejory/collections/wallet_db.dart';
+import 'package:tejory/objectbox/wallet_db.dart';
 import 'package:tejory/singleton.dart';
 import 'package:tejory/ui/components/pin_code_dialog.dart';
 import 'package:tejory/ui/currency.dart';

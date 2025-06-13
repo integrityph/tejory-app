@@ -38,11 +38,27 @@ class NextKeyModel extends BaseBoxModel<NextKey, isar.NextKey> {
       query.limit = limit;
     }
     try {
-      final result = await query.findAsync();
+      final result = query.find();
       query.close();
       return result;
     } catch (e) {
       print("ERROR: NextKey.find ${e}");
+      return null;
+    }
+  }
+
+  Future<int?> delete({
+    Condition<NextKey>? q,
+  }) async {
+    final objectbox = Singleton.getObjectBoxDB();
+    var queryBuilder = objectbox.nextKeyBox.query(q);
+    final query = queryBuilder.build();
+    try {
+      final result = query.remove();
+      query.close();
+      return result;
+    } catch (e) {
+      print("ERROR: NextKey.delete ${e}");
       return null;
     }
   }
@@ -61,8 +77,11 @@ class NextKeyModel extends BaseBoxModel<NextKey, isar.NextKey> {
   }
 
   Future<NextKey?> getById(int id) async {
+    if (id == 0) {
+      return null;
+    }
     final objectbox = Singleton.getObjectBoxDB();
-    return objectbox.nextKeyBox.getAsync(id);
+    return objectbox.nextKeyBox.get(id);
   }
 
   Condition<NextKey> uniqueCondition(int? wallet, int? coin, String? path) {
@@ -77,7 +96,7 @@ class NextKeyModel extends BaseBoxModel<NextKey, isar.NextKey> {
     ObjectBox box = Singleton.getObjectBoxDB();
     final query =
         box.nextKeyBox.query(uniqueCondition(wallet, coin, path)).build();
-    final result = await query.findFirstAsync();
+    final result = query.findFirst();
     query.close();
     return result;
   }
@@ -86,13 +105,10 @@ class NextKeyModel extends BaseBoxModel<NextKey, isar.NextKey> {
     final box = Singleton.getObjectBoxDB();
 
     if (nextKey.id != 0) {
-      return box.nextKeyBox.putAsync(nextKey);
+      return box.nextKeyBox.put(nextKey);
     }
 
-    return box.getStore().runInTransactionAsync(TxMode.write, (
-      Store store,
-      NextKey nextKey,
-    ) {
+    return box.getStore().runInTransaction(TxMode.write, () {
       final query = box.nextKeyBox
           .query(uniqueCondition(nextKey.wallet, nextKey.coin, nextKey.path))
           .build();
@@ -103,8 +119,8 @@ class NextKeyModel extends BaseBoxModel<NextKey, isar.NextKey> {
         nextKey.id = existingId[0];
       }
 
-      return store.box<NextKey>().put(nextKey);
-    }, nextKey);
+      return box.nextKeyBox.put(nextKey);
+    });
   }
 
   NextKey fromIsar(isar.NextKey src) {

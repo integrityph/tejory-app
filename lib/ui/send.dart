@@ -3,7 +3,7 @@ import 'package:blockchain_utils/hex/hex.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:tejory/coins/tx.dart';
-import 'package:tejory/collections/wallet_db.dart';
+import 'package:tejory/objectbox/wallet_db.dart';
 import 'package:tejory/comms/nfc.dart';
 import 'package:tejory/crypto-helper/other_helpers.dart';
 import 'package:tejory/singleton.dart';

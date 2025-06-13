@@ -12,14 +12,13 @@ import 'package:tejory/coins/pst.dart';
 import 'package:tejory/coins/tx.dart';
 import 'package:tejory/coins/visual_tx.dart';
 import 'package:tejory/coins/wallet.dart';
-import 'package:tejory/collections/balance.dart';
-import 'package:tejory/collections/block.dart';
-import 'package:tejory/collections/key.dart' as keyCollection;
-import 'package:tejory/collections/tx.dart';
-import 'package:tejory/collections/wallet_db.dart';
+import 'package:tejory/objectbox/balance.dart';
+import 'package:tejory/objectbox/block.dart';
+import 'package:tejory/objectbox/key.dart' as keyCollection;
+import 'package:tejory/objectbox/tx.dart';
 import 'package:tejory/crypto-helper/ethscan.dart';
 import 'package:tejory/crypto-helper/keccak.dart';
-import 'package:tejory/isar_models.dart';
+import 'package:tejory/box_models.g.dart';
 import 'package:tejory/singleton.dart';
 import 'package:http/http.dart' as http;
 import 'package:tejory/wallets/iwallet.dart';
@@ -213,7 +212,7 @@ class Ether extends CryptoCoin {
     //   walletId,
     //   id,
     // );
-    keyCollection.Key? key = await Models.key.getUnique(path, walletId, id);
+    keyCollection.Key? key = await Models.key.getUnique(walletId, id, path);
     Bip32PublicKey pubkey;
 
     // if the key is not if the DB, create it and save it
@@ -269,7 +268,7 @@ class Ether extends CryptoCoin {
       var tempPath = pathParts.sublist(0, i).join("/");
       // var isar = Singleton.getDB();
       // key = isar.keys.getByPathWalletCoinSync(tempPath, walletId, id);
-      key = await Models.key.getUnique(tempPath, walletId, id);
+      key = await Models.key.getUnique(walletId, id, tempPath);
       if (key != null) {
         break;
       }
@@ -695,7 +694,7 @@ class Ether extends CryptoCoin {
     TxDB? tx;
     for (var result in resultObj.result!) {
       // tx = await isar.txDBs.getByHashCoinOutputIndex(result.hash, id, 0);
-      tx = await Models.txDB.getUnique(result.hash, id, 0);
+      tx = await Models.txDB.getUnique(id, result.hash, 0);
       if (tx != null) {
         continue;
       }

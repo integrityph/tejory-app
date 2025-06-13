@@ -34,7 +34,7 @@ class NextKeyModel {
     return isar.nextKeys.get(id);
   }
 
-  Future<NextKey?> getUnique(String? path, int? coin, int? wallet) async {
+  Future<NextKey?> getUnique(int? wallet, int? coin, String? path) async {
     Isar isar = Singleton.getDB();
     return isar.nextKeys.getByPathCoinWallet(path, coin, wallet);
   }

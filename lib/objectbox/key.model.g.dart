@@ -38,11 +38,27 @@ class KeyModel extends BaseBoxModel<Key, isar.Key> {
       query.limit = limit;
     }
     try {
-      final result = await query.findAsync();
+      final result = query.find();
       query.close();
       return result;
     } catch (e) {
       print("ERROR: Key.find ${e}");
+      return null;
+    }
+  }
+
+  Future<int?> delete({
+    Condition<Key>? q,
+  }) async {
+    final objectbox = Singleton.getObjectBoxDB();
+    var queryBuilder = objectbox.keyBox.query(q);
+    final query = queryBuilder.build();
+    try {
+      final result = query.remove();
+      query.close();
+      return result;
+    } catch (e) {
+      print("ERROR: Key.delete ${e}");
       return null;
     }
   }
@@ -61,8 +77,11 @@ class KeyModel extends BaseBoxModel<Key, isar.Key> {
   }
 
   Future<Key?> getById(int id) async {
+    if (id == 0) {
+      return null;
+    }
     final objectbox = Singleton.getObjectBoxDB();
-    return objectbox.keyBox.getAsync(id);
+    return objectbox.keyBox.get(id);
   }
 
   Condition<Key> uniqueCondition(int? wallet, int? coin, String? path) {
@@ -76,7 +95,7 @@ class KeyModel extends BaseBoxModel<Key, isar.Key> {
   Future<Key?> getUnique(int? wallet, int? coin, String? path) async {
     ObjectBox box = Singleton.getObjectBoxDB();
     final query = box.keyBox.query(uniqueCondition(wallet, coin, path)).build();
-    final result = await query.findFirstAsync();
+    final result = query.findFirst();
     query.close();
     return result;
   }
@@ -85,13 +104,10 @@ class KeyModel extends BaseBoxModel<Key, isar.Key> {
     final box = Singleton.getObjectBoxDB();
 
     if (key.id != 0) {
-      return box.keyBox.putAsync(key);
+      return box.keyBox.put(key);
     }
 
-    return box.getStore().runInTransactionAsync(TxMode.write, (
-      Store store,
-      Key key,
-    ) {
+    return box.getStore().runInTransaction(TxMode.write, () {
       final query = box.keyBox
           .query(uniqueCondition(key.wallet, key.coin, key.path))
           .build();
@@ -102,8 +118,8 @@ class KeyModel extends BaseBoxModel<Key, isar.Key> {
         key.id = existingId[0];
       }
 
-      return store.box<Key>().put(key);
-    }, key);
+      return box.keyBox.put(key);
+    });
   }
 
   Key fromIsar(isar.Key src) {

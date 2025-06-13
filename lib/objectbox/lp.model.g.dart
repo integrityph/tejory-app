@@ -38,11 +38,27 @@ class LPModel extends BaseBoxModel<LP, isar.LP> {
       query.limit = limit;
     }
     try {
-      final result = await query.findAsync();
+      final result = query.find();
       query.close();
       return result;
     } catch (e) {
       print("ERROR: LP.find ${e}");
+      return null;
+    }
+  }
+
+  Future<int?> delete({
+    Condition<LP>? q,
+  }) async {
+    final objectbox = Singleton.getObjectBoxDB();
+    var queryBuilder = objectbox.lPBox.query(q);
+    final query = queryBuilder.build();
+    try {
+      final result = query.remove();
+      query.close();
+      return result;
+    } catch (e) {
+      print("ERROR: LP.delete ${e}");
       return null;
     }
   }
@@ -61,8 +77,11 @@ class LPModel extends BaseBoxModel<LP, isar.LP> {
   }
 
   Future<LP?> getById(int id) async {
+    if (id == 0) {
+      return null;
+    }
     final objectbox = Singleton.getObjectBoxDB();
-    return objectbox.lPBox.getAsync(id);
+    return objectbox.lPBox.get(id);
   }
 
   Condition<LP> uniqueCondition(String? currency0, String? currency1) {
@@ -78,7 +97,7 @@ class LPModel extends BaseBoxModel<LP, isar.LP> {
     ObjectBox box = Singleton.getObjectBoxDB();
     final query =
         box.lPBox.query(uniqueCondition(currency0, currency1)).build();
-    final result = await query.findFirstAsync();
+    final result = query.findFirst();
     query.close();
     return result;
   }
@@ -87,13 +106,10 @@ class LPModel extends BaseBoxModel<LP, isar.LP> {
     final box = Singleton.getObjectBoxDB();
 
     if (lP.id != 0) {
-      return box.lPBox.putAsync(lP);
+      return box.lPBox.put(lP);
     }
 
-    return box.getStore().runInTransactionAsync(TxMode.write, (
-      Store store,
-      LP lP,
-    ) {
+    return box.getStore().runInTransaction(TxMode.write, () {
       final query =
           box.lPBox.query(uniqueCondition(lP.currency0, lP.currency1)).build();
       final existingId = query.findIds();
@@ -103,8 +119,8 @@ class LPModel extends BaseBoxModel<LP, isar.LP> {
         lP.id = existingId[0];
       }
 
-      return store.box<LP>().put(lP);
-    }, lP);
+      return box.lPBox.put(lP);
+    });
   }
 
   LP fromIsar(isar.LP src) {

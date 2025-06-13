@@ -18,17 +18,18 @@ import 'package:tejory/coins/bitcoin_tx_in.dart';
 import 'package:tejory/coins/tx.dart';
 import 'package:tejory/coins/visual_tx.dart';
 import 'package:tejory/coins/wallet.dart';
-import 'package:tejory/collections/balance.dart';
-import 'package:tejory/collections/block.dart';
-import 'package:tejory/collections/key.dart' as keyCollection;
-import 'package:tejory/collections/next_key.dart';
-import 'package:tejory/collections/tx.dart';
-import 'package:tejory/collections/wallet_db.dart';
+import 'package:tejory/objectbox/balance.dart';
+import 'package:tejory/objectbox/block.dart';
+import 'package:tejory/objectbox/key.dart' as keyCollection;
+import 'package:tejory/objectbox/next_key.dart';
+import 'package:tejory/objectbox/tx.dart';
+import 'package:tejory/objectbox/wallet_db.dart';
 import 'package:tejory/crypto-helper/bech32m.dart';
 import 'package:tejory/crypto-helper/hd_wallet.dart';
 import 'package:tejory/crypto-helper/other_helpers.dart';
-import 'package:tejory/isar_models.dart';
-// import 'package:tejory/box_models.g.dart';
+// import 'package:tejory/isar_models.dart';
+import 'package:tejory/box_models.g.dart';
+import 'package:tejory/objectbox.g.dart';
 import 'package:tejory/singleton.dart';
 import 'package:tejory/wallets/iwallet.dart';
 import 'package:tejory/wallets/tejorycard/bitcoin_applet.dart';
@@ -144,6 +145,7 @@ class Bitcoin extends CryptoCoin {
     // run getPublicKeyHashes to calculate the addresses with the public keys
     await getPublicKeyHashes(refresh: true);
 
+
     // for (int i=0; i<addressList.length; i++) {
     //   print("${hex.encode(addressList[i])}: ${pubKeyAddressPathMap[String.fromCharCodes(addressList[i])]}");
     // }
@@ -179,10 +181,8 @@ class Bitcoin extends CryptoCoin {
       utxoSet['${txdb.hash!}${hex.encode(buf)}'] = utxo;
       utxoSetChanged = true;
     });
-
     notifyListeners();
     _setupPrivateKey();
-
     // recalculate height
     () async {
       calculateHeight().then((void x) async {
@@ -262,14 +262,17 @@ class Bitcoin extends CryptoCoin {
     List<String> scanAddressTypeList = ["P2PKH", "P2WPKH", "P2TR"];
     for (var addressType in scanAddressTypeList) {
       for (int change = 0; change < 2; change++) {
+
         var purpose = getPurposeByAddressType(addressType);
+
         path = "m/$purpose'/0'/0'/$change";
         int lastIndex = (change == 0) ? externalGap : internalGap;
-        NextKey? nextKey = Singleton.isar!.nextKeys.getByPathCoinWalletSync(
-          path,
-          id,
-          walletId,
-        );
+        // NextKey? nextKey = Singleton.isar!.nextKeys.getByPathCoinWalletSync(
+        //   path,
+        //   id,
+        //   walletId,
+        // );
+        NextKey? nextKey = await Models.nextKey.getUnique(walletId, id, path);
         if (nextKey != null && nextKey.nextKey != null) {
           lastIndex += nextKey.nextKey!;
         }
@@ -306,7 +309,6 @@ class Bitcoin extends CryptoCoin {
         }
       }
     }
-
     if (refreshBloomFilters) {
       () async {
         Uint8List payload = await msgFilterLoad(addressList);
@@ -386,9 +388,14 @@ class Bitcoin extends CryptoCoin {
     //     .sortByHeightDesc()
     //     .limit(1)
     //     .findAllSync();
+    // var blocks = await Models.block.find(
+    //   q: FilterGroup.and([FilterCondition.equalTo(property: "coin", value: id)]),
+    //   order: SortProperty(property: "height", sort: Sort.desc),
+    //   limit: 1,
+    // );
     var blocks = await Models.block.find(
-      q: FilterGroup.and([FilterCondition.equalTo(property: "coin", value: id)]),
-      order: SortProperty(property: "height", sort: Sort.desc),
+      q: Block_.coin.equals(id!),
+      order: Block_.height,
       limit: 1,
     );
 
@@ -442,6 +449,7 @@ class Bitcoin extends CryptoCoin {
   }
 
   Future<bool> connect({String? ip}) async {
+    print("bitcoin.connect from Isolate");
     if (!online) {
       return false;
     }
@@ -806,7 +814,7 @@ class Bitcoin extends CryptoCoin {
           ..coin = id
           ..previousHash = blk.getprevHashHex();
 
-    block.save().then((int blockId) async {
+    block.save().then((_) async {
       if (getMoreBlocks) {
         sendMessage(makeMsg('getblocks', msgGetBlocks()));
         // print("calculating height");
@@ -944,10 +952,14 @@ class Bitcoin extends CryptoCoin {
     //       .heightLessThan(height - 1000)
     //       .deleteAll();
     // });
-    await Models.block.delete(q:FilterGroup.and([
-      FilterCondition.lessThan(property: "height", value: height - 1000),
-      FilterCondition.equalTo(property: "coin", value: id),
-    ]));
+    // await Models.block.delete(q:FilterGroup.and([
+    //   FilterCondition.lessThan(property: "height", value: height - 1000),
+    //   FilterCondition.equalTo(property: "coin", value: id),
+    // ]));
+    await Models.block.delete(q:
+      Block_.height.lessThan(height - 1000) &
+      Block_.coin.equals(id!)
+    );
   }
 
   Future<void> calculateHeight() async {
@@ -965,11 +977,15 @@ class Bitcoin extends CryptoCoin {
       //         .heightIsNull()
       //         .limit(500)
       //         .findAllSync();
+      // blocks = await Models.block.find(
+      //   q:FilterGroup.and([
+      //     FilterCondition.equalTo(property: "coin", value: id),
+      //     FilterCondition.isNull(property: "height"),
+      //   ]),
+      //   limit: 500,
+      // );
       blocks = await Models.block.find(
-        q:FilterGroup.and([
-          FilterCondition.equalTo(property: "coin", value: id),
-          FilterCondition.isNull(property: "height"),
-        ]),
+        q: Block_.coin.equals(id!) & Block_.height.isNull(),
         limit: 500,
       );
       
@@ -977,7 +993,7 @@ class Bitcoin extends CryptoCoin {
         break;
       }
       for (int j = 0; j < blocks.length; j++) {
-        blocks[j].height = blocks[j].getHeight();
+        blocks[j].height = await blocks[j].getHeight();
         await blocks[j].save();
         if (highest < (blocks[j].height ?? -1)) {
           highest = blocks[j].height!;
@@ -1571,7 +1587,7 @@ class Bitcoin extends CryptoCoin {
     //   id,
     //   walletId,
     // );
-    NextKey? nextKey = await Models.nextKey.getUnique(path, id, walletId);
+    NextKey? nextKey = await Models.nextKey.getUnique(walletId, id, path);
 
     int nextKeyIndex = (nextKey?.nextKey ?? 0);
 
@@ -1600,7 +1616,7 @@ class Bitcoin extends CryptoCoin {
     //   walletId,
     //   id,
     // );
-    NextKey? nextKey = await Models.nextKey.getUnique(path, id, walletId);
+    NextKey? nextKey = await Models.nextKey.getUnique(walletId, id, path);
 
     // save the next key in a seperate thread
     if (nextKey == null) {
@@ -1634,7 +1650,7 @@ class Bitcoin extends CryptoCoin {
       var tempPath = pathParts.sublist(0, i).join("/");
       // var isar = Singleton.getDB();
       // key = isar.keys.getByPathWalletCoinSync(tempPath, walletId, id);
-      key = await Models.key.getUnique(tempPath, walletId, id);
+      key = await Models.key.getUnique(walletId, id, tempPath);
       if (key != null) {
         break;
       }
@@ -1680,7 +1696,7 @@ class Bitcoin extends CryptoCoin {
     //   walletId,
     //   id,
     // );
-    keyCollection.Key? key = await Models.key.getUnique(path, walletId, id);
+    keyCollection.Key? key = await Models.key.getUnique(walletId, id, path);
     Bip32PublicKey pubkey;
 
     // if the key is not if the DB, create it and save it
@@ -2875,10 +2891,14 @@ class Bitcoin extends CryptoCoin {
     //         .coinEqualTo(id)
     //         .walletEqualTo(walletId)
     //         .findAll();
-    txList = await Models.txDB.find(q:FilterGroup.and([
-      FilterCondition.equalTo(property: "coin", value: id),
-      FilterCondition.equalTo(property: "wallet", value: walletId),
-    ]));
+    // txList = await Models.txDB.find(q:FilterGroup.and([
+    //   FilterCondition.equalTo(property: "coin", value: id),
+    //   FilterCondition.equalTo(property: "wallet", value: walletId),
+    // ]));
+    txList = await Models.txDB.find(q:
+      TxDB_.coin.equals(id!) &
+      TxDB_.wallet.equals(walletId)
+    );
 
     txList?.forEach((txdb) {
       if ((txdb.spent ?? true) == true ||
@@ -3066,7 +3086,7 @@ class Bitcoin extends CryptoCoin {
       //   id,
       //   input.previousOutIndex,
       // );
-      TxDB? utx = await Models.txDB.getUnique(hex.encode(input.previousOutHash), id, input.previousOutIndex);
+      TxDB? utx = await Models.txDB.getUnique(id, hex.encode(input.previousOutHash), input.previousOutIndex);
       if (utx == null) {
         continue;
       } else {

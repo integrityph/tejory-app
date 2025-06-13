@@ -38,11 +38,27 @@ class BalanceModel extends BaseBoxModel<Balance, isar.Balance> {
       query.limit = limit;
     }
     try {
-      final result = await query.findAsync();
+      final result = query.find();
       query.close();
       return result;
     } catch (e) {
       print("ERROR: Balance.find ${e}");
+      return null;
+    }
+  }
+
+  Future<int?> delete({
+    Condition<Balance>? q,
+  }) async {
+    final objectbox = Singleton.getObjectBoxDB();
+    var queryBuilder = objectbox.balanceBox.query(q);
+    final query = queryBuilder.build();
+    try {
+      final result = query.remove();
+      query.close();
+      return result;
+    } catch (e) {
+      print("ERROR: Balance.delete ${e}");
       return null;
     }
   }
@@ -61,8 +77,11 @@ class BalanceModel extends BaseBoxModel<Balance, isar.Balance> {
   }
 
   Future<Balance?> getById(int id) async {
+    if (id == 0) {
+      return null;
+    }
     final objectbox = Singleton.getObjectBoxDB();
-    return objectbox.balanceBox.getAsync(id);
+    return objectbox.balanceBox.get(id);
   }
 
   Condition<Balance> uniqueCondition(int? coin, int? wallet) {
@@ -77,7 +96,7 @@ class BalanceModel extends BaseBoxModel<Balance, isar.Balance> {
   Future<Balance?> getUnique(int? coin, int? wallet) async {
     ObjectBox box = Singleton.getObjectBoxDB();
     final query = box.balanceBox.query(uniqueCondition(coin, wallet)).build();
-    final result = await query.findFirstAsync();
+    final result = query.findFirst();
     query.close();
     return result;
   }
@@ -86,13 +105,10 @@ class BalanceModel extends BaseBoxModel<Balance, isar.Balance> {
     final box = Singleton.getObjectBoxDB();
 
     if (balance.id != 0) {
-      return box.balanceBox.putAsync(balance);
+      return box.balanceBox.put(balance);
     }
 
-    return box.getStore().runInTransactionAsync(TxMode.write, (
-      Store store,
-      Balance balance,
-    ) {
+    return box.getStore().runInTransaction(TxMode.write, () {
       final query = box.balanceBox
           .query(uniqueCondition(balance.coin, balance.wallet))
           .build();
@@ -103,8 +119,8 @@ class BalanceModel extends BaseBoxModel<Balance, isar.Balance> {
         balance.id = existingId[0];
       }
 
-      return store.box<Balance>().put(balance);
-    }, balance);
+      return box.balanceBox.put(balance);
+    });
   }
 
   Balance fromIsar(isar.Balance src) {

@@ -2,9 +2,10 @@ import 'package:analyzer/dart/element/element.dart';
 import 'package:build/build.dart';
 import 'package:source_gen/source_gen.dart';
 
-import '../box_model.dart'; // Import your annotation class
+import '../box_model.dart';
 
-class GetByIdGenerator extends GeneratorForAnnotation<BoxModel> {
+class DeleteGenerator extends GeneratorForAnnotation<BoxModel> {
+
   @override
   String generateForAnnotatedElement(
     Element element,
@@ -23,12 +24,20 @@ class GetByIdGenerator extends GeneratorForAnnotation<BoxModel> {
     final boxName = '${className[0].toLowerCase()}${className.substring(1)}Box';
 
     final generatedCode = '''
-      Future<$className?> getById(int id) async {
-        if (id == 0) {
+      Future<int?> delete({
+          Condition<$className>? q,
+      }) async {
+        final objectbox = Singleton.getObjectBoxDB();
+        var queryBuilder = objectbox.$boxName.query(q);
+        final query = queryBuilder.build();
+        try {
+          final result = query.remove();
+          query.close();
+          return result;
+        } catch (e) {
+          print("ERROR: $className.delete \${e}");
           return null;
         }
-        final objectbox = Singleton.getObjectBoxDB();
-        return objectbox.$boxName.get(id);
       }
   ''';
 
