@@ -34,9 +34,9 @@ class GetUniqueGenerator extends GeneratorForAnnotation<BoxModel> {
         .join(", ");
 
     return '''
-      Future<$className?> getUnique($parameters) async {
+      $className? getUniqueMV($parameters) {
         ObjectBox box = Singleton.getObjectBoxDB();
-        final query = box.$boxName.query(uniqueCondition($fieldNames)).build();
+        final query = box.$boxName.query(uniqueConditionMV($fieldNames)).build();
         final result = query.findFirst();
         query.close();
         return result;

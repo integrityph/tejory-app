@@ -24,9 +24,9 @@ class DeleteGenerator extends GeneratorForAnnotation<BoxModel> {
     final boxName = '${className[0].toLowerCase()}${className.substring(1)}Box';
 
     final generatedCode = '''
-      Future<int?> delete({
+      int? delete({
           Condition<$className>? q,
-      }) async {
+      }) {
         final objectbox = Singleton.getObjectBoxDB();
         var queryBuilder = objectbox.$boxName.query(q);
         final query = queryBuilder.build();

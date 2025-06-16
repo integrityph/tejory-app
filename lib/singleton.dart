@@ -1,6 +1,4 @@
 import 'dart:io';
-import 'dart:typed_data';
-
 import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -180,7 +178,7 @@ class Singleton {
     // }
 
     objectbox = await ObjectBox.create(fromBytes:fromBytes);
-    if (Admin.isAvailable() && fromBytes != null && kDebugMode) {
+    if (Admin.isAvailable() && fromBytes == null && kDebugMode) {
       // Keep a reference until no longer needed or manually closed.
       boxAdmin = Admin(objectbox!.getStore());
     }

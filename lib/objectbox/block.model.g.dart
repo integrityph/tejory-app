@@ -7,8 +7,12 @@ part of 'block.dart';
 // **************************************************************************
 
 extension BlockBoxModelHelpers on Block {
-  Future<int?> save() async {
+  int? save() {
     return BlockModel().upsert(this);
+  }
+
+  String getCPK() {
+    return BlockModel().calculateCPK(coin, hash);
   }
 }
 
@@ -19,12 +23,12 @@ extension BlockBoxModelHelpers on Block {
 class BlockModel extends BaseBoxModel<Block, isar.Block> {
   const BlockModel();
 
-  Future<List<Block>?> find({
+  List<Block>? find({
     Condition<Block>? q,
     QueryProperty<Block, dynamic>? order,
     bool ascending = true,
     int? limit,
-  }) async {
+  }) {
     final objectbox = Singleton.getObjectBoxDB();
     var queryBuilder = objectbox.blockBox.query(q);
     if (order != null) {
@@ -47,9 +51,9 @@ class BlockModel extends BaseBoxModel<Block, isar.Block> {
     }
   }
 
-  Future<int?> delete({
+  int? delete({
     Condition<Block>? q,
-  }) async {
+  }) {
     final objectbox = Singleton.getObjectBoxDB();
     var queryBuilder = objectbox.blockBox.query(q);
     final query = queryBuilder.build();
@@ -63,7 +67,7 @@ class BlockModel extends BaseBoxModel<Block, isar.Block> {
     }
   }
 
-  Future<int?> count({Condition<Block>? q}) async {
+  int? count({Condition<Block>? q}) {
     final objectbox = Singleton.getObjectBoxDB();
     final query = objectbox.blockBox.query(q).build();
     try {
@@ -76,7 +80,7 @@ class BlockModel extends BaseBoxModel<Block, isar.Block> {
     }
   }
 
-  Future<Block?> getById(int id) async {
+  Block? getById(int id) {
     if (id == 0) {
       return null;
     }
@@ -84,12 +88,33 @@ class BlockModel extends BaseBoxModel<Block, isar.Block> {
     return objectbox.blockBox.get(id);
   }
 
-  Condition<Block> uniqueCondition(int? coin, String? hash) {
+  Condition<Block> uniqueConditionMV(int? coin, String? hash) {
     return ((coin == null) ? Block_.coin.isNull() : Block_.coin.equals(coin)) &
         ((hash == null) ? Block_.hash.isNull() : Block_.hash.equals(hash));
   }
 
-  Future<Block?> getUnique(int? coin, String? hash) async {
+  Condition<Block> uniqueCondition(int? coin, String? hash) {
+    return Block_.cpk.equals(calculateCPK(coin, hash));
+  }
+
+  String calculateCPK(int? coin, String? hash) {
+    final sha256Hasher = Sha256().toSync().newHashSink();
+    sha256Hasher.add(CPK.toBytes(coin));
+    sha256Hasher.add(CPK.toBytes(hash));
+
+    sha256Hasher.close();
+    return String.fromCharCodes(CPK.encode7Bit(sha256Hasher.hashSync().bytes));
+  }
+
+  Block? getUniqueMV(int? coin, String? hash) {
+    ObjectBox box = Singleton.getObjectBoxDB();
+    final query = box.blockBox.query(uniqueConditionMV(coin, hash)).build();
+    final result = query.findFirst();
+    query.close();
+    return result;
+  }
+
+  Block? getUnique(int? coin, String? hash) {
     ObjectBox box = Singleton.getObjectBoxDB();
     final query = box.blockBox.query(uniqueCondition(coin, hash)).build();
     final result = query.findFirst();
@@ -97,9 +122,30 @@ class BlockModel extends BaseBoxModel<Block, isar.Block> {
     return result;
   }
 
-  Future<int> upsert(Block block) async {
+  int upsertMV(Block block) {
     final box = Singleton.getObjectBoxDB();
 
+    if (block.id != 0) {
+      return box.blockBox.put(block);
+    }
+
+    return box.getStore().runInTransaction(TxMode.write, () {
+      final query =
+          box.blockBox.query(uniqueConditionMV(block.coin, block.hash)).build();
+      final existingId = query.findIds();
+      query.close();
+
+      if (existingId.isNotEmpty) {
+        block.id = existingId[0];
+      }
+
+      return box.blockBox.put(block);
+    });
+  }
+
+  int upsert(Block block) {
+    final box = Singleton.getObjectBoxDB();
+    block.cpk = block.getCPK();
     if (block.id != 0) {
       return box.blockBox.put(block);
     }

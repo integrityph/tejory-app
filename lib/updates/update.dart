@@ -13,7 +13,7 @@ abstract class Update {
   Stream<UpdateProgress> getProgressStream() {
     return streamController.stream;
   }
-  bool required();
+  Future<bool> required();
   Future<void> start();
   UpdateStatus getStatus();
 

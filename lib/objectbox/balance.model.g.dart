@@ -7,8 +7,12 @@ part of 'balance.dart';
 // **************************************************************************
 
 extension BalanceBoxModelHelpers on Balance {
-  Future<int?> save() async {
+  int? save() {
     return BalanceModel().upsert(this);
+  }
+
+  String getCPK() {
+    return BalanceModel().calculateCPK(coin, wallet);
   }
 }
 
@@ -19,12 +23,12 @@ extension BalanceBoxModelHelpers on Balance {
 class BalanceModel extends BaseBoxModel<Balance, isar.Balance> {
   const BalanceModel();
 
-  Future<List<Balance>?> find({
+  List<Balance>? find({
     Condition<Balance>? q,
     QueryProperty<Balance, dynamic>? order,
     bool ascending = true,
     int? limit,
-  }) async {
+  }) {
     final objectbox = Singleton.getObjectBoxDB();
     var queryBuilder = objectbox.balanceBox.query(q);
     if (order != null) {
@@ -47,9 +51,9 @@ class BalanceModel extends BaseBoxModel<Balance, isar.Balance> {
     }
   }
 
-  Future<int?> delete({
+  int? delete({
     Condition<Balance>? q,
-  }) async {
+  }) {
     final objectbox = Singleton.getObjectBoxDB();
     var queryBuilder = objectbox.balanceBox.query(q);
     final query = queryBuilder.build();
@@ -63,7 +67,7 @@ class BalanceModel extends BaseBoxModel<Balance, isar.Balance> {
     }
   }
 
-  Future<int?> count({Condition<Balance>? q}) async {
+  int? count({Condition<Balance>? q}) {
     final objectbox = Singleton.getObjectBoxDB();
     final query = objectbox.balanceBox.query(q).build();
     try {
@@ -76,7 +80,7 @@ class BalanceModel extends BaseBoxModel<Balance, isar.Balance> {
     }
   }
 
-  Future<Balance?> getById(int id) async {
+  Balance? getById(int id) {
     if (id == 0) {
       return null;
     }
@@ -84,7 +88,7 @@ class BalanceModel extends BaseBoxModel<Balance, isar.Balance> {
     return objectbox.balanceBox.get(id);
   }
 
-  Condition<Balance> uniqueCondition(int? coin, int? wallet) {
+  Condition<Balance> uniqueConditionMV(int? coin, int? wallet) {
     return ((coin == null)
             ? Balance_.coin.isNull()
             : Balance_.coin.equals(coin)) &
@@ -93,7 +97,28 @@ class BalanceModel extends BaseBoxModel<Balance, isar.Balance> {
             : Balance_.wallet.equals(wallet));
   }
 
-  Future<Balance?> getUnique(int? coin, int? wallet) async {
+  Condition<Balance> uniqueCondition(int? coin, int? wallet) {
+    return Balance_.cpk.equals(calculateCPK(coin, wallet));
+  }
+
+  String calculateCPK(int? coin, int? wallet) {
+    final sha256Hasher = Sha256().toSync().newHashSink();
+    sha256Hasher.add(CPK.toBytes(coin));
+    sha256Hasher.add(CPK.toBytes(wallet));
+
+    sha256Hasher.close();
+    return String.fromCharCodes(CPK.encode7Bit(sha256Hasher.hashSync().bytes));
+  }
+
+  Balance? getUniqueMV(int? coin, int? wallet) {
+    ObjectBox box = Singleton.getObjectBoxDB();
+    final query = box.balanceBox.query(uniqueConditionMV(coin, wallet)).build();
+    final result = query.findFirst();
+    query.close();
+    return result;
+  }
+
+  Balance? getUnique(int? coin, int? wallet) {
     ObjectBox box = Singleton.getObjectBoxDB();
     final query = box.balanceBox.query(uniqueCondition(coin, wallet)).build();
     final result = query.findFirst();
@@ -101,9 +126,31 @@ class BalanceModel extends BaseBoxModel<Balance, isar.Balance> {
     return result;
   }
 
-  Future<int> upsert(Balance balance) async {
+  int upsertMV(Balance balance) {
     final box = Singleton.getObjectBoxDB();
 
+    if (balance.id != 0) {
+      return box.balanceBox.put(balance);
+    }
+
+    return box.getStore().runInTransaction(TxMode.write, () {
+      final query = box.balanceBox
+          .query(uniqueConditionMV(balance.coin, balance.wallet))
+          .build();
+      final existingId = query.findIds();
+      query.close();
+
+      if (existingId.isNotEmpty) {
+        balance.id = existingId[0];
+      }
+
+      return box.balanceBox.put(balance);
+    });
+  }
+
+  int upsert(Balance balance) {
+    final box = Singleton.getObjectBoxDB();
+    balance.cpk = balance.getCPK();
     if (balance.id != 0) {
       return box.balanceBox.put(balance);
     }

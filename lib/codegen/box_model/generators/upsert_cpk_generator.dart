@@ -4,7 +4,7 @@ import 'package:source_gen/source_gen.dart';
 import '../box_model.dart';
 import 'helpers/get_unique_index_fields.dart';
 
-class UpsertGenerator extends GeneratorForAnnotation<BoxModel> {
+class UpsertCPKGenerator extends GeneratorForAnnotation<BoxModel> {
   @override
   String generateForAnnotatedElement(
     Element element,
@@ -29,16 +29,16 @@ class UpsertGenerator extends GeneratorForAnnotation<BoxModel> {
         .join(", ");
 
     return '''
-      int upsertMV($className $classVariableName) {
+      int upsert($className $classVariableName) {
         final box = Singleton.getObjectBoxDB();
-
+        $classVariableName.cpk = $classVariableName.getCPK();
         if ($classVariableName.id != 0) {
           return box.$boxName.put($classVariableName);
         }
 
         return box.getStore().runInTransaction(TxMode.write, (
         ) {
-          final query = box.$boxName.query(uniqueConditionMV($fieldNames)).build();
+          final query = box.$boxName.query(uniqueCondition($fieldNames)).build();
           final existingId = query.findIds();
           query.close();
 

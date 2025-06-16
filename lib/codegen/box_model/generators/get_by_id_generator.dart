@@ -23,7 +23,7 @@ class GetByIdGenerator extends GeneratorForAnnotation<BoxModel> {
     final boxName = '${className[0].toLowerCase()}${className.substring(1)}Box';
 
     final generatedCode = '''
-      Future<$className?> getById(int id) async {
+      $className? getById(int id) {
         if (id == 0) {
           return null;
         }

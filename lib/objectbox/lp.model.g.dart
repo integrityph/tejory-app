@@ -7,8 +7,12 @@ part of 'lp.dart';
 // **************************************************************************
 
 extension LPBoxModelHelpers on LP {
-  Future<int?> save() async {
+  int? save() {
     return LPModel().upsert(this);
+  }
+
+  String getCPK() {
+    return LPModel().calculateCPK(currency0, currency1);
   }
 }
 
@@ -19,12 +23,12 @@ extension LPBoxModelHelpers on LP {
 class LPModel extends BaseBoxModel<LP, isar.LP> {
   const LPModel();
 
-  Future<List<LP>?> find({
+  List<LP>? find({
     Condition<LP>? q,
     QueryProperty<LP, dynamic>? order,
     bool ascending = true,
     int? limit,
-  }) async {
+  }) {
     final objectbox = Singleton.getObjectBoxDB();
     var queryBuilder = objectbox.lPBox.query(q);
     if (order != null) {
@@ -47,9 +51,9 @@ class LPModel extends BaseBoxModel<LP, isar.LP> {
     }
   }
 
-  Future<int?> delete({
+  int? delete({
     Condition<LP>? q,
-  }) async {
+  }) {
     final objectbox = Singleton.getObjectBoxDB();
     var queryBuilder = objectbox.lPBox.query(q);
     final query = queryBuilder.build();
@@ -63,7 +67,7 @@ class LPModel extends BaseBoxModel<LP, isar.LP> {
     }
   }
 
-  Future<int?> count({Condition<LP>? q}) async {
+  int? count({Condition<LP>? q}) {
     final objectbox = Singleton.getObjectBoxDB();
     final query = objectbox.lPBox.query(q).build();
     try {
@@ -76,7 +80,7 @@ class LPModel extends BaseBoxModel<LP, isar.LP> {
     }
   }
 
-  Future<LP?> getById(int id) async {
+  LP? getById(int id) {
     if (id == 0) {
       return null;
     }
@@ -84,7 +88,7 @@ class LPModel extends BaseBoxModel<LP, isar.LP> {
     return objectbox.lPBox.get(id);
   }
 
-  Condition<LP> uniqueCondition(String? currency0, String? currency1) {
+  Condition<LP> uniqueConditionMV(String? currency0, String? currency1) {
     return ((currency0 == null)
             ? LP_.currency0.isNull()
             : LP_.currency0.equals(currency0)) &
@@ -93,7 +97,29 @@ class LPModel extends BaseBoxModel<LP, isar.LP> {
             : LP_.currency1.equals(currency1));
   }
 
-  Future<LP?> getUnique(String? currency0, String? currency1) async {
+  Condition<LP> uniqueCondition(String? currency0, String? currency1) {
+    return LP_.cpk.equals(calculateCPK(currency0, currency1));
+  }
+
+  String calculateCPK(String? currency0, String? currency1) {
+    final sha256Hasher = Sha256().toSync().newHashSink();
+    sha256Hasher.add(CPK.toBytes(currency0));
+    sha256Hasher.add(CPK.toBytes(currency1));
+
+    sha256Hasher.close();
+    return String.fromCharCodes(CPK.encode7Bit(sha256Hasher.hashSync().bytes));
+  }
+
+  LP? getUniqueMV(String? currency0, String? currency1) {
+    ObjectBox box = Singleton.getObjectBoxDB();
+    final query =
+        box.lPBox.query(uniqueConditionMV(currency0, currency1)).build();
+    final result = query.findFirst();
+    query.close();
+    return result;
+  }
+
+  LP? getUnique(String? currency0, String? currency1) {
     ObjectBox box = Singleton.getObjectBoxDB();
     final query =
         box.lPBox.query(uniqueCondition(currency0, currency1)).build();
@@ -102,9 +128,31 @@ class LPModel extends BaseBoxModel<LP, isar.LP> {
     return result;
   }
 
-  Future<int> upsert(LP lP) async {
+  int upsertMV(LP lP) {
     final box = Singleton.getObjectBoxDB();
 
+    if (lP.id != 0) {
+      return box.lPBox.put(lP);
+    }
+
+    return box.getStore().runInTransaction(TxMode.write, () {
+      final query = box.lPBox
+          .query(uniqueConditionMV(lP.currency0, lP.currency1))
+          .build();
+      final existingId = query.findIds();
+      query.close();
+
+      if (existingId.isNotEmpty) {
+        lP.id = existingId[0];
+      }
+
+      return box.lPBox.put(lP);
+    });
+  }
+
+  int upsert(LP lP) {
+    final box = Singleton.getObjectBoxDB();
+    lP.cpk = lP.getCPK();
     if (lP.id != 0) {
       return box.lPBox.put(lP);
     }

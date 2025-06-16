@@ -4,11 +4,19 @@ import 'dart:typed_data';
 import 'package:blockchain_utils/crypto/crypto/cdsa/secp256k1/secp256k1.dart';
 import 'package:ffi/ffi.dart';
 import 'package:blockchain_utils/blockchain_utils.dart';
+import 'package:elliptic/src/elliptic.dart';
+import 'package:elliptic/src/base.dart';
+import 'package:elliptic/src/publickey.dart';
 
 // classes
 final class Secp256k1Context extends ffi.Opaque {}
+
 final class Secp256k1PubkeyStruct extends ffi.Opaque {}
-// final class Secp256k1InternalPubkey extends ffi.Opaque {}
+
+final class Secp256k1EcdsaSignatureStruct extends ffi.Struct {
+  @ffi.Array(64) // secp256k1_ecdsa_signature is typically 64 bytes
+  external ffi.Array<ffi.Uint8> data;
+}
 
 typedef CreateContextC =
     ffi.Pointer<Secp256k1Context> Function(ffi.Uint32 flags);
@@ -66,27 +74,169 @@ typedef PrivkeyTweakAddDart =
     );
 
 // secp256k1_ec_pubkey_parse
-typedef PubkeyParseC = ffi.Int32 Function(
-    ffi.Pointer<Secp256k1Context> ctx,
-    ffi.Pointer<Secp256k1PubkeyStruct> pubkey,
-    ffi.Pointer<ffi.Uint8> input,
-    ffi.Size inputlen);
-typedef PubkeyParseDart = int Function(
-    ffi.Pointer<Secp256k1Context> ctx,
-    ffi.Pointer<Secp256k1PubkeyStruct> pubkey,
-    ffi.Pointer<ffi.Uint8> input,
-    int inputlen);
+typedef PubkeyParseC =
+    ffi.Int32 Function(
+      ffi.Pointer<Secp256k1Context> ctx,
+      ffi.Pointer<Secp256k1PubkeyStruct> pubkey,
+      ffi.Pointer<ffi.Uint8> input,
+      ffi.Size inputlen,
+    );
+typedef PubkeyParseDart =
+    int Function(
+      ffi.Pointer<Secp256k1Context> ctx,
+      ffi.Pointer<Secp256k1PubkeyStruct> pubkey,
+      ffi.Pointer<ffi.Uint8> input,
+      int inputlen,
+    );
 
 // secp256k1_ec_pubkey_tweak_add
-typedef PubkeyTweakAddC = ffi.Int32 Function(
-    ffi.Pointer<Secp256k1Context> ctx,
-    ffi.Pointer<Secp256k1PubkeyStruct> pubkey, // In/Out
-    ffi.Pointer<ffi.Uint8> tweak);
-typedef PubkeyTweakAddDart = int Function(
-    ffi.Pointer<Secp256k1Context> ctx,
-    ffi.Pointer<Secp256k1PubkeyStruct> pubkey,
-    ffi.Pointer<ffi.Uint8> tweak);
+typedef PubkeyTweakAddC =
+    ffi.Int32 Function(
+      ffi.Pointer<Secp256k1Context> ctx,
+      ffi.Pointer<Secp256k1PubkeyStruct> pubkey, // In/Out
+      ffi.Pointer<ffi.Uint8> tweak,
+    );
+typedef PubkeyTweakAddDart =
+    int Function(
+      ffi.Pointer<Secp256k1Context> ctx,
+      ffi.Pointer<Secp256k1PubkeyStruct> pubkey,
+      ffi.Pointer<ffi.Uint8> tweak,
+    );
 
+// secp256k1_ec_pubkey_combine
+typedef PubkeyCombineC =
+    ffi.Int32 Function(
+      ffi.Pointer<Secp256k1Context> ctx,
+      ffi.Pointer<Secp256k1PubkeyStruct> output,
+      ffi.Pointer<ffi.Pointer<Secp256k1PubkeyStruct>> ins,
+      ffi.Size n,
+    );
+typedef PubkeyCombineDart =
+    int Function(
+      ffi.Pointer<Secp256k1Context> ctx,
+      ffi.Pointer<Secp256k1PubkeyStruct> output,
+      ffi.Pointer<ffi.Pointer<Secp256k1PubkeyStruct>> ins,
+      int n,
+    );
+
+// Define the nonce function signature for secp256k1_ecdsa_sign
+// This matches the C signature:
+// int (*secp256k1_nonce_function)(unsigned char *nonce32, const unsigned char *msg32, const unsigned char *key32, const unsigned char *algo, void *data, unsigned int counter)
+typedef Secp256k1NonceFunctionC =
+    ffi.Int32 Function(
+      ffi.Pointer<ffi.Uint8> nonce32,
+      ffi.Pointer<ffi.Uint8> msg32,
+      ffi.Pointer<ffi.Uint8> key32,
+      ffi.Pointer<ffi.Uint8> algo,
+      ffi.Pointer<ffi.Void> data,
+      ffi.Uint32 counter,
+    );
+typedef Secp256k1NonceFunctionDart =
+    int Function(
+      ffi.Pointer<ffi.Uint8> nonce32,
+      ffi.Pointer<ffi.Uint8> msg32,
+      ffi.Pointer<ffi.Uint8> key32,
+      ffi.Pointer<ffi.Uint8> algo,
+      ffi.Pointer<ffi.Void> data,
+      int counter,
+    );
+
+// secp256k1_ecdsa_sign
+typedef EcdsaSignC =
+    ffi.Int32 Function(
+      ffi.Pointer<Secp256k1Context> ctx,
+      ffi.Pointer<Secp256k1EcdsaSignatureStruct> sig,
+      ffi.Pointer<ffi.Uint8> msg32, // 32-byte message hash
+      ffi.Pointer<ffi.Uint8> seckey, // 32-byte secret key
+      ffi.Pointer<ffi.NativeFunction<Secp256k1NonceFunctionC>>
+      noncefp, // Can be ffi.Null.toPointer() for default
+      ffi.Pointer<ffi.Void> noncefp_data, // Can be ffi.Null.toPointer()
+    );
+typedef EcdsaSignDart =
+    int Function(
+      ffi.Pointer<Secp256k1Context> ctx,
+      ffi.Pointer<Secp256k1EcdsaSignatureStruct> sig,
+      ffi.Pointer<ffi.Uint8> msg32,
+      ffi.Pointer<ffi.Uint8> seckey,
+      ffi.Pointer<ffi.NativeFunction<Secp256k1NonceFunctionC>> noncefp,
+      ffi.Pointer<ffi.Void> noncefp_data,
+    );
+
+// secp256k1_ecdsa_signature_serialize_der
+typedef EcdsaSignatureSerializeDerC =
+    ffi.Int32 Function(
+      ffi.Pointer<Secp256k1Context> ctx,
+      ffi.Pointer<ffi.Uint8> output,
+      ffi.Pointer<ffi.Size> outputlen, // Pointer to size_t to get output length
+      ffi.Pointer<Secp256k1EcdsaSignatureStruct> sig,
+    );
+typedef EcdsaSignatureSerializeDerDart =
+    int Function(
+      ffi.Pointer<Secp256k1Context> ctx,
+      ffi.Pointer<ffi.Uint8> output,
+      ffi.Pointer<ffi.Size> outputlen,
+      ffi.Pointer<Secp256k1EcdsaSignatureStruct> sig,
+    );
+
+// secp256k1_ecdsa_signature_serialize_compact
+typedef EcdsaSignatureSerializeCompactC =
+    ffi.Int32 Function(
+      ffi.Pointer<Secp256k1Context> ctx,
+      ffi.Pointer<ffi.Uint8> output64, // 64-byte output buffer
+      ffi.Pointer<Secp256k1EcdsaSignatureStruct> sig,
+    );
+typedef EcdsaSignatureSerializeCompactDart =
+    int Function(
+      ffi.Pointer<Secp256k1Context> ctx,
+      ffi.Pointer<ffi.Uint8> output64,
+      ffi.Pointer<Secp256k1EcdsaSignatureStruct> sig,
+    );
+
+// secp256k1_ecdsa_verify
+typedef EcdsaVerifyC =
+    ffi.Int32 Function(
+      ffi.Pointer<Secp256k1Context> ctx,
+      ffi.Pointer<Secp256k1EcdsaSignatureStruct> sig,
+      ffi.Pointer<ffi.Uint8> msg32, // 32-byte message hash
+      ffi.Pointer<Secp256k1PubkeyStruct> pubkey,
+    );
+typedef EcdsaVerifyDart =
+    int Function(
+      ffi.Pointer<Secp256k1Context> ctx,
+      ffi.Pointer<Secp256k1EcdsaSignatureStruct> sig,
+      ffi.Pointer<ffi.Uint8> msg32,
+      ffi.Pointer<Secp256k1PubkeyStruct> pubkey,
+    );
+
+// secp256k1_ecdsa_signature_parse_der
+typedef EcdsaSignatureParseDerC =
+    ffi.Int32 Function(
+      ffi.Pointer<Secp256k1Context> ctx,
+      ffi.Pointer<Secp256k1EcdsaSignatureStruct> sig,
+      ffi.Pointer<ffi.Uint8> input,
+      ffi.Size inputlen,
+    );
+typedef EcdsaSignatureParseDerDart =
+    int Function(
+      ffi.Pointer<Secp256k1Context> ctx,
+      ffi.Pointer<Secp256k1EcdsaSignatureStruct> sig,
+      ffi.Pointer<ffi.Uint8> input,
+      int inputlen,
+    );
+
+// secp256k1_ecdsa_signature_parse_compact
+typedef EcdsaSignatureParseCompactC =
+    ffi.Int32 Function(
+      ffi.Pointer<Secp256k1Context> ctx,
+      ffi.Pointer<Secp256k1EcdsaSignatureStruct> sig,
+      ffi.Pointer<ffi.Uint8> input64, // 64-byte input buffer
+    );
+typedef EcdsaSignatureParseCompactDart =
+    int Function(
+      ffi.Pointer<Secp256k1Context> ctx,
+      ffi.Pointer<Secp256k1EcdsaSignatureStruct> sig,
+      ffi.Pointer<ffi.Uint8> input64,
+    );
 
 // this implementation works with version v0.6.0
 // https://github.com/bitcoin-core/secp256k1
@@ -109,6 +259,14 @@ class LibSecp256k1FFI {
   static PubkeyCreateDart? _pubkeyCreate;
   static PubkeyParseDart? _pubkeyParse;
   static PubkeyTweakAddDart? _pubkeyTweakAdd;
+  static PubkeyCombineDart? _pubkeyCombine;
+  static Secp256k1NonceFunctionDart? _secp256k1NonceFunctionDart;
+  static EcdsaSignDart? _ecdsaSignDart;
+  static EcdsaSignatureSerializeDerDart? _ecdsaSignatureSerializeDerDart;
+  static EcdsaSignatureSerializeCompactDart? _ecdsaSignatureSerializeCompactDart;
+  static EcdsaVerifyDart? _ecdsaVerifyDart;
+  static EcdsaSignatureParseDerDart? _ecdsaSignatureParseDerDart;
+  static EcdsaSignatureParseCompactDart? _ecdsaSignatureParseCompactDart;
 
   // Private constructor to prevent instantiation as it's all static
   LibSecp256k1FFI._();
@@ -182,12 +340,42 @@ class LibSecp256k1FFI {
                 'secp256k1_ec_pubkey_parse',
               )
               .asFunction<PubkeyParseDart>();
-      _pubkeyTweakAdd = 
+      _pubkeyTweakAdd =
           _lib!
               .lookup<ffi.NativeFunction<PubkeyTweakAddC>>(
                 'secp256k1_ec_pubkey_tweak_add',
               )
               .asFunction<PubkeyTweakAddDart>();
+      _pubkeyCombine =
+          _lib!
+              .lookup<ffi.NativeFunction<PubkeyCombineC>>(
+                'secp256k1_ec_pubkey_combine',
+              )
+              .asFunction<PubkeyCombineDart>();
+      _ecdsaSignDart =
+          _lib!
+              .lookup<ffi.NativeFunction<EcdsaSignC>>('secp256k1_ecdsa_sign')
+              .asFunction<EcdsaSignDart>();
+      _ecdsaSignatureSerializeDerDart =
+          _lib!
+              .lookup<ffi.NativeFunction<EcdsaSignatureSerializeDerC>>('secp256k1_ecdsa_signature_serialize_der')
+              .asFunction<EcdsaSignatureSerializeDerDart>();
+      _ecdsaSignatureSerializeCompactDart =
+          _lib!
+              .lookup<ffi.NativeFunction<EcdsaSignatureSerializeCompactC>>('secp256k1_ecdsa_signature_serialize_compact')
+              .asFunction<EcdsaSignatureSerializeCompactDart>();
+      _ecdsaVerifyDart =
+          _lib!
+              .lookup<ffi.NativeFunction<EcdsaVerifyC>>('secp256k1_ecdsa_verify')
+              .asFunction<EcdsaVerifyDart>();
+      _ecdsaSignatureParseDerDart =
+          _lib!
+              .lookup<ffi.NativeFunction<EcdsaSignatureParseDerC>>('secp256k1_ecdsa_signature_parse_der')
+              .asFunction<EcdsaSignatureParseDerDart>();
+      _ecdsaSignatureParseCompactDart =
+          _lib!
+              .lookup<ffi.NativeFunction<EcdsaSignatureParseCompactC>>('secp256k1_ecdsa_signature_parse_compact')
+              .asFunction<EcdsaSignatureParseCompactDart>();
       print("LibSecp256k1: Core cryptographic functions looked up.");
 
       _isInitialized = true;
@@ -372,78 +560,320 @@ class LibSecp256k1FFI {
   }
 
   static List<int>? publicKeyScalarAdd({
-  required List<int> parentPubKeyBytes, // e.g., 33 bytes compressed
-  required List<int> scalarTweakBytes,  // 32 bytes (IL from HMAC)
-}) {
-  // fallback if there FFI is not available
-  if (!_isInitialized ||
-      _pubkeyParse == null ||
-      _pubkeyTweakAdd == null ||
-      _pubkeySerialize == null ||
-      _context == null ||
-      _lib == null) {
-    _maybePrintFallbackWarning();
-    return _pureDart_publicKeyScalarAdd(parentPubKeyBytes, scalarTweakBytes);
-  }
-  if (scalarTweakBytes.length != 32) {
-    throw ArgumentError("Scalar tweak must be 32 bytes.");
-  }
-  if (parentPubKeyBytes.length != 33 && parentPubKeyBytes.length != 65) {
-    throw ArgumentError("Parent public key must be 33 (compressed) or 65 (uncompressed) bytes.");
-  }
-
-  final arena = Arena();
-  try {
-    // 1. Prepare parent public key input
-    final ffi.Pointer<ffi.Uint8> parentInputPtr = arena.allocate<ffi.Uint8>(parentPubKeyBytes.length);
-    parentInputPtr.asTypedList(parentPubKeyBytes.length).setAll(0, parentPubKeyBytes);
-
-    // Allocate space for the internal secp256k1_pubkey struct (64 bytes)
-    final ffi.Pointer<Secp256k1PubkeyStruct> pubkeyStructPtr =
-        arena.allocate<ffi.Uint8>(64).cast<Secp256k1PubkeyStruct>();
-
-    // 2. Parse parent public key bytes into the struct
-    int success = _pubkeyParse!(_context!, pubkeyStructPtr, parentInputPtr, parentPubKeyBytes.length);
-    if (success != 1) {
-      print("FFI: secp256k1_ec_pubkey_parse failed for parent public key.");
-      return null;
+    required List<int> parentPubKeyBytes, // e.g., 33 bytes compressed
+    required List<int> scalarTweakBytes, // 32 bytes (IL from HMAC)
+  }) {
+    // fallback if there FFI is not available
+    if (!_isInitialized ||
+        _pubkeyParse == null ||
+        _pubkeyTweakAdd == null ||
+        _pubkeySerialize == null ||
+        _context == null ||
+        _lib == null) {
+      _maybePrintFallbackWarning();
+      return _pureDart_publicKeyScalarAdd(parentPubKeyBytes, scalarTweakBytes);
+    }
+    if (scalarTweakBytes.length != 32) {
+      throw ArgumentError("Scalar tweak must be 32 bytes.");
+    }
+    if (parentPubKeyBytes.length != 33 && parentPubKeyBytes.length != 65) {
+      throw ArgumentError(
+        "Parent public key must be 33 (compressed) or 65 (uncompressed) bytes.",
+      );
     }
 
-    // 3. Prepare tweak input
-    final ffi.Pointer<ffi.Uint8> tweakPtr = arena.allocate<ffi.Uint8>(32);
-    tweakPtr.asTypedList(32).setAll(0, scalarTweakBytes);
+    final arena = Arena();
+    try {
+      // 1. Prepare parent public key input
+      final ffi.Pointer<ffi.Uint8> parentInputPtr = arena.allocate<ffi.Uint8>(
+        parentPubKeyBytes.length,
+      );
+      parentInputPtr
+          .asTypedList(parentPubKeyBytes.length)
+          .setAll(0, parentPubKeyBytes);
 
-    // 4. Call secp256k1_ec_pubkey_tweak_add (modifies pubkeyStructPtr in place)
-    success = _pubkeyTweakAdd!(_context!, pubkeyStructPtr, tweakPtr);
-    if (success != 1) {
-      print("FFI: secp256k1_ec_pubkey_tweak_add failed.");
-      return null;
+      // Allocate space for the internal secp256k1_pubkey struct (64 bytes)
+      final ffi.Pointer<Secp256k1PubkeyStruct> pubkeyStructPtr =
+          arena.allocate<ffi.Uint8>(64).cast<Secp256k1PubkeyStruct>();
+
+      // 2. Parse parent public key bytes into the struct
+      int success = _pubkeyParse!(
+        _context!,
+        pubkeyStructPtr,
+        parentInputPtr,
+        parentPubKeyBytes.length,
+      );
+      if (success != 1) {
+        print("FFI: secp256k1_ec_pubkey_parse failed for parent public key.");
+        return null;
+      }
+
+      // 3. Prepare tweak input
+      final ffi.Pointer<ffi.Uint8> tweakPtr = arena.allocate<ffi.Uint8>(32);
+      tweakPtr.asTypedList(32).setAll(0, scalarTweakBytes);
+
+      // 4. Call secp256k1_ec_pubkey_tweak_add (modifies pubkeyStructPtr in place)
+      success = _pubkeyTweakAdd!(_context!, pubkeyStructPtr, tweakPtr);
+      if (success != 1) {
+        print("FFI: secp256k1_ec_pubkey_tweak_add failed.");
+        return null;
+      }
+
+      // 5. Serialize the resulting (tweaked) public key
+      final int outputSizeBytes = 33; // For compressed public key
+      final ffi.Pointer<ffi.Uint8> serializedResultPtr = arena
+          .allocate<ffi.Uint8>(outputSizeBytes);
+      final ffi.Pointer<ffi.Size> actualOutputLenPtr = arena.allocate<ffi.Size>(
+        1,
+      );
+      actualOutputLenPtr.value = outputSizeBytes;
+
+      success = _pubkeySerialize!(
+        _context!,
+        serializedResultPtr,
+        actualOutputLenPtr,
+        pubkeyStructPtr,
+        _SECP256K1_EC_COMPRESSED_FLAG,
+      );
+
+      if (success == 1) {
+        return Uint8List.fromList(
+          serializedResultPtr.asTypedList(actualOutputLenPtr.value),
+        );
+      } else {
+        print(
+          "FFI: secp256k1_ec_pubkey_serialize failed for child public key.",
+        );
+        return null;
+      }
+    } finally {
+      arena.releaseAll();
+    }
+  }
+
+  /// Adds two public keys together using the native library.
+  ///
+  /// Returns a 33-byte compressed public key, or null on failure.
+  static List<int>? pointAdd(List<int> pubkeyBytesA, List<int> pubkeyBytesB) {
+    if (!_isInitialized ||
+        _pubkeyParse == null ||
+        _pubkeyCombine == null ||
+        _pubkeySerialize == null ||
+        _context == null) {
+      _maybePrintFallbackWarning();
+      return _pureDart_pointAdd(
+        _ensureUint8List(pubkeyBytesA),
+        _ensureUint8List(pubkeyBytesB),
+      );
     }
 
-    // 5. Serialize the resulting (tweaked) public key
-    final int outputSizeBytes = 33; // For compressed public key
-    final ffi.Pointer<ffi.Uint8> serializedResultPtr = arena.allocate<ffi.Uint8>(outputSizeBytes);
-    final ffi.Pointer<ffi.Size> actualOutputLenPtr = arena.allocate<ffi.Size>(1);
-    actualOutputLenPtr.value = outputSizeBytes;
+    // Validate inputs
+    for (var key in [pubkeyBytesA, pubkeyBytesB]) {
+      if (key.length != 33 && key.length != 65) {
+        throw ArgumentError(
+          "Public keys must be 33 (compressed) or 65 (uncompressed) bytes.",
+        );
+      }
+    }
 
-    success = _pubkeySerialize!(
-      _context!,
-      serializedResultPtr,
-      actualOutputLenPtr,
-      pubkeyStructPtr,
-      _SECP256K1_EC_COMPRESSED_FLAG
+    final arena = Arena();
+    try {
+      // 1. Parse both public keys into internal structs.
+      final ffi.Pointer<Secp256k1PubkeyStruct> pubkeyA =
+          arena<ffi.Uint8>(64).cast<Secp256k1PubkeyStruct>();
+      final ffi.Pointer<Secp256k1PubkeyStruct> pubkeyB =
+          arena<ffi.Uint8>(64).cast<Secp256k1PubkeyStruct>();
+
+      final parseResults = [
+        _parseKey(pubkeyBytesA, pubkeyA, arena),
+        _parseKey(pubkeyBytesB, pubkeyB, arena),
+      ];
+      if (parseResults.any((s) => s != 1)) {
+        print("FFI: secp256k1_ec_pubkey_parse failed.");
+        return null;
+      }
+
+      // 2. Prepare the input array of pointers for the combine call.
+      final ffi.Pointer<ffi.Pointer<Secp256k1PubkeyStruct>> ins =
+          arena<ffi.Pointer<Secp256k1PubkeyStruct>>(2);
+      ins[0] = pubkeyA;
+      ins[1] = pubkeyB;
+
+      // 3. Call the combine function.
+      final ffi.Pointer<Secp256k1PubkeyStruct> combinedPubkey =
+          arena<ffi.Uint8>(64).cast<Secp256k1PubkeyStruct>();
+      int success = _pubkeyCombine!(_context!, combinedPubkey, ins, 2);
+      if (success != 1) {
+        print("FFI: secp256k1_ec_pubkey_combine failed.");
+        return null;
+      }
+
+      // 4. Serialize the resulting combined public key.
+      final int outputSizeBytes = 33; // For compressed public key
+      final ffi.Pointer<ffi.Uint8> serializedResultPtr = arena<ffi.Uint8>(
+        outputSizeBytes,
+      );
+      final ffi.Pointer<ffi.Size> actualOutputLenPtr = arena<ffi.Size>();
+      actualOutputLenPtr.value = outputSizeBytes;
+
+      success = _pubkeySerialize!(
+        _context!,
+        serializedResultPtr,
+        actualOutputLenPtr,
+        combinedPubkey,
+        _SECP256K1_EC_COMPRESSED_FLAG,
+      );
+
+      if (success == 1) {
+        return serializedResultPtr
+            .asTypedList(actualOutputLenPtr.value)
+            .sublist(1);
+      } else {
+        print("FFI: secp256k1_ec_pubkey_serialize failed for combined key.");
+        return null;
+      }
+    } finally {
+      arena.releaseAll();
+    }
+  }
+
+  // --- Wrapper for secp256k1_ecdsa_sign ---
+  /// Signs a 32-byte message hash with the given private key using ECDSA.
+  ///
+  /// The `message` parameter **must** be the 32-byte hash of the data you want to sign.
+  /// If you have a longer message, hash it first using a suitable cryptographic
+  /// hashing function (e.g., SHA-256 from `package:crypto`).
+  ///
+  /// If `messagePrefix` is provided, the message will be preprocessed according
+  /// to Bitcoin's signed message standard (e.g., `"\x18Bitcoin Signed Message:\n" + len(message_bytes) + message_bytes`)
+  /// before hashing. In this case, `message` should be the *original* message,
+  /// and the hashing will be performed internally.
+  ///
+  /// Returns the DER-encoded ECDSA signature as a [Uint8List], or `null` if signing fails.
+  static Uint8List? signMessage(
+    Uint8List message,
+    Uint8List privateKeyBytes, {
+    Uint8List? messagePrefix,
+  }) {
+    if (!_isInitialized || _ecdsaSignDart == null || _ecdsaSignatureSerializeDerDart == null || _context == null) {
+      _maybePrintFallbackWarning();
+      print("FFI: Not initialized or required functions missing.");
+      return _pureDart_signMessage(message, privateKeyBytes, messagePrefix: messagePrefix);
+    }
+
+    // Validate inputs
+    if (privateKeyBytes.length != 32) {
+      throw ArgumentError("Private key must be 32 bytes.");
+    }
+
+    final arena = Arena();
+    try {
+      final ffi.Pointer<ffi.Uint8> privateKeyPtr = arena<ffi.Uint8>(32);
+      privateKeyPtr.asTypedList(32).setAll(0, privateKeyBytes);
+
+      if (messagePrefix != null) {
+        if (messagePrefix.length < 1 || messagePrefix[0] != 0x18) {
+          throw ArgumentError(
+                "`messagePrefix` should start with 0x18"
+            );
+        }
+      } else {
+        messagePrefix = _ensureUint8List('\x18Bitcoin Signed Message:\n'.codeUnits);
+      }
+
+      final encodeLength = IntUtils.encodeVarint(message.length);
+      message = Uint8List.fromList([...messagePrefix, ...encodeLength, ...message]);
+      Uint8List messageHash = _ensureUint8List(QuickCrypto.sha256DoubleHash(message));
+
+
+      final ffi.Pointer<ffi.Uint8> msg32Ptr = arena<ffi.Uint8>(32);
+      msg32Ptr.asTypedList(32).setAll(0, messageHash);
+
+      final ffi.Pointer<Secp256k1EcdsaSignatureStruct> sigStructPtr =
+          arena<ffi.Uint8>(64).cast<Secp256k1EcdsaSignatureStruct>();
+
+      // 1. Call the signing function
+      int success = _ecdsaSignDart!(
+        _context!,
+        sigStructPtr,
+        msg32Ptr,
+        privateKeyPtr,
+        ffi.nullptr, // Use NULL for default deterministic nonce
+        ffi.nullptr, // No data for the nonce function
+      );
+
+      if (success != 1) {
+        print("FFI: secp256k1_ecdsa_sign failed.");
+        return null;
+      }
+
+      // 2. Serialize the signature to DER format
+      // DER signatures can be up to 72 bytes (plus 9 for headers/lengths) = ~72
+      final int maxDerSignatureSize = 72; // Maximum possible DER size
+      final ffi.Pointer<ffi.Uint8> derOutputPtr = arena<ffi.Uint8>(maxDerSignatureSize);
+      final ffi.Pointer<ffi.Size> derOutputLenPtr = arena<ffi.Size>();
+      derOutputLenPtr.value = maxDerSignatureSize; // Initialize with max buffer size
+
+      success = _ecdsaSignatureSerializeDerDart!(
+        _context!,
+        derOutputPtr,
+        derOutputLenPtr,
+        sigStructPtr,
+      );
+
+      if (success == 1) {
+        // Copy the result to a Dart Uint8List
+        return derOutputPtr.asTypedList(derOutputLenPtr.value);
+      } else {
+        print("FFI: secp256k1_ecdsa_signature_serialize_der failed.");
+        return null;
+      }
+    } finally {
+      arena.releaseAll();
+    }
+  }
+
+  static Uint8List _pureDart_signMessage(Uint8List message, Uint8List privateKeyBytes, {Uint8List? messagePrefix}) {
+    return Uint8List(0);
+  }
+
+  static Uint8List _pureDart_pointAdd(Uint8List A, Uint8List B) {
+    EllipticCurve _s256 = EllipticCurve(
+      'secp256k1',
+      256,
+      BigInt.parse(
+        'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F',
+        radix: 16,
+      ), // p
+      BigInt.zero, // a
+      BigInt.from(7), // b
+      BigInt.zero, // S
+      AffinePoint.fromXY(
+        BigInt.parse(
+          '79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798',
+          radix: 16,
+        ),
+        BigInt.parse(
+          '483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8',
+          radix: 16,
+        ),
+      ), // G
+      BigInt.parse(
+        'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141',
+        radix: 16,
+      ), // n
+      01, // h
     );
+    var curve = _s256;
+    PublicKey a = PublicKey.fromHex(curve, hex.encode(A));
+    PublicKey b = PublicKey.fromHex(curve, hex.encode(B));
+    var p1 = AffinePoint.fromXY(a.X, a.Y);
+    var p2 = AffinePoint.fromXY(b.X, b.Y);
 
-    if (success == 1) {
-      return Uint8List.fromList(serializedResultPtr.asTypedList(actualOutputLenPtr.value));
-    } else {
-      print("FFI: secp256k1_ec_pubkey_serialize failed for child public key.");
-      return null;
-    }
-  } finally {
-    arena.releaseAll();
+    return Uint8List.fromList(
+      hex.decode(curve.add(p1, p2).X.toRadixString(16).padLeft(64)),
+    );
   }
-}
 
   // --- Pure Dart Fallback Implementations (stubs, you'd have your actual logic) ---
   static BigInt? _pureDart_addScalar(
@@ -482,18 +912,26 @@ class LibSecp256k1FFI {
     );
   }
 
-  static Uint8List _pureDart_publicKeyScalarAdd(List<int> parentPubKeyBytes, List<int> scalarTweakBytes){
+  static Uint8List _pureDart_publicKeyScalarAdd(
+    List<int> parentPubKeyBytes,
+    List<int> scalarTweakBytes,
+  ) {
     var type = EllipticCurveTypes.secp256k1;
     final generator = EllipticCurveGetter.generatorFromType(type);
 
-    var pubKey = Bip32PublicKey.fromBytes(parentPubKeyBytes, Bip32KeyData(), Bip32KeyNetVersions([],[]), type);
+    var pubKey = Bip32PublicKey.fromBytes(
+      parentPubKeyBytes,
+      Bip32KeyData(),
+      Bip32KeyNetVersions([0x04, 0x35, 0x87, 0xCF], [0x04, 0x35, 0x83, 0x94]),
+      type,
+    );
 
-    final newPubKeyPoint = pubKey.point + (generator * BigintUtils.fromBytes(scalarTweakBytes));
+    final newPubKeyPoint =
+        pubKey.point + (generator * BigintUtils.fromBytes(scalarTweakBytes));
     return _ensureUint8List(newPubKeyPoint.toBytes());
   }
 
   // Helper (keep static or move outside if used elsewhere)
-  // Helper to convert List<int> to Uint8List if not already
   static Uint8List _ensureUint8List(List<int> bytesList) {
     if (bytesList is Uint8List) {
       return bytesList;
@@ -514,5 +952,15 @@ class LibSecp256k1FFI {
       }
     }
     return result;
+  }
+
+  static int _parseKey(
+    List<int> keyBytes,
+    ffi.Pointer<Secp256k1PubkeyStruct> keyStructPtr,
+    Arena arena,
+  ) {
+    final ffi.Pointer<ffi.Uint8> inputPtr = arena<ffi.Uint8>(keyBytes.length);
+    inputPtr.asTypedList(keyBytes.length).setAll(0, keyBytes);
+    return _pubkeyParse!(_context!, keyStructPtr, inputPtr, keyBytes.length);
   }
 }

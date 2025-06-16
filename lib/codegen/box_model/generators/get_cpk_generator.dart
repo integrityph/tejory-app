@@ -1,11 +1,10 @@
 import 'package:analyzer/dart/element/element.dart';
 import 'package:build/build.dart';
 import 'package:source_gen/source_gen.dart';
-
 import '../box_model.dart';
+import 'helpers/get_unique_index_fields.dart';
 
-class SaveGenerator extends GeneratorForAnnotation<BoxModel> {
-
+class GetCPKGenerator extends GeneratorForAnnotation<BoxModel> {
   @override
   String generateForAnnotatedElement(
     Element element,
@@ -15,18 +14,22 @@ class SaveGenerator extends GeneratorForAnnotation<BoxModel> {
     if (element is! ClassElement) {
       throw InvalidGenerationSourceError(
         '`@BoxModel` can only be used on classes.',
-        element: element,
       );
     }
 
+    final uniqueKeyFields = getUniqueIndexFields(element);
+
+    final parameters = uniqueKeyFields
+        .map((f) {
+          return '${f.name}';
+        })
+        .join(', ');
     final className = element.name;
 
-    final generatedCode = '''
-      int? save() {
-        return ${className}Model().upsert(this);
+    return '''
+      String getCPK() {
+        return ${className}Model().calculateCPK($parameters);
       }
-  ''';
-
-    return generatedCode;
+    ''';
   }
 }

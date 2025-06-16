@@ -7,6 +7,7 @@ import 'package:dnsolve/dnsolve.dart';
 import 'package:flutter/material.dart';
 import 'package:isar/isar.dart';
 import 'package:murmur3/murmur3.dart';
+import 'package:tejory/bip32/derivation_bip32_key.dart';
 import 'package:tejory/coins/bitcoin_tx_out.dart';
 import 'package:tejory/coins/bitcoin_block.dart';
 import 'package:tejory/coins/btc_helper.dart';
@@ -18,6 +19,7 @@ import 'package:tejory/coins/bitcoin_tx_in.dart';
 import 'package:tejory/coins/tx.dart';
 import 'package:tejory/coins/visual_tx.dart';
 import 'package:tejory/coins/wallet.dart';
+import 'package:tejory/libsecp256k1ffi/libsecp256k1ffi.dart';
 import 'package:tejory/objectbox/balance.dart';
 import 'package:tejory/objectbox/block.dart';
 import 'package:tejory/objectbox/key.dart' as keyCollection;
@@ -119,7 +121,11 @@ class Bitcoin extends CryptoCoin {
   }
 
   @override
-  Future<void> initCoin({List<Block>? blocks, List<TxDB>? txList, Balance? balanceDB}) async {
+  Future<void> initCoin({
+    List<Block>? blocks,
+    List<TxDB>? txList,
+    Balance? balanceDB,
+  }) async {
     if (balanceDB != null && balanceDB.coinBalance != null) {
       balance = BigInt.from(balanceDB.coinBalance!);
     }
@@ -144,7 +150,6 @@ class Bitcoin extends CryptoCoin {
 
     // run getPublicKeyHashes to calculate the addresses with the public keys
     await getPublicKeyHashes(refresh: true);
-
 
     // for (int i=0; i<addressList.length; i++) {
     //   print("${hex.encode(addressList[i])}: ${pubKeyAddressPathMap[String.fromCharCodes(addressList[i])]}");
@@ -260,9 +265,10 @@ class Bitcoin extends CryptoCoin {
     Uint8List pubKeyHash = Uint8List(0);
     String path = "";
     List<String> scanAddressTypeList = ["P2PKH", "P2WPKH", "P2TR"];
+    Stopwatch watch = Stopwatch();
     for (var addressType in scanAddressTypeList) {
       for (int change = 0; change < 2; change++) {
-
+        watch.start();
         var purpose = getPurposeByAddressType(addressType);
 
         path = "m/$purpose'/0'/0'/$change";
@@ -272,7 +278,7 @@ class Bitcoin extends CryptoCoin {
         //   id,
         //   walletId,
         // );
-        NextKey? nextKey = await Models.nextKey.getUnique(walletId, id, path);
+        NextKey? nextKey = Models.nextKey.getUnique(walletId, id, path);
         if (nextKey != null && nextKey.nextKey != null) {
           lastIndex += nextKey.nextKey!;
         }
@@ -281,7 +287,7 @@ class Bitcoin extends CryptoCoin {
           startIndex = 0;
         }
         for (int index = startIndex + 1; index < lastIndex; index++) {
-          pubKey = await getPublicKey("$path/$index");
+          pubKey = getPublicKey("$path/$index");
           lastAddedIndex[path] = index;
           if (addressType == "P2TR") {
             pubKey = tweakPublicKey(pubKey);
@@ -307,6 +313,16 @@ class Bitcoin extends CryptoCoin {
                 "m/${purpose}'/0'/0'/$change/$index";
           }
         }
+        int derivations = lastIndex - startIndex + 1;
+        if (derivations < 0) {
+          derivations = 0;
+        }
+        double perDerivation = 0;
+        if (derivations != 0) {
+          perDerivation = watch.elapsedMilliseconds/derivations;
+        }
+        print("time for $path=${watch.elapsedMilliseconds} ${derivations} derivations ${perDerivation}ms perDerivation");
+        watch.reset();
       }
     }
     if (refreshBloomFilters) {
@@ -717,11 +733,10 @@ class Bitcoin extends CryptoCoin {
   }
 
   Future<void> processBuffer() async {
+    await msgMutex.acquire();
     if (!isValidMsg(buffer)) {
       return;
     }
-
-    await msgMutex.acquire();
     var payloadLength = ByteData.sublistView(
       buffer.sublist(16, 20),
     ).getUint32(0, Endian.little);
@@ -814,13 +829,14 @@ class Bitcoin extends CryptoCoin {
           ..coin = id
           ..previousHash = blk.getprevHashHex();
 
-    block.save().then((_) async {
+    () async {
+      block.save();
       if (getMoreBlocks) {
         sendMessage(makeMsg('getblocks', msgGetBlocks()));
         // print("calculating height");
         calculateHeight();
       }
-    });
+    }();
   }
 
   void processP2PMessage(Uint8List msg) {
@@ -956,9 +972,8 @@ class Bitcoin extends CryptoCoin {
     //   FilterCondition.lessThan(property: "height", value: height - 1000),
     //   FilterCondition.equalTo(property: "coin", value: id),
     // ]));
-    await Models.block.delete(q:
-      Block_.height.lessThan(height - 1000) &
-      Block_.coin.equals(id!)
+    await Models.block.delete(
+      q: Block_.height.lessThan(height - 1000) & Block_.coin.equals(id!),
     );
   }
 
@@ -988,7 +1003,7 @@ class Bitcoin extends CryptoCoin {
         q: Block_.coin.equals(id!) & Block_.height.isNull(),
         limit: 500,
       );
-      
+
       if (blocks == null || blocks.isEmpty) {
         break;
       }
@@ -1131,7 +1146,7 @@ class Bitcoin extends CryptoCoin {
       Wallet wallet = Wallet(id: walletId);
 
       if (wallet.fingerprint == null) {
-        final hdw = Bip32Slip10Secp256k1.fromExtendedKey(
+        final hdw = DerivationBIP32Key.fromExtendedKey(
           extendedPrivateKey!,
           getNetVersion(),
         );
@@ -1324,7 +1339,11 @@ class Bitcoin extends CryptoCoin {
   }
 
   @override
-  Future<Tx?> makeTransaction(String toAddress, BigInt amount, {noChange = false}) async {
+  Future<Tx?> makeTransaction(
+    String toAddress,
+    BigInt amount, {
+    noChange = false,
+  }) async {
     BitcoinTx tx = BitcoinTx();
     List<BitcoinTxOut> txUTXOSet = [];
     BigInt balance = BigInt.zero;
@@ -1635,9 +1654,10 @@ class Bitcoin extends CryptoCoin {
     await getPublicKeyHashes();
   }
 
-  Future<Bip32Slip10Secp256k1?> getNearestParentKey(String path) async {
+  // Future<Bip32Slip10Secp256k1?> getNearestParentKey(String path) async {
+  DerivationBIP32Key? getNearestParentKey(String path) {
     if (extendedPrivateKey != null) {
-      final hdw = Bip32Slip10Secp256k1.fromExtendedKey(
+      final hdw = DerivationBIP32Key.fromExtendedKey(
         extendedPrivateKey!,
         getNetVersion(),
       );
@@ -1650,7 +1670,7 @@ class Bitcoin extends CryptoCoin {
       var tempPath = pathParts.sublist(0, i).join("/");
       // var isar = Singleton.getDB();
       // key = isar.keys.getByPathWalletCoinSync(tempPath, walletId, id);
-      key = await Models.key.getUnique(walletId, id, tempPath);
+      key = Models.key.getUnique(walletId, id, tempPath);
       if (key != null) {
         break;
       }
@@ -1672,23 +1692,30 @@ class Bitcoin extends CryptoCoin {
       index += 0x80000000;
     }
     List<int> pubkey = hex.decode(key.pubKey!);
-    Bip32KeyData? keyData = Bip32KeyData(
+    // Bip32KeyData? keyData = Bip32KeyData(
+    //   chainCode: Bip32ChainCode(hex.decode(key.chainCode!)),
+    //   depth: Bip32Depth(pathParts.length),
+    //   index: Bip32KeyIndex(index),
+    // );
+    Bip32KeyNetVersions? keyNetVer = getNetVersion();
+
+    // final hdw = Bip32Slip10Secp256k1.fromPublicKey(
+    //   pubkey,
+    //   keyData: keyData,
+    //   keyNetVer: keyNetVer,
+    // );
+    final hdw = DerivationBIP32Key(
+      publicKey: pubkey,
       chainCode: Bip32ChainCode(hex.decode(key.chainCode!)),
       depth: Bip32Depth(pathParts.length),
       index: Bip32KeyIndex(index),
-    );
-    Bip32KeyNetVersions? keyNetVer = getNetVersion();
-
-    final hdw = Bip32Slip10Secp256k1.fromPublicKey(
-      pubkey,
-      keyData: keyData,
       keyNetVer: keyNetVer,
     );
 
     return hdw;
   }
 
-  Future<String> getExtendedPublicKey(String path) async {
+  DerivationBIP32Key getExtendedPublicKey(String path) {
     // check if the key is already in the DB
     // var isar = Singleton.getDB();
     // keyCollection.Key? key = isar.keys.getByPathWalletCoinSync(
@@ -1696,45 +1723,35 @@ class Bitcoin extends CryptoCoin {
     //   walletId,
     //   id,
     // );
-    keyCollection.Key? key = await Models.key.getUnique(walletId, id, path);
-    Bip32PublicKey pubkey;
+    keyCollection.Key? key = Models.key.getUnique(walletId, id, path);
+    DerivationBIP32Key? pubkey;
 
     // if the key is not if the DB, create it and save it
     if (key == null) {
-      var hdw = await getNearestParentKey(path);
-      if (hdw == null) {
-        return "";
-      }
-      var account = hdw.derivePath(path);
-      pubkey = account.publicKey;
+      pubkey = getNearestParentKey(path);
+      pubkey = pubkey!.derivePath(path);
 
       key = keyCollection.Key();
-      key.chainCode = pubkey.chainCode.toHex();
-      key.pubKey = pubkey.toHex();
+      key.chainCode = pubkey!.chainCode!.toHex();
+      key.pubKey = hex.encode(pubkey.publicKey);
       key.coin = id;
       key.wallet = walletId;
       key.path = path;
       key.save();
+    } else {
+      Bip32ChainCode chainCode = Bip32ChainCode(hex.decode(key.chainCode!));
+      List<int> keyBytes = hex.decode(key.pubKey!);
+      Bip32Depth depth = Bip32Depth(path.split("/").length);
+      Bip32KeyIndex index = Bip32KeyIndex(int.parse(path.split("/").last));
+      pubkey = DerivationBIP32Key(
+        publicKey: keyBytes,
+        chainCode: chainCode,
+        depth: depth,
+        index: index,
+      );
     }
-    Bip32ChainCode chainCode = Bip32ChainCode(hex.decode(key.chainCode!));
-    Bip32KeyData keyData = Bip32KeyData(chainCode: chainCode);
-    List<int> keyBytes = hex.decode(key.pubKey!);
-    EllipticCurveTypes curveType = EllipticCurveTypes.secp256k1;
-    pubkey = Bip32PublicKey.fromBytes(
-      keyBytes,
-      keyData,
-      getNetVersion(),
-      curveType,
-    );
 
-    final hdw = Bip32Slip10Secp256k1.fromPublicKey(
-      keyBytes,
-      keyData: keyData,
-      keyNetVer: getNetVersion(),
-    );
-    pubkey = hdw.publicKey;
-
-    return pubkey.toExtended;
+    return pubkey;
   }
 
   // Uint8List getPrivateKey(String path) {
@@ -1749,18 +1766,15 @@ class Bitcoin extends CryptoCoin {
   Future<Uint8List> getChangeAddress({int account = 0}) async {
     String purpose = getPurposeByAddressType(DEFAULT_TX_TYPE);
     String accountPath = "m/${purpose}'/0'/${account}'/${INTERNAL_INDEX}";
-    String extendedPubKey = await getExtendedPublicKey(accountPath);
-    var parentAccount = Bip32Slip10Secp256k1.fromExtendedKey(
-      extendedPubKey,
-      getNetVersion(),
-    );
+    DerivationBIP32Key parentAccount = await getExtendedPublicKey(accountPath);
+    // var parentAccount = DerivationBIP32Key.fromExtendedKey(
+    //   extendedPubKey,
+    //   getNetVersion(),
+    // );
     int nextIndex = await getNextIndex(accountPath);
     var childKey = parentAccount.childKey(Bip32KeyIndex(nextIndex));
 
-    return getAddress(
-      Uint8List.fromList(childKey.publicKey.compressed),
-      DEFAULT_TX_TYPE,
-    );
+    return getAddress(Uint8List.fromList(childKey!.publicKey), DEFAULT_TX_TYPE);
   }
 
   Uint8List getAddress(Uint8List pubKeyBytes, String addressType) {
@@ -1785,13 +1799,13 @@ class Bitcoin extends CryptoCoin {
       pubKey = Uint8List.fromList([0x02, ...pubKey.sublist(1)]);
     }
     var tweak = taggedHash("TapTweak", pubKey.sublist(1));
-    var pubTweak = ECPrivate.fromBytes(tweak).getPublic();
-    var tweakedPoint = OtherHelpers.pointAdd(
+    var pubTweak = DerivationBIP32Key(privateKey: tweak).publicKey;
+    var tweakedPoint = LibSecp256k1FFI.pointAdd(
       pubKey,
-      Uint8List.fromList(hex.decode(pubTweak.toHex())),
+      pubTweak,
     );
-    var tweakedPointXHex = tweakedPoint.X.toRadixString(16).padLeft(64, "0");
-    return Uint8List.fromList(hex.decode(tweakedPointXHex));
+    
+    return Uint8List.fromList(tweakedPoint!);
   }
 
   Uint8List taggedHash(String tag, Uint8List data) {
@@ -1801,19 +1815,23 @@ class Bitcoin extends CryptoCoin {
     );
   }
 
-  Future<Uint8List> getPublicKey(String path) async {
+  Uint8List getPublicKey(String path) {
     var pathParts = path.split("/");
-    String parentPubKey = await getExtendedPublicKey(
+    DerivationBIP32Key parentAccount = getExtendedPublicKey(
       pathParts.sublist(0, pathParts.length - 1).join("/"),
     );
-    var parentAccount = Bip32Slip10Secp256k1.fromExtendedKey(
-      parentPubKey,
-      getNetVersion(),
-    );
+    // var parentAccount = Bip32Slip10Secp256k1.fromExtendedKey(
+    //   parentPubKey,
+    //   getNetVersion(),
+    // );
+    // var parentAccount = DerivationBIP32Key.fromExtendedKey(
+    //   parentPubKey,
+    //   getNetVersion(),
+    // );
     var childKey = parentAccount.childKey(
       Bip32KeyIndex(int.parse(pathParts[pathParts.length - 1])),
     );
-    var returnPubKey = Uint8List.fromList(childKey.publicKey.compressed);
+    var returnPubKey = Uint8List.fromList(childKey!.publicKey);
 
     return returnPubKey;
   }
@@ -2076,7 +2094,7 @@ class Bitcoin extends CryptoCoin {
       }(),
       fee: btcTX.fee,
       network: BitcoinNetwork.mainnet,
-      utxos: await()async {
+      utxos: await () async {
         List<UtxoWithAddress> utxos = [];
 
         for (int i = 0; i < psbt.inputs.length; i++) {
@@ -2295,7 +2313,7 @@ class Bitcoin extends CryptoCoin {
       fee: btcTX.fee,
       network: BitcoinNetwork.mainnet,
       enableRBF: true,
-      utxos: await() async{
+      utxos: await () async {
         List<UtxoWithAddress> utxos = [];
 
         for (int i = 0; i < psbt.inputs.length; i++) {
@@ -2615,10 +2633,15 @@ class Bitcoin extends CryptoCoin {
     const ADDRESS_GAP_INTERNAL = 200;
 
     // recalculate out address list
+    print("setupTransactionsForPathChildren.getPublicKeyHashes before");
+    Stopwatch watch = Stopwatch()..start();
     await getPublicKeyHashes(
       refresh: true,
       externalGap: ADDRESS_GAP_EXTERNAL,
       internalGap: ADDRESS_GAP_INTERNAL,
+    );
+    print(
+      "setupTransactionsForPathChildren.getPublicKeyHashes ${watch.elapsedMilliseconds}",
     );
 
     // Get transactions for each cild external address upto ADDRESS_GAP
@@ -2689,7 +2712,10 @@ class Bitcoin extends CryptoCoin {
         if (inAddressUsed.isEmpty) {
           for (int i = 0; i < ADDRESS_GAP_EXTERNAL; i++) {
             searchAddressList.add(
-              await getAddressFromPath("$path/$exIndex", addressType: addressType),
+              await getAddressFromPath(
+                "$path/$exIndex",
+                addressType: addressType,
+              ),
             );
             addressMap[searchAddressList.last] = "$path/$exIndex";
             exIndex += 1;
@@ -2703,7 +2729,10 @@ class Bitcoin extends CryptoCoin {
 
           for (int i = 0; i < ADDRESS_GAP_EXTERNAL; i++) {
             inAddressList.add(
-              await getAddressFromPath("$inPath/$inIndex", addressType: addressType),
+              await getAddressFromPath(
+                "$inPath/$inIndex",
+                addressType: addressType,
+              ),
             );
             addressMap[inAddressList.last] = "$inPath/$inIndex";
             inIndex += 1;
@@ -2895,11 +2924,11 @@ class Bitcoin extends CryptoCoin {
     //   FilterCondition.equalTo(property: "coin", value: id),
     //   FilterCondition.equalTo(property: "wallet", value: walletId),
     // ]));
-    txList = await Models.txDB.find(q:
-      TxDB_.coin.equals(id!) &
-      TxDB_.wallet.equals(walletId)
+    txList = Models.txDB.find(
+      q: TxDB_.coin.equals(id!) & TxDB_.wallet.equals(walletId),
     );
 
+    utxoSet = {};
     txList?.forEach((txdb) {
       if ((txdb.spent ?? true) == true ||
           ((txdb.isDeposit ?? false) == false)) {
@@ -2968,11 +2997,11 @@ class Bitcoin extends CryptoCoin {
       // Latest
       Block()
         ..hash =
-            "0000000000000000000065cf652b48b1dc2d2a7c089f1ad579ef8b7cdcf2014e"
-        ..height = 883252
+            "000000000000000000002888dbe5890a1af46e5651bcc231a4dd857dea488117"
+        ..height = 901063
         ..previousHash =
-            "00000000000000000000177b2c98eef41f69d0269636457d652dcb0fa44f83f7"
-        ..time = DateTime.parse("2025-02-11 10:54:05"),
+            "00000000000000000001967a65a225bf726fdb9b96f084b3e896ecccce69f7c8"
+        ..time = DateTime.parse("2025-06-13 07:02:40"),
     ];
 
     Block blk;
@@ -3086,7 +3115,11 @@ class Bitcoin extends CryptoCoin {
       //   id,
       //   input.previousOutIndex,
       // );
-      TxDB? utx = await Models.txDB.getUnique(id, hex.encode(input.previousOutHash), input.previousOutIndex);
+      TxDB? utx = Models.txDB.getUnique(
+        id,
+        hex.encode(input.previousOutHash),
+        input.previousOutIndex,
+      );
       if (utx == null) {
         continue;
       } else {

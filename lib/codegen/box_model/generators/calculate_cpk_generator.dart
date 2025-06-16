@@ -1,11 +1,12 @@
 import 'package:analyzer/dart/element/element.dart';
 import 'package:build/build.dart';
 import 'package:source_gen/source_gen.dart';
-import 'package:analyzer/dart/element/nullability_suffix.dart';
+
 import '../box_model.dart';
 import 'helpers/get_unique_index_fields.dart';
 
-class UniqueConditionGenerator extends GeneratorForAnnotation<BoxModel> {
+
+class CalculateCPKGenerator extends GeneratorForAnnotation<BoxModel> {
   @override
   String generateForAnnotatedElement(
     Element element,
@@ -24,21 +25,21 @@ class UniqueConditionGenerator extends GeneratorForAnnotation<BoxModel> {
           return '${f.type} ${f.name}';
         })
         .join(', ');
-    final className = element.name;
 
     final conditions = uniqueKeyFields
         .map((f) {
           final fieldName = f.name;
-          if (f.type.nullabilitySuffix != NullabilitySuffix.question) {
-            return '${className}_.${fieldName}.equals(${fieldName})';
-          }
-          return '((${fieldName} == null) ? ${className}_.${fieldName}.isNull() : ${className}_.${fieldName}.equals(${fieldName}))';
+          return 'sha256Hasher.add(CPK.toBytes($fieldName));';
         })
-        .join(' & \n');
+        .join('\n');
 
     return '''
-      Condition<$className> uniqueConditionMV($parameters) {
-        return $conditions;
+      String calculateCPK($parameters) {
+        final sha256Hasher = Sha256().toSync().newHashSink();
+        $conditions
+
+        sha256Hasher.close();
+        return String.fromCharCodes(CPK.encode7Bit(sha256Hasher.hashSync().bytes));
       }
     ''';
   }

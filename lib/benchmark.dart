@@ -1,23 +1,34 @@
-
 // ignore_for_file: unused_local_variable
+
+import 'dart:typed_data';
 
 import 'package:advance_math/advance_math.dart';
 import 'package:blockchain_utils/bip/bip.dart';
 import 'package:blockchain_utils/hex/hex.dart';
 import 'package:collection/collection.dart';
 import 'package:cryptography/cryptography.dart' as crypto;
+import 'package:hex/hex.dart';
 import 'package:tejory/bip32/derivation_bip32_key.dart';
+import 'package:tejory/crypto-helper/other_helpers.dart';
+import 'package:tejory/libsecp256k1ffi/libsecp256k1ffi.dart';
 import 'package:tejory/ui/setup/seed_dropdown.dart';
 import 'package:tejory/ui/setup/word_list.dart';
 
 Future<void> runBenchmarks() async {
-  // await benchmarkMnemonicsToSeedBU(25);
-    await benchmarkMnemonicsToSeedCrypto(25);
-    // await benchmarkMasterHDFromSeed(25);
-    await benchmarkMasterHDFromSeedFFI(25);
-    // await benchmarkKeyDerivation(5);
-    // await benchmarkKeyDerivationB44(100);
-    await benchmarkKeyDerivationFFI(5);
+  await benchmarkMnemonicsToSeedBU(25);
+  await benchmarkMnemonicsToSeedCrypto(25);
+  // await benchmarkMasterHDFromSeed(25);
+  await benchmarkMasterHDFromSeedFFI(25);
+  // await benchmarkKeyDerivation(5);
+  // await benchmarkKeyDerivationB44(100);
+  await benchmarkKeyDerivationFFI(5);
+  // await benchmarkPublicKeyDerivation(5);
+  await benchmarkPublicKeyDerivationFFI(5);
+  // await benchmarkPublicKeyAdd(5);
+  await benchmarkPublicKeyAddFFI(5);
+  // await benchmarkHexLib(1000);
+  await benchmarkHexBCU(1000);
+  // await benchmarkHexMY(1000);
 }
 
 // Future<void> benchmarkMnemonicsToSeed(int iterations) async {
@@ -242,7 +253,10 @@ Future<void> benchmarkMasterHDFromSeedFFI(int iterations) async {
   for (int iteration = 0; iteration < iterations; iteration++) {
     seedArr = List.generate(32, (i) => rand.nextInt(256));
     Stopwatch stopwatch = Stopwatch()..start();
-    var hdw = DerivationBIP32Key.fromSeed(seedBytes: seedArr, keyNetVersions:netVersions);
+    var hdw = DerivationBIP32Key.fromSeed(
+      seedBytes: seedArr,
+      keyNetVersions: netVersions,
+    );
     print('Master HD from Seed took: ${stopwatch.elapsedMilliseconds} ms');
     results[iteration] = stopwatch.elapsedMilliseconds;
   }
@@ -326,9 +340,9 @@ Future<void> benchmarkKeyDerivationB44(int iterations) async {
 }
 
 Future<void> benchmarkKeyDerivationFFI(int iterations) async {
-  print("============================================");
-  print("Benchmarking derivePath for one key (FFI)   ");
-  print("============================================");
+  print("==============================================");
+  print("Benchmarking derivePath for one key from (FFI)");
+  print("==============================================");
   List<int> seedArr;
   Bip32KeyNetVersions netVersions = Bip32KeyNetVersions(
     [0x04, 0x35, 0x87, 0xCF],
@@ -339,7 +353,10 @@ Future<void> benchmarkKeyDerivationFFI(int iterations) async {
   List<num> results2 = List.filled(iterations, 0);
   List<num> results = List.filled(iterations, 0);
   seedArr = List.generate(32, (i) => (i * 7 + 11) % 256);
-  var hdw = DerivationBIP32Key.fromSeed(seedBytes: seedArr, keyNetVersions:netVersions);
+  var hdw = DerivationBIP32Key.fromSeed(
+    seedBytes: seedArr,
+    keyNetVersions: netVersions,
+  );
   for (int iteration = 0; iteration < iterations; iteration++) {
     String path = "m/84'/0'/0'/${iteration}'";
     Stopwatch stopwatch = Stopwatch()..start();
@@ -355,7 +372,7 @@ Future<void> benchmarkKeyDerivationFFI(int iterations) async {
     results[iteration] =
         stopwatch.elapsedMilliseconds + stopwatch2.elapsedMilliseconds;
     print(
-      "${path}: ${hex.encode(publicKey)} ${hex.encode(derivedPubKey.chainCode?.toBytes()??[])}",
+      "${path}: ${hex.encode(publicKey)} ${hex.encode(derivedPubKey.chainCode?.toBytes() ?? [])}",
     );
   }
 
@@ -378,6 +395,247 @@ Future<void> benchmarkKeyDerivationFFI(int iterations) async {
   print(
     "path + public key derivation for one key aggregate results for all $iterations results:",
   );
+  print(" - avg: ${results.average} ms");
+  print(" - med: ${median(results)} ms");
+  print(" - max: ${results.max} ms");
+  print(" - min: ${results.min} ms");
+  print(" - std: ${stdDev(results)} ms");
+  return;
+}
+
+Future<void> benchmarkPublicKeyDerivation(int iterations) async {
+  print("==========================================");
+  print("Benchmarking derivePath for one key public");
+  print("==========================================");
+  List<int> seedArr;
+  Bip32KeyNetVersions netVersions = Bip32KeyNetVersions(
+    [0x04, 0x35, 0x87, 0xCF],
+    [0x04, 0x35, 0x83, 0x94],
+  );
+  var rand = Random.secure();
+  List<num> results = List.filled(iterations, 0);
+  // seedArr = List.generate(32, (i) => rand.nextInt(256));
+  // var hdw = Bip32Slip10Secp256k1.fromSeed(seedArr, netVersions);
+  seedArr = List.generate(32, (i) => (i * 7 + 11) % 256);
+  var hdw = Bip32Slip10Secp256k1.fromSeed(seedArr, netVersions);
+  hdw.convertToPublic();
+  for (int iteration = 0; iteration < iterations; iteration++) {
+    String path = "m/84/0/0/${iteration}";
+    Stopwatch stopwatch = Stopwatch()..start();
+    Bip32PublicKey derivedPubKey = hdw.derivePath(path).publicKey;
+    print('derivePath for one key took: ${stopwatch.elapsedMilliseconds} ms');
+    print(
+      "${path}: ${hex.encode(derivedPubKey.pubKey.compressed)} ${hex.encode(derivedPubKey.chainCode.toBytes())}",
+    );
+    results[iteration] = stopwatch.elapsedMilliseconds;
+  }
+
+  print(
+    "public derivePath for one key aggregate results for all $iterations results:",
+  );
+  print(" - avg: ${results.average} ms");
+  print(" - med: ${median(results)} ms");
+  print(" - max: ${results.max} ms");
+  print(" - min: ${results.min} ms");
+  print(" - std: ${stdDev(results)} ms");
+  return;
+}
+
+Future<void> benchmarkPublicKeyDerivationFFI(int iterations) async {
+  print("=====================================================");
+  print("Benchmarking derivePath for one key from public (FFI)");
+  print("=====================================================");
+  List<int> seedArr;
+  Bip32KeyNetVersions netVersions = Bip32KeyNetVersions(
+    [0x04, 0x35, 0x87, 0xCF],
+    [0x04, 0x35, 0x83, 0x94],
+  );
+  var rand = Random.secure();
+  List<num> results1 = List.filled(iterations, 0);
+  List<num> results2 = List.filled(iterations, 0);
+  List<num> results = List.filled(iterations, 0);
+  seedArr = List.generate(32, (i) => (i * 7 + 11) % 256);
+  var hdw = DerivationBIP32Key.fromSeed(
+    seedBytes: seedArr,
+    keyNetVersions: netVersions,
+  );
+  hdw.publicKey;
+  hdw.privateKey = null;
+  for (int iteration = 0; iteration < iterations; iteration++) {
+    String path = "m/84/0/0/${iteration}";
+    Stopwatch stopwatch = Stopwatch()..start();
+    DerivationBIP32Key? derivedPubKey = await hdw.derivePath(path);
+    stopwatch.stop();
+    print('derivePath for one key took: ${stopwatch.elapsedMilliseconds} ms');
+    Stopwatch stopwatch2 = Stopwatch()..start();
+    var publicKey = derivedPubKey!.publicKey;
+    stopwatch2.stop();
+    print('public key derivation took: ${stopwatch2.elapsedMilliseconds} ms');
+    results1[iteration] = stopwatch.elapsedMilliseconds;
+    results2[iteration] = stopwatch2.elapsedMilliseconds;
+    results[iteration] =
+        stopwatch.elapsedMilliseconds + stopwatch2.elapsedMilliseconds;
+    print(
+      "${path}: ${hex.encode(publicKey)} ${hex.encode(derivedPubKey.chainCode?.toBytes() ?? [])}",
+    );
+  }
+
+  print(
+    "public derivePath for one key aggregate results for all $iterations results:",
+  );
+  print(" - avg: ${results1.average} ms");
+  print(" - med: ${median(results1)} ms");
+  print(" - max: ${results1.max} ms");
+  print(" - min: ${results1.min} ms");
+  print(" - std: ${stdDev(results1)} ms");
+  print(
+    "public key derivation for one key aggregate results for all $iterations results:",
+  );
+  print(" - avg: ${results2.average} ms");
+  print(" - med: ${median(results2)} ms");
+  print(" - max: ${results2.max} ms");
+  print(" - min: ${results2.min} ms");
+  print(" - std: ${stdDev(results2)} ms");
+  print(
+    "path + public key derivation for one key aggregate results for all $iterations results:",
+  );
+  print(" - avg: ${results.average} ms");
+  print(" - med: ${median(results)} ms");
+  print(" - max: ${results.max} ms");
+  print(" - min: ${results.min} ms");
+  print(" - std: ${stdDev(results)} ms");
+  return;
+}
+
+Future<void> benchmarkPublicKeyAdd(int iterations) async {
+  print("=======================");
+  print("Benchmarking pubkey add");
+  print("=======================");
+  List<num> results = List.filled(iterations, 0);
+  List<int> pointA;
+  List<int> pointB;
+  Uint8List pointC;
+  for (int iteration = 0; iteration < iterations; iteration++) {
+    pointA = List.generate(32, (i) => (i * 7 + 11 + iteration) % 256);
+    // pointA = [(i%2 == 0)?0x02:0x03, ...pointA];
+    pointB = List.generate(32, (i) => (i * 3 + 7 + iteration) % 256);
+    // pointB = [(i%2 == 0)?0x02:0x03, ...pointB];
+    Stopwatch stopwatch = Stopwatch()..start();
+    pointC = OtherHelpers.pointAdd(
+      Uint8List.fromList(DerivationBIP32Key(privateKey: pointA).publicKey),
+      Uint8List.fromList(DerivationBIP32Key(privateKey: pointB).publicKey),
+    );
+    print('pubkey add took: ${stopwatch.elapsedMilliseconds} ms');
+    print("$i: ${hex.encode(pointC)}");
+    results[iteration] = stopwatch.elapsedMilliseconds;
+  }
+
+  print(
+    "public derivePath for one key aggregate results for all $iterations results:",
+  );
+  print(" - avg: ${results.average} ms");
+  print(" - med: ${median(results)} ms");
+  print(" - max: ${results.max} ms");
+  print(" - min: ${results.min} ms");
+  print(" - std: ${stdDev(results)} ms");
+  return;
+}
+
+Future<void> benchmarkPublicKeyAddFFI(int iterations) async {
+  print("=============================");
+  print("Benchmarking pubkey add (FFI)");
+  print("=============================");
+  List<num> results = List.filled(iterations, 0);
+  List<int> pointA;
+  List<int> pointB;
+  List<int>? pointC;
+  for (int iteration = 0; iteration < iterations; iteration++) {
+    pointA = List.generate(32, (i) => (i * 7 + 11 + iteration) % 256);
+    // pointA = [(i%2 == 0)?0x02:0x03, ...pointA];
+    pointB = List.generate(32, (i) => (i * 3 + 7 + iteration) % 256);
+    // pointB = [(i%2 == 0)?0x02:0x03, ...pointB];
+    Stopwatch stopwatch = Stopwatch()..start();
+    pointC = LibSecp256k1FFI.pointAdd(
+      DerivationBIP32Key(privateKey: pointA).publicKey,
+      DerivationBIP32Key(privateKey: pointB).publicKey,
+    );
+    print('pubkey add took: ${stopwatch.elapsedMilliseconds} ms');
+    print("$i: ${hex.encode(pointC ?? [])}");
+    results[iteration] = stopwatch.elapsedMilliseconds;
+  }
+
+  print(
+    "public derivePath for one key aggregate results for all $iterations results:",
+  );
+  print(" - avg: ${results.average} ms");
+  print(" - med: ${median(results)} ms");
+  print(" - max: ${results.max} ms");
+  print(" - min: ${results.min} ms");
+  print(" - std: ${stdDev(results)} ms");
+  return;
+}
+
+Future<void> benchmarkHexLib(int iterations) async {
+  print("=============================");
+  print("     Benchmarking HEX Lib    ");
+  print("=============================");
+  List<num> results = List.filled(4, 0);
+  for (int len = 1; len < 4; len++) {
+    List<int> data = List.generate(32 * len, (i) => (i * 7 + 11) % 256);
+    Stopwatch stopwatch = Stopwatch()..start();
+    for (int iteration = 0; iteration < iterations; iteration++) {
+      HEX.encode(data);
+    }
+    print('pubkey add took: ${stopwatch.elapsedMilliseconds} ms');
+    results[len] = stopwatch.elapsedMilliseconds;
+  }
+  print("hex encode results for all $iterations results:");
+  print(" - avg: ${results.average} ms");
+  print(" - med: ${median(results)} ms");
+  print(" - max: ${results.max} ms");
+  print(" - min: ${results.min} ms");
+  print(" - std: ${stdDev(results)} ms");
+  return;
+}
+
+Future<void> benchmarkHexBCU(int iterations) async {
+  print("=============================");
+  print("     Benchmarking HEX BCU    ");
+  print("=============================");
+  List<num> results = List.filled(4, 0);
+  for (int len = 1; len < 4; len++) {
+    List<int> data = List.generate(32 * len, (i) => (i * 7 + 11) % 256);
+    Stopwatch stopwatch = Stopwatch()..start();
+    for (int iteration = 0; iteration < iterations; iteration++) {
+      hex.encode(data);
+    }
+    print('pubkey add took: ${stopwatch.elapsedMilliseconds} ms');
+    results[len] = stopwatch.elapsedMilliseconds;
+  }
+  print("hex encode results for all $iterations results:");
+  print(" - avg: ${results.average} ms");
+  print(" - med: ${median(results)} ms");
+  print(" - max: ${results.max} ms");
+  print(" - min: ${results.min} ms");
+  print(" - std: ${stdDev(results)} ms");
+  return;
+}
+
+Future<void> benchmarkHexMY(int iterations) async {
+  print("=============================");
+  print("     Benchmarking HEX MY     ");
+  print("=============================");
+  List<num> results = List.filled(4, 0);
+  for (int len = 1; len < 4; len++) {
+    List<int> data = List.generate(32 * len, (i) => (i * 7 + 11) % 256);
+    Stopwatch stopwatch = Stopwatch()..start();
+    for (int iteration = 0; iteration < iterations; iteration++) {
+      data.map((i) => i.toRadixString(16).padLeft(2, "0")).join("");
+    }
+    print('pubkey add took: ${stopwatch.elapsedMilliseconds} ms');
+    results[len] = stopwatch.elapsedMilliseconds;
+  }
+  print("hex encode results for all $iterations results:");
   print(" - avg: ${results.average} ms");
   print(" - med: ${median(results)} ms");
   print(" - max: ${results.max} ms");

@@ -7,8 +7,12 @@ part of 'next_key.dart';
 // **************************************************************************
 
 extension NextKeyBoxModelHelpers on NextKey {
-  Future<int?> save() async {
+  int? save() {
     return NextKeyModel().upsert(this);
+  }
+
+  String getCPK() {
+    return NextKeyModel().calculateCPK(wallet, coin, path);
   }
 }
 
@@ -19,12 +23,12 @@ extension NextKeyBoxModelHelpers on NextKey {
 class NextKeyModel extends BaseBoxModel<NextKey, isar.NextKey> {
   const NextKeyModel();
 
-  Future<List<NextKey>?> find({
+  List<NextKey>? find({
     Condition<NextKey>? q,
     QueryProperty<NextKey, dynamic>? order,
     bool ascending = true,
     int? limit,
-  }) async {
+  }) {
     final objectbox = Singleton.getObjectBoxDB();
     var queryBuilder = objectbox.nextKeyBox.query(q);
     if (order != null) {
@@ -47,9 +51,9 @@ class NextKeyModel extends BaseBoxModel<NextKey, isar.NextKey> {
     }
   }
 
-  Future<int?> delete({
+  int? delete({
     Condition<NextKey>? q,
-  }) async {
+  }) {
     final objectbox = Singleton.getObjectBoxDB();
     var queryBuilder = objectbox.nextKeyBox.query(q);
     final query = queryBuilder.build();
@@ -63,7 +67,7 @@ class NextKeyModel extends BaseBoxModel<NextKey, isar.NextKey> {
     }
   }
 
-  Future<int?> count({Condition<NextKey>? q}) async {
+  int? count({Condition<NextKey>? q}) {
     final objectbox = Singleton.getObjectBoxDB();
     final query = objectbox.nextKeyBox.query(q).build();
     try {
@@ -76,7 +80,7 @@ class NextKeyModel extends BaseBoxModel<NextKey, isar.NextKey> {
     }
   }
 
-  Future<NextKey?> getById(int id) async {
+  NextKey? getById(int id) {
     if (id == 0) {
       return null;
     }
@@ -84,7 +88,7 @@ class NextKeyModel extends BaseBoxModel<NextKey, isar.NextKey> {
     return objectbox.nextKeyBox.get(id);
   }
 
-  Condition<NextKey> uniqueCondition(int? wallet, int? coin, String? path) {
+  Condition<NextKey> uniqueConditionMV(int? wallet, int? coin, String? path) {
     return ((wallet == null)
             ? NextKey_.wallet.isNull()
             : NextKey_.wallet.equals(wallet)) &
@@ -92,7 +96,30 @@ class NextKeyModel extends BaseBoxModel<NextKey, isar.NextKey> {
         ((path == null) ? NextKey_.path.isNull() : NextKey_.path.equals(path));
   }
 
-  Future<NextKey?> getUnique(int? wallet, int? coin, String? path) async {
+  Condition<NextKey> uniqueCondition(int? wallet, int? coin, String? path) {
+    return NextKey_.cpk.equals(calculateCPK(wallet, coin, path));
+  }
+
+  String calculateCPK(int? wallet, int? coin, String? path) {
+    final sha256Hasher = Sha256().toSync().newHashSink();
+    sha256Hasher.add(CPK.toBytes(wallet));
+    sha256Hasher.add(CPK.toBytes(coin));
+    sha256Hasher.add(CPK.toBytes(path));
+
+    sha256Hasher.close();
+    return String.fromCharCodes(CPK.encode7Bit(sha256Hasher.hashSync().bytes));
+  }
+
+  NextKey? getUniqueMV(int? wallet, int? coin, String? path) {
+    ObjectBox box = Singleton.getObjectBoxDB();
+    final query =
+        box.nextKeyBox.query(uniqueConditionMV(wallet, coin, path)).build();
+    final result = query.findFirst();
+    query.close();
+    return result;
+  }
+
+  NextKey? getUnique(int? wallet, int? coin, String? path) {
     ObjectBox box = Singleton.getObjectBoxDB();
     final query =
         box.nextKeyBox.query(uniqueCondition(wallet, coin, path)).build();
@@ -101,9 +128,31 @@ class NextKeyModel extends BaseBoxModel<NextKey, isar.NextKey> {
     return result;
   }
 
-  Future<int> upsert(NextKey nextKey) async {
+  int upsertMV(NextKey nextKey) {
     final box = Singleton.getObjectBoxDB();
 
+    if (nextKey.id != 0) {
+      return box.nextKeyBox.put(nextKey);
+    }
+
+    return box.getStore().runInTransaction(TxMode.write, () {
+      final query = box.nextKeyBox
+          .query(uniqueConditionMV(nextKey.wallet, nextKey.coin, nextKey.path))
+          .build();
+      final existingId = query.findIds();
+      query.close();
+
+      if (existingId.isNotEmpty) {
+        nextKey.id = existingId[0];
+      }
+
+      return box.nextKeyBox.put(nextKey);
+    });
+  }
+
+  int upsert(NextKey nextKey) {
+    final box = Singleton.getObjectBoxDB();
+    nextKey.cpk = nextKey.getCPK();
     if (nextKey.id != 0) {
       return box.nextKeyBox.put(nextKey);
     }

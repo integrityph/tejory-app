@@ -54,6 +54,7 @@ class Asset with ChangeNotifier {
   Widget iconOffline = Container(width: 40, height: 40);
   bool active = true;
   bool workerIsolateRequired = false;
+  List<void Function()?> _listeners = [];
 
   Asset({
     required this.id,
@@ -131,29 +132,12 @@ class Asset with ChangeNotifier {
       this.initialRateSaved = true;
       // Future<Coin?> coinFtr =
       //     Singleton.getDB().coins.filter().idEqualTo(this.coinId!).findFirst();
-      Future<Coin?> coinFtr = Models.coin.getById(this.coinId!);
-      coinFtr
-          .then((Coin? coin) {
-            if (coin != null) {
-              coin.usdPrice = this.priceUsd; // Save the current price
-              coin
-                  .save()
-                  .then((_) {
-                    print("Initial price for ${this.symbol} saved to DB.");
-                  })
-                  .catchError((e) {
-                    this.initialRateSaved = false;
-                    print("Error saving initial price for ${this.symbol}: $e");
-                    // Potentially retry or leave initialRateSaved as false if save fails
-                  });
-            }
-          })
-          .catchError((e) {
-            this.initialRateSaved = false;
-            print(
-              "Error fetching coin to save initial price for ${this.symbol}: $e",
-            );
-          });
+      Coin? coin = Models.coin.getById(this.coinId!);
+
+      if (coin != null) {
+        coin.usdPrice = this.priceUsd; // Save the current price
+        coin.save();
+      }
     }
 
     if (priceActuallyChanged) {
@@ -183,7 +167,7 @@ class Asset with ChangeNotifier {
   Future<void> initWorker() async {
     if (!active || !workerIsolateRequired) {
       if (isolate != null) {
-        isolate!.kill().then((_){
+        isolate!.kill().then((_) {
           isolate = null;
         });
       }
@@ -212,15 +196,15 @@ class Asset with ChangeNotifier {
       "decimals": decimals,
       "name": name,
       "contractHash": contractHash,
-      "template":template,
-      "id":coinId,
-      "active":active,
-      "workerIsolateRequired":workerIsolateRequired,
+      "template": template,
+      "id": coinId,
+      "active": active,
+      "workerIsolateRequired": workerIsolateRequired,
     };
     coinTemplate = fromConfig(configMap);
 
     for (int i = 0; i < wallets.length; i++) {
-      if (coins.length < i+1) {
+      if (coins.length < i + 1) {
         configMap["walletId"] = wallets[i].id;
         coins.add(fromConfig(configMap)!);
       }
@@ -231,6 +215,7 @@ class Asset with ChangeNotifier {
       coins[i].online = online;
       coins[i].assetIndex = assetIndex;
       coins[i].coinIndex = i;
+      _listeners.forEach((listener) => coins[i].addListener(listener!));
     }
 
     // initialize workers and initialize coins after that
@@ -246,21 +231,18 @@ class Asset with ChangeNotifier {
         // Future<List<TxDB>?> txListFtr = Models.txDB.find(q:FilterGroup.and([
         //   FilterCondition.equalTo(property: "coin", value: coinId),
         // ]));
-        Future<List<TxDB>?> txListFtr = Models.txDB.find(q:
-          TxDB_.coin.equals(coinId!),
-        );
+        List<TxDB>? txList = Models.txDB.find(q: TxDB_.coin.equals(coinId!));
 
         // Future<Balance?> balanceFtr = isar.balances.getByCoinWallet(
         //   coinId,
         //   coins[i].walletId,
         // );
-        Future<Balance?> balanceFtr = Models.balance.getUnique(coinId, coins[i].walletId);
-        
-        await Future.wait([txListFtr, balanceFtr]).then(await (values) async {
-          List<TxDB> txList = values[0] as List<TxDB>;
-          Balance? balance = values[1] as Balance?;
-          await coins[i].initCoin(blocks: null, txList: txList, balanceDB: balance);
-        });
+        Balance? balance = Models.balance.getUnique(coinId, coins[i].walletId);
+        await coins[i].initCoin(
+          blocks: null,
+          txList: txList,
+          balanceDB: balance,
+        );
       }
     });
   }
@@ -308,7 +290,7 @@ class Asset with ChangeNotifier {
         );
         break;
       default:
-        if ((config["template"]??"") == "ERC-20") {
+        if ((config["template"] ?? "") == "ERC-20") {
           coin = ERC20(
             config["walletId"],
             walletType: config["walletType"],
@@ -332,13 +314,13 @@ class Asset with ChangeNotifier {
       return null;
     }
     coin.id = config["coinId"];
-    coin.template = config["template"]??null;
+    coin.template = config["template"] ?? null;
     coin.walletId = config["walletId"];
-    coin.hrp = config["hrp"]??"";
+    coin.hrp = config["hrp"] ?? "";
     coin.decimals = config["decimals"];
-    coin.online = config["online"]??false;
-    coin.assetIndex = config["assetIndex"]??0;
-    coin.coinIndex = config["coinIndex"]??0;
+    coin.online = config["online"] ?? false;
+    coin.assetIndex = config["assetIndex"] ?? 0;
+    coin.coinIndex = config["coinIndex"] ?? 0;
 
     return coin;
   }
@@ -399,7 +381,11 @@ class Asset with ChangeNotifier {
     return null;
   }
 
-  Future<Tx?> makeTransaction(String toAddress, BigInt amount, {noChange = false}) async {
+  Future<Tx?> makeTransaction(
+    String toAddress,
+    BigInt amount, {
+    noChange = false,
+  }) async {
     int usedWalletId = getWalletId();
     CryptoCoin? usedCoin = getCoinByWalletId(usedWalletId);
     return usedCoin?.makeTransaction(toAddress, amount, noChange: noChange);
@@ -483,6 +469,8 @@ class Asset with ChangeNotifier {
   @override
   void addListener(VoidCallback listener) {
     super.addListener(listener);
+
+    _listeners.add(listener);
 
     for (int i = 0; i < coins.length; i++) {
       coins[i].addListener(listener);

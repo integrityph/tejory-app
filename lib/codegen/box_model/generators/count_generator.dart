@@ -25,7 +25,7 @@ class CountGenerator extends GeneratorForAnnotation<BoxModel> {
 
 
     final generatedCode = '''
-      Future<int?> count({Condition<$className>? q}) async {
+      int? count({Condition<$className>? q}) {
         final objectbox = Singleton.getObjectBoxDB();
         final query = objectbox.$boxName.query(q).build();
         try {

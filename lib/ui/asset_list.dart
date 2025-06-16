@@ -1,8 +1,11 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'dart:async';
 import 'package:http/http.dart' as http;
 import 'package:isar/isar.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:tejory/coindesk/api.dart' as coindesk;
 import 'package:tejory/objectbox.g.dart';
 import 'package:tejory/objectbox/block.dart';
@@ -20,7 +23,7 @@ import 'package:tejory/ui/setup/start_setup.dart';
 import 'package:tejory/ui/setup/page_animation.dart';
 import 'package:tejory/ui/token_details.dart';
 import 'asset.dart';
-import 'package:flutter/services.dart' show rootBundle;
+import 'package:flutter/services.dart' show rootBundle, ImmutableBuffer, ByteData;
 
 class AssetList extends StatefulWidget {
   AssetList.newBlank({super.key});
@@ -241,10 +244,26 @@ class _AssetListState extends State<AssetList> with ChangeNotifier {
     coindesk.streamPrices(symbolList.toList(), Singleton.assetList.assetListState.streamPriceCallback);
   }
 
-  Future<void> initCoinData() async {
-    String filePath = "assets/coindata.json";
+  Future<String> getAssetPath(String filePath) async {
+    Directory dir = await getApplicationDocumentsDirectory();
+    String localPath = '${dir.path}/$filePath';
+    final file = File(localPath);
+    if (await file.exists()) {
+      return localPath;
+    }
 
-    String data = await rootBundle.loadString(filePath);
+    ByteData data = await rootBundle.load(filePath);
+    await file.create(recursive:true);
+    await file.writeAsBytes(data.buffer.asUint8List());
+    return localPath;
+  }
+
+  Future<void> initCoinData() async {
+    // String filePath = "assets/coindata.json";
+
+    // String data = await rootBundle.loadString(filePath);
+    String filePath = await getAssetPath("assets/coindata.json");
+    String data = await File(filePath).readAsString();
     JsonDecoder decoder = JsonDecoder();
     final Map<String, dynamic> jsonMap = decoder.convert(data);
 

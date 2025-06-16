@@ -41,11 +41,11 @@ class DBMigration extends Update {
   }
 
   @override
-  bool required() {
+  Future<bool> required() async {
     var isar = Singleton.getDB();
     var box = Singleton.getObjectBoxDB();
 
-    if (isar.walletDBs.count() != 0 && box.walletDBBox.count() == 0) {
+    if (await isar.walletDBs.countSync() != 0 && box.walletDBBox.count() == 0) {
       return true;
     }
     return false;
@@ -125,8 +125,6 @@ class DBMigration extends Update {
         }
 
         print("DBMigration: db initialized");
-        "d".runtimeType;
-        Type x = String;
         List<MigrationTask> migrationList = [
           MigrationTask<boxmodel.Balance>(
             isar!.balances,
@@ -213,7 +211,7 @@ class DBMigration extends Update {
       } catch (e) {
         sendPort.send(
           UpdateProgress(
-            100,
+            1.0,
             done: true,
             message: "DBMigration: Error. ${e.toString()}",
             ex: e as Exception,

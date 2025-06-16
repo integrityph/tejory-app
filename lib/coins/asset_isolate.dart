@@ -4,6 +4,7 @@ import 'dart:isolate';
 import 'package:flutter/services.dart';
 import 'package:tejory/api_keys/api_keys.dart';
 import 'package:tejory/coins/crypto_coin.dart';
+import 'package:tejory/libsecp256k1ffi/libsecp256k1ffi.dart';
 import 'package:tejory/singleton.dart';
 import 'package:tejory/ui/asset.dart';
 
@@ -143,6 +144,8 @@ class AssetIsolate {
         // initialize API keys
         APIKeys.keys = apiKey;
 
+        await LibSecp256k1FFI.init();
+
         // initialize coin from config
         coin = Asset.fromConfig(coinConfig);
         // configure the coin for worker isolate
@@ -181,11 +184,11 @@ class AssetIsolate {
           }
           break;
         case "setupTransactionsForPathChildren":
-          try {
+          // try {
             await coin!.setupTransactionsForPathChildren(msgMap["params"]["paths"]);
-          } catch (e) {
-            error = e;
-          }
+          // } catch (e) {
+          //   error = e;
+          // }
           break;
         case "transmitTxBytes":
           try {

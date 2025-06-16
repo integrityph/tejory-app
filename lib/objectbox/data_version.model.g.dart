@@ -7,8 +7,12 @@ part of 'data_version.dart';
 // **************************************************************************
 
 extension DataVersionBoxModelHelpers on DataVersion {
-  Future<int?> save() async {
+  int? save() {
     return DataVersionModel().upsert(this);
+  }
+
+  String getCPK() {
+    return DataVersionModel().calculateCPK(name);
   }
 }
 
@@ -19,12 +23,12 @@ extension DataVersionBoxModelHelpers on DataVersion {
 class DataVersionModel extends BaseBoxModel<DataVersion, isar.DataVersion> {
   const DataVersionModel();
 
-  Future<List<DataVersion>?> find({
+  List<DataVersion>? find({
     Condition<DataVersion>? q,
     QueryProperty<DataVersion, dynamic>? order,
     bool ascending = true,
     int? limit,
-  }) async {
+  }) {
     final objectbox = Singleton.getObjectBoxDB();
     var queryBuilder = objectbox.dataVersionBox.query(q);
     if (order != null) {
@@ -47,9 +51,9 @@ class DataVersionModel extends BaseBoxModel<DataVersion, isar.DataVersion> {
     }
   }
 
-  Future<int?> delete({
+  int? delete({
     Condition<DataVersion>? q,
-  }) async {
+  }) {
     final objectbox = Singleton.getObjectBoxDB();
     var queryBuilder = objectbox.dataVersionBox.query(q);
     final query = queryBuilder.build();
@@ -63,7 +67,7 @@ class DataVersionModel extends BaseBoxModel<DataVersion, isar.DataVersion> {
     }
   }
 
-  Future<int?> count({Condition<DataVersion>? q}) async {
+  int? count({Condition<DataVersion>? q}) {
     final objectbox = Singleton.getObjectBoxDB();
     final query = objectbox.dataVersionBox.query(q).build();
     try {
@@ -76,7 +80,7 @@ class DataVersionModel extends BaseBoxModel<DataVersion, isar.DataVersion> {
     }
   }
 
-  Future<DataVersion?> getById(int id) async {
+  DataVersion? getById(int id) {
     if (id == 0) {
       return null;
     }
@@ -84,13 +88,33 @@ class DataVersionModel extends BaseBoxModel<DataVersion, isar.DataVersion> {
     return objectbox.dataVersionBox.get(id);
   }
 
-  Condition<DataVersion> uniqueCondition(String? name) {
+  Condition<DataVersion> uniqueConditionMV(String? name) {
     return ((name == null)
         ? DataVersion_.name.isNull()
         : DataVersion_.name.equals(name));
   }
 
-  Future<DataVersion?> getUnique(String? name) async {
+  Condition<DataVersion> uniqueCondition(String? name) {
+    return DataVersion_.cpk.equals(calculateCPK(name));
+  }
+
+  String calculateCPK(String? name) {
+    final sha256Hasher = Sha256().toSync().newHashSink();
+    sha256Hasher.add(CPK.toBytes(name));
+
+    sha256Hasher.close();
+    return String.fromCharCodes(CPK.encode7Bit(sha256Hasher.hashSync().bytes));
+  }
+
+  DataVersion? getUniqueMV(String? name) {
+    ObjectBox box = Singleton.getObjectBoxDB();
+    final query = box.dataVersionBox.query(uniqueConditionMV(name)).build();
+    final result = query.findFirst();
+    query.close();
+    return result;
+  }
+
+  DataVersion? getUnique(String? name) {
     ObjectBox box = Singleton.getObjectBoxDB();
     final query = box.dataVersionBox.query(uniqueCondition(name)).build();
     final result = query.findFirst();
@@ -98,9 +122,30 @@ class DataVersionModel extends BaseBoxModel<DataVersion, isar.DataVersion> {
     return result;
   }
 
-  Future<int> upsert(DataVersion dataVersion) async {
+  int upsertMV(DataVersion dataVersion) {
     final box = Singleton.getObjectBoxDB();
 
+    if (dataVersion.id != 0) {
+      return box.dataVersionBox.put(dataVersion);
+    }
+
+    return box.getStore().runInTransaction(TxMode.write, () {
+      final query =
+          box.dataVersionBox.query(uniqueConditionMV(dataVersion.name)).build();
+      final existingId = query.findIds();
+      query.close();
+
+      if (existingId.isNotEmpty) {
+        dataVersion.id = existingId[0];
+      }
+
+      return box.dataVersionBox.put(dataVersion);
+    });
+  }
+
+  int upsert(DataVersion dataVersion) {
+    final box = Singleton.getObjectBoxDB();
+    dataVersion.cpk = dataVersion.getCPK();
     if (dataVersion.id != 0) {
       return box.dataVersionBox.put(dataVersion);
     }

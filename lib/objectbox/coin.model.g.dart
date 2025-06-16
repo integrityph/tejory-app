@@ -7,8 +7,12 @@ part of 'coin.dart';
 // **************************************************************************
 
 extension CoinBoxModelHelpers on Coin {
-  Future<int?> save() async {
+  int? save() {
     return CoinModel().upsert(this);
+  }
+
+  String getCPK() {
+    return CoinModel().calculateCPK(name);
   }
 }
 
@@ -19,12 +23,12 @@ extension CoinBoxModelHelpers on Coin {
 class CoinModel extends BaseBoxModel<Coin, isar.Coin> {
   const CoinModel();
 
-  Future<List<Coin>?> find({
+  List<Coin>? find({
     Condition<Coin>? q,
     QueryProperty<Coin, dynamic>? order,
     bool ascending = true,
     int? limit,
-  }) async {
+  }) {
     final objectbox = Singleton.getObjectBoxDB();
     var queryBuilder = objectbox.coinBox.query(q);
     if (order != null) {
@@ -47,9 +51,9 @@ class CoinModel extends BaseBoxModel<Coin, isar.Coin> {
     }
   }
 
-  Future<int?> delete({
+  int? delete({
     Condition<Coin>? q,
-  }) async {
+  }) {
     final objectbox = Singleton.getObjectBoxDB();
     var queryBuilder = objectbox.coinBox.query(q);
     final query = queryBuilder.build();
@@ -63,7 +67,7 @@ class CoinModel extends BaseBoxModel<Coin, isar.Coin> {
     }
   }
 
-  Future<int?> count({Condition<Coin>? q}) async {
+  int? count({Condition<Coin>? q}) {
     final objectbox = Singleton.getObjectBoxDB();
     final query = objectbox.coinBox.query(q).build();
     try {
@@ -76,7 +80,7 @@ class CoinModel extends BaseBoxModel<Coin, isar.Coin> {
     }
   }
 
-  Future<Coin?> getById(int id) async {
+  Coin? getById(int id) {
     if (id == 0) {
       return null;
     }
@@ -84,11 +88,31 @@ class CoinModel extends BaseBoxModel<Coin, isar.Coin> {
     return objectbox.coinBox.get(id);
   }
 
-  Condition<Coin> uniqueCondition(String? name) {
+  Condition<Coin> uniqueConditionMV(String? name) {
     return ((name == null) ? Coin_.name.isNull() : Coin_.name.equals(name));
   }
 
-  Future<Coin?> getUnique(String? name) async {
+  Condition<Coin> uniqueCondition(String? name) {
+    return Coin_.cpk.equals(calculateCPK(name));
+  }
+
+  String calculateCPK(String? name) {
+    final sha256Hasher = Sha256().toSync().newHashSink();
+    sha256Hasher.add(CPK.toBytes(name));
+
+    sha256Hasher.close();
+    return String.fromCharCodes(CPK.encode7Bit(sha256Hasher.hashSync().bytes));
+  }
+
+  Coin? getUniqueMV(String? name) {
+    ObjectBox box = Singleton.getObjectBoxDB();
+    final query = box.coinBox.query(uniqueConditionMV(name)).build();
+    final result = query.findFirst();
+    query.close();
+    return result;
+  }
+
+  Coin? getUnique(String? name) {
     ObjectBox box = Singleton.getObjectBoxDB();
     final query = box.coinBox.query(uniqueCondition(name)).build();
     final result = query.findFirst();
@@ -96,9 +120,29 @@ class CoinModel extends BaseBoxModel<Coin, isar.Coin> {
     return result;
   }
 
-  Future<int> upsert(Coin coin) async {
+  int upsertMV(Coin coin) {
     final box = Singleton.getObjectBoxDB();
 
+    if (coin.id != 0) {
+      return box.coinBox.put(coin);
+    }
+
+    return box.getStore().runInTransaction(TxMode.write, () {
+      final query = box.coinBox.query(uniqueConditionMV(coin.name)).build();
+      final existingId = query.findIds();
+      query.close();
+
+      if (existingId.isNotEmpty) {
+        coin.id = existingId[0];
+      }
+
+      return box.coinBox.put(coin);
+    });
+  }
+
+  int upsert(Coin coin) {
+    final box = Singleton.getObjectBoxDB();
+    coin.cpk = coin.getCPK();
     if (coin.id != 0) {
       return box.coinBox.put(coin);
     }

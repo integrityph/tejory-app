@@ -24,12 +24,12 @@ class FindGenerator extends GeneratorForAnnotation<BoxModel> {
     final boxName = '${className[0].toLowerCase()}${className.substring(1)}Box';
 
     final generatedCode = '''
-      Future<List<$className>?> find({
+      List<$className>? find({
           Condition<$className>? q,
           QueryProperty<$className, dynamic>? order,
           bool ascending = true,
           int? limit,
-      }) async {
+      }) {
         final objectbox = Singleton.getObjectBoxDB();
         var queryBuilder = objectbox.$boxName.query(q);
         if (order != null) {

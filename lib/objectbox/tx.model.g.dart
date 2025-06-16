@@ -7,8 +7,12 @@ part of 'tx.dart';
 // **************************************************************************
 
 extension TxDBBoxModelHelpers on TxDB {
-  Future<int?> save() async {
+  int? save() {
     return TxDBModel().upsert(this);
+  }
+
+  String getCPK() {
+    return TxDBModel().calculateCPK(coin, hash, outputIndex);
   }
 }
 
@@ -19,12 +23,12 @@ extension TxDBBoxModelHelpers on TxDB {
 class TxDBModel extends BaseBoxModel<TxDB, isar.TxDB> {
   const TxDBModel();
 
-  Future<List<TxDB>?> find({
+  List<TxDB>? find({
     Condition<TxDB>? q,
     QueryProperty<TxDB, dynamic>? order,
     bool ascending = true,
     int? limit,
-  }) async {
+  }) {
     final objectbox = Singleton.getObjectBoxDB();
     var queryBuilder = objectbox.txDBBox.query(q);
     if (order != null) {
@@ -47,9 +51,9 @@ class TxDBModel extends BaseBoxModel<TxDB, isar.TxDB> {
     }
   }
 
-  Future<int?> delete({
+  int? delete({
     Condition<TxDB>? q,
-  }) async {
+  }) {
     final objectbox = Singleton.getObjectBoxDB();
     var queryBuilder = objectbox.txDBBox.query(q);
     final query = queryBuilder.build();
@@ -63,7 +67,7 @@ class TxDBModel extends BaseBoxModel<TxDB, isar.TxDB> {
     }
   }
 
-  Future<int?> count({Condition<TxDB>? q}) async {
+  int? count({Condition<TxDB>? q}) {
     final objectbox = Singleton.getObjectBoxDB();
     final query = objectbox.txDBBox.query(q).build();
     try {
@@ -76,7 +80,7 @@ class TxDBModel extends BaseBoxModel<TxDB, isar.TxDB> {
     }
   }
 
-  Future<TxDB?> getById(int id) async {
+  TxDB? getById(int id) {
     if (id == 0) {
       return null;
     }
@@ -84,7 +88,7 @@ class TxDBModel extends BaseBoxModel<TxDB, isar.TxDB> {
     return objectbox.txDBBox.get(id);
   }
 
-  Condition<TxDB> uniqueCondition(int? coin, String? hash, int? outputIndex) {
+  Condition<TxDB> uniqueConditionMV(int? coin, String? hash, int? outputIndex) {
     return ((coin == null) ? TxDB_.coin.isNull() : TxDB_.coin.equals(coin)) &
         ((hash == null) ? TxDB_.hash.isNull() : TxDB_.hash.equals(hash)) &
         ((outputIndex == null)
@@ -92,7 +96,30 @@ class TxDBModel extends BaseBoxModel<TxDB, isar.TxDB> {
             : TxDB_.outputIndex.equals(outputIndex));
   }
 
-  Future<TxDB?> getUnique(int? coin, String? hash, int? outputIndex) async {
+  Condition<TxDB> uniqueCondition(int? coin, String? hash, int? outputIndex) {
+    return TxDB_.cpk.equals(calculateCPK(coin, hash, outputIndex));
+  }
+
+  String calculateCPK(int? coin, String? hash, int? outputIndex) {
+    final sha256Hasher = Sha256().toSync().newHashSink();
+    sha256Hasher.add(CPK.toBytes(coin));
+    sha256Hasher.add(CPK.toBytes(hash));
+    sha256Hasher.add(CPK.toBytes(outputIndex));
+
+    sha256Hasher.close();
+    return String.fromCharCodes(CPK.encode7Bit(sha256Hasher.hashSync().bytes));
+  }
+
+  TxDB? getUniqueMV(int? coin, String? hash, int? outputIndex) {
+    ObjectBox box = Singleton.getObjectBoxDB();
+    final query =
+        box.txDBBox.query(uniqueConditionMV(coin, hash, outputIndex)).build();
+    final result = query.findFirst();
+    query.close();
+    return result;
+  }
+
+  TxDB? getUnique(int? coin, String? hash, int? outputIndex) {
     ObjectBox box = Singleton.getObjectBoxDB();
     final query =
         box.txDBBox.query(uniqueCondition(coin, hash, outputIndex)).build();
@@ -101,9 +128,31 @@ class TxDBModel extends BaseBoxModel<TxDB, isar.TxDB> {
     return result;
   }
 
-  Future<int> upsert(TxDB txDB) async {
+  int upsertMV(TxDB txDB) {
     final box = Singleton.getObjectBoxDB();
 
+    if (txDB.id != 0) {
+      return box.txDBBox.put(txDB);
+    }
+
+    return box.getStore().runInTransaction(TxMode.write, () {
+      final query = box.txDBBox
+          .query(uniqueConditionMV(txDB.coin, txDB.hash, txDB.outputIndex))
+          .build();
+      final existingId = query.findIds();
+      query.close();
+
+      if (existingId.isNotEmpty) {
+        txDB.id = existingId[0];
+      }
+
+      return box.txDBBox.put(txDB);
+    });
+  }
+
+  int upsert(TxDB txDB) {
+    final box = Singleton.getObjectBoxDB();
+    txDB.cpk = txDB.getCPK();
     if (txDB.id != 0) {
       return box.txDBBox.put(txDB);
     }

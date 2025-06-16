@@ -73,6 +73,7 @@ dependencies:
   package_info_plus: ^8.3.0
   advance_math: ^5.3.2
   cryptography: ^2.7.0
+  hex: ^0.2.0
 
 dev_dependencies:
   flutter_test:

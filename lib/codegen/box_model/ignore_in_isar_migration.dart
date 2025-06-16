@@ -1,0 +1,3 @@
+class IgnoreInIsarMigration {
+  const IgnoreInIsarMigration();
+}

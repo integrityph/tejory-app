@@ -1,11 +1,10 @@
 import 'package:analyzer/dart/element/element.dart';
 import 'package:build/build.dart';
 import 'package:source_gen/source_gen.dart';
-import 'package:analyzer/dart/element/nullability_suffix.dart';
 import '../box_model.dart';
 import 'helpers/get_unique_index_fields.dart';
 
-class UniqueConditionGenerator extends GeneratorForAnnotation<BoxModel> {
+class GetUniqueGeneratorCPK extends GeneratorForAnnotation<BoxModel> {
   @override
   String generateForAnnotatedElement(
     Element element,
@@ -19,26 +18,28 @@ class UniqueConditionGenerator extends GeneratorForAnnotation<BoxModel> {
     }
 
     final uniqueKeyFields = getUniqueIndexFields(element);
+
     final parameters = uniqueKeyFields
         .map((f) {
           return '${f.type} ${f.name}';
         })
         .join(', ');
-    final className = element.name;
 
-    final conditions = uniqueKeyFields
+    final className = element.name;
+    final boxName = '${className[0].toLowerCase()}${className.substring(1)}Box';
+    final fieldNames = uniqueKeyFields
         .map((f) {
-          final fieldName = f.name;
-          if (f.type.nullabilitySuffix != NullabilitySuffix.question) {
-            return '${className}_.${fieldName}.equals(${fieldName})';
-          }
-          return '((${fieldName} == null) ? ${className}_.${fieldName}.isNull() : ${className}_.${fieldName}.equals(${fieldName}))';
+          return f.name;
         })
-        .join(' & \n');
+        .join(", ");
 
     return '''
-      Condition<$className> uniqueConditionMV($parameters) {
-        return $conditions;
+      $className? getUnique($parameters) {
+        ObjectBox box = Singleton.getObjectBoxDB();
+        final query = box.$boxName.query(uniqueCondition($fieldNames)).build();
+        final result = query.findFirst();
+        query.close();
+        return result;
       }
     ''';
   }

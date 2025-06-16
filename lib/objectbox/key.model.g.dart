@@ -7,8 +7,12 @@ part of 'key.dart';
 // **************************************************************************
 
 extension KeyBoxModelHelpers on Key {
-  Future<int?> save() async {
+  int? save() {
     return KeyModel().upsert(this);
+  }
+
+  String getCPK() {
+    return KeyModel().calculateCPK(wallet, coin, path);
   }
 }
 
@@ -19,12 +23,12 @@ extension KeyBoxModelHelpers on Key {
 class KeyModel extends BaseBoxModel<Key, isar.Key> {
   const KeyModel();
 
-  Future<List<Key>?> find({
+  List<Key>? find({
     Condition<Key>? q,
     QueryProperty<Key, dynamic>? order,
     bool ascending = true,
     int? limit,
-  }) async {
+  }) {
     final objectbox = Singleton.getObjectBoxDB();
     var queryBuilder = objectbox.keyBox.query(q);
     if (order != null) {
@@ -47,9 +51,9 @@ class KeyModel extends BaseBoxModel<Key, isar.Key> {
     }
   }
 
-  Future<int?> delete({
+  int? delete({
     Condition<Key>? q,
-  }) async {
+  }) {
     final objectbox = Singleton.getObjectBoxDB();
     var queryBuilder = objectbox.keyBox.query(q);
     final query = queryBuilder.build();
@@ -63,7 +67,7 @@ class KeyModel extends BaseBoxModel<Key, isar.Key> {
     }
   }
 
-  Future<int?> count({Condition<Key>? q}) async {
+  int? count({Condition<Key>? q}) {
     final objectbox = Singleton.getObjectBoxDB();
     final query = objectbox.keyBox.query(q).build();
     try {
@@ -76,7 +80,7 @@ class KeyModel extends BaseBoxModel<Key, isar.Key> {
     }
   }
 
-  Future<Key?> getById(int id) async {
+  Key? getById(int id) {
     if (id == 0) {
       return null;
     }
@@ -84,7 +88,7 @@ class KeyModel extends BaseBoxModel<Key, isar.Key> {
     return objectbox.keyBox.get(id);
   }
 
-  Condition<Key> uniqueCondition(int? wallet, int? coin, String? path) {
+  Condition<Key> uniqueConditionMV(int? wallet, int? coin, String? path) {
     return ((wallet == null)
             ? Key_.wallet.isNull()
             : Key_.wallet.equals(wallet)) &
@@ -92,7 +96,30 @@ class KeyModel extends BaseBoxModel<Key, isar.Key> {
         ((path == null) ? Key_.path.isNull() : Key_.path.equals(path));
   }
 
-  Future<Key?> getUnique(int? wallet, int? coin, String? path) async {
+  Condition<Key> uniqueCondition(int? wallet, int? coin, String? path) {
+    return Key_.cpk.equals(calculateCPK(wallet, coin, path));
+  }
+
+  String calculateCPK(int? wallet, int? coin, String? path) {
+    final sha256Hasher = Sha256().toSync().newHashSink();
+    sha256Hasher.add(CPK.toBytes(wallet));
+    sha256Hasher.add(CPK.toBytes(coin));
+    sha256Hasher.add(CPK.toBytes(path));
+
+    sha256Hasher.close();
+    return String.fromCharCodes(CPK.encode7Bit(sha256Hasher.hashSync().bytes));
+  }
+
+  Key? getUniqueMV(int? wallet, int? coin, String? path) {
+    ObjectBox box = Singleton.getObjectBoxDB();
+    final query =
+        box.keyBox.query(uniqueConditionMV(wallet, coin, path)).build();
+    final result = query.findFirst();
+    query.close();
+    return result;
+  }
+
+  Key? getUnique(int? wallet, int? coin, String? path) {
     ObjectBox box = Singleton.getObjectBoxDB();
     final query = box.keyBox.query(uniqueCondition(wallet, coin, path)).build();
     final result = query.findFirst();
@@ -100,9 +127,31 @@ class KeyModel extends BaseBoxModel<Key, isar.Key> {
     return result;
   }
 
-  Future<int> upsert(Key key) async {
+  int upsertMV(Key key) {
     final box = Singleton.getObjectBoxDB();
 
+    if (key.id != 0) {
+      return box.keyBox.put(key);
+    }
+
+    return box.getStore().runInTransaction(TxMode.write, () {
+      final query = box.keyBox
+          .query(uniqueConditionMV(key.wallet, key.coin, key.path))
+          .build();
+      final existingId = query.findIds();
+      query.close();
+
+      if (existingId.isNotEmpty) {
+        key.id = existingId[0];
+      }
+
+      return box.keyBox.put(key);
+    });
+  }
+
+  int upsert(Key key) {
+    final box = Singleton.getObjectBoxDB();
+    key.cpk = key.getCPK();
     if (key.id != 0) {
       return box.keyBox.put(key);
     }

@@ -7,8 +7,12 @@ part of 'wallet_db.dart';
 // **************************************************************************
 
 extension WalletDBBoxModelHelpers on WalletDB {
-  Future<int?> save() async {
+  int? save() {
     return WalletDBModel().upsert(this);
+  }
+
+  String getCPK() {
+    return WalletDBModel().calculateCPK(id);
   }
 }
 
@@ -19,12 +23,12 @@ extension WalletDBBoxModelHelpers on WalletDB {
 class WalletDBModel extends BaseBoxModel<WalletDB, isar.WalletDB> {
   const WalletDBModel();
 
-  Future<List<WalletDB>?> find({
+  List<WalletDB>? find({
     Condition<WalletDB>? q,
     QueryProperty<WalletDB, dynamic>? order,
     bool ascending = true,
     int? limit,
-  }) async {
+  }) {
     final objectbox = Singleton.getObjectBoxDB();
     var queryBuilder = objectbox.walletDBBox.query(q);
     if (order != null) {
@@ -47,9 +51,9 @@ class WalletDBModel extends BaseBoxModel<WalletDB, isar.WalletDB> {
     }
   }
 
-  Future<int?> delete({
+  int? delete({
     Condition<WalletDB>? q,
-  }) async {
+  }) {
     final objectbox = Singleton.getObjectBoxDB();
     var queryBuilder = objectbox.walletDBBox.query(q);
     final query = queryBuilder.build();
@@ -63,7 +67,7 @@ class WalletDBModel extends BaseBoxModel<WalletDB, isar.WalletDB> {
     }
   }
 
-  Future<int?> count({Condition<WalletDB>? q}) async {
+  int? count({Condition<WalletDB>? q}) {
     final objectbox = Singleton.getObjectBoxDB();
     final query = objectbox.walletDBBox.query(q).build();
     try {
@@ -76,7 +80,7 @@ class WalletDBModel extends BaseBoxModel<WalletDB, isar.WalletDB> {
     }
   }
 
-  Future<WalletDB?> getById(int id) async {
+  WalletDB? getById(int id) {
     if (id == 0) {
       return null;
     }
@@ -84,11 +88,31 @@ class WalletDBModel extends BaseBoxModel<WalletDB, isar.WalletDB> {
     return objectbox.walletDBBox.get(id);
   }
 
-  Condition<WalletDB> uniqueCondition(int id) {
+  Condition<WalletDB> uniqueConditionMV(int id) {
     return WalletDB_.id.equals(id);
   }
 
-  Future<WalletDB?> getUnique(int id) async {
+  Condition<WalletDB> uniqueCondition(int id) {
+    return WalletDB_.cpk.equals(calculateCPK(id));
+  }
+
+  String calculateCPK(int id) {
+    final sha256Hasher = Sha256().toSync().newHashSink();
+    sha256Hasher.add(CPK.toBytes(id));
+
+    sha256Hasher.close();
+    return String.fromCharCodes(CPK.encode7Bit(sha256Hasher.hashSync().bytes));
+  }
+
+  WalletDB? getUniqueMV(int id) {
+    ObjectBox box = Singleton.getObjectBoxDB();
+    final query = box.walletDBBox.query(uniqueConditionMV(id)).build();
+    final result = query.findFirst();
+    query.close();
+    return result;
+  }
+
+  WalletDB? getUnique(int id) {
     ObjectBox box = Singleton.getObjectBoxDB();
     final query = box.walletDBBox.query(uniqueCondition(id)).build();
     final result = query.findFirst();
@@ -96,9 +120,30 @@ class WalletDBModel extends BaseBoxModel<WalletDB, isar.WalletDB> {
     return result;
   }
 
-  Future<int> upsert(WalletDB walletDB) async {
+  int upsertMV(WalletDB walletDB) {
     final box = Singleton.getObjectBoxDB();
 
+    if (walletDB.id != 0) {
+      return box.walletDBBox.put(walletDB);
+    }
+
+    return box.getStore().runInTransaction(TxMode.write, () {
+      final query =
+          box.walletDBBox.query(uniqueConditionMV(walletDB.id)).build();
+      final existingId = query.findIds();
+      query.close();
+
+      if (existingId.isNotEmpty) {
+        walletDB.id = existingId[0];
+      }
+
+      return box.walletDBBox.put(walletDB);
+    });
+  }
+
+  int upsert(WalletDB walletDB) {
+    final box = Singleton.getObjectBoxDB();
+    walletDB.cpk = walletDB.getCPK();
     if (walletDB.id != 0) {
       return box.walletDBBox.put(walletDB);
     }

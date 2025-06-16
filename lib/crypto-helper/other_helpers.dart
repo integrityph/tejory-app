@@ -104,7 +104,7 @@ class OtherHelpers {
     return curve.scalarMul(pubPoint, multiplier);
   }
 
-	static AffinePoint pointAdd(Uint8List A, Uint8List B) {
+	static Uint8List pointAdd(Uint8List A, Uint8List B) {
     EllipticCurve _s256 = EllipticCurve(
       'secp256k1',
       256,
@@ -132,7 +132,7 @@ class OtherHelpers {
     var p1 = AffinePoint.fromXY(a.X, a.Y);
 		var p2 = AffinePoint.fromXY(b.X, b.Y);
 
-    return curve.add(p1, p2);
+    return Uint8List.fromList(hex.decode(curve.add(p1, p2).X.toRadixString(16).padLeft(64)));
   }
 
   static int getYParity(Uint8List pubKey, List<int> hash, Uint8List rawSig) {

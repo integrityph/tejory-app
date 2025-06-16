@@ -4,8 +4,10 @@ import 'package:tejory/benchmark.dart';
 import 'package:tejory/libsecp256k1ffi/libsecp256k1ffi.dart';
 import 'package:tejory/singleton.dart';
 import 'package:tejory/ui/login.dart';
+import 'package:tejory/updates/cpk_calculation.dart';
 import 'package:tejory/updates/db_migration.dart';
 import 'package:tejory/updates/update.dart';
+import 'package:tejory/updates/update_assets.dart';
 import 'package:tejory/updates/update_ui.dart';
 
 final RouteObserver<ModalRoute<void>> routeObserver =
@@ -27,14 +29,20 @@ void main() async {
   // Add a list of active updates
   List<Update> activeUpdates = [
     DBMigration(),
+    CPKCalculation(),
+    UpdateAssets(),
   ];
   List<Update> requiredUpdates = [];
 
-  activeUpdates.forEach((update) {
-    if (update.required()) {
-      requiredUpdates.add(update);
+  for (int i=0; i<activeUpdates.length; i++) {
+    print("${activeUpdates[i].name()}: Update checking");
+    if (await activeUpdates[i].required()) {
+      print("${activeUpdates[i].name()}: Update required");
+      requiredUpdates.add(activeUpdates[i]);
+    } else {
+      print("${activeUpdates[i].name()}: Update not required");
     }
-  });
+  };
 
   if (requiredUpdates.length != 0) {
     runApp(MyApp(requiredUpdates:requiredUpdates));
