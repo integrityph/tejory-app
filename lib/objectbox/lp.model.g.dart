@@ -102,12 +102,7 @@ class LPModel extends BaseBoxModel<LP, isar.LP> {
   }
 
   String calculateCPK(String? currency0, String? currency1) {
-    final sha256Hasher = Sha256().toSync().newHashSink();
-    sha256Hasher.add(CPK.toBytes(currency0));
-    sha256Hasher.add(CPK.toBytes(currency1));
-
-    sha256Hasher.close();
-    return String.fromCharCodes(CPK.encode7Bit(sha256Hasher.hashSync().bytes));
+    return CPK.calculateCPK([currency0, currency1]);
   }
 
   LP? getUniqueMV(String? currency0, String? currency1) {

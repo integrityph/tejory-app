@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:cryptography/cryptography.dart';
+
 class CPK {
   /// Helper function to convert a dynamic value to a consistent byte representation
   /// for hashing. This is critical to ensure that different data types or null values
@@ -99,5 +101,15 @@ class CPK {
     }
 
     return output.toBytes();
+  }
+
+  static String calculateCPK(List<dynamic> data) {
+    final sha256Hasher = Sha256().toSync().newHashSink();
+    for (final chunk in data)  {
+      sha256Hasher.add(toBytes(chunk));
+    }
+
+    sha256Hasher.close();
+    return String.fromCharCodes(encode7Bit(sha256Hasher.hashSync().bytes));
   }
 }

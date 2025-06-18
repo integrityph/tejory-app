@@ -1,14 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:tejory/objectbox/objectbox.dart';
-import 'package:tejory/singleton.dart';
 import 'package:tejory/ui/login.dart';
 import 'package:tejory/ui/setup/page_animation.dart';
+import 'package:tejory/updates/cpk_calculation.dart';
+import 'package:tejory/updates/db_migration.dart';
 import 'package:tejory/updates/update.dart';
+import 'package:tejory/updates/update_assets.dart';
 
 class UpdateUI extends StatefulWidget {
-  final List<Update> updates;
+  // Add a list of active updates
+  final List<Update> activeUpdates = [
+    DBMigration(),
+    CPKCalculation(),
+    UpdateAssets(),
+  ];
 
-  UpdateUI(this.updates);
+  UpdateUI();
 
   @override
   State<StatefulWidget> createState() => _UpdateUIState();
@@ -25,12 +31,17 @@ class _UpdateUIState extends State<UpdateUI> {
   late Map<UpdateStatus, Color> statusIconColorMap;
   late Map<UpdateStatus, Color> statusTextColorMap;
   int updateIndex = 0;
+  late Future<void> updatesReady;
+  List<Update> updates = [];
 
   @override
   void initState() {
     super.initState();
 
-    startUpdates();
+    updatesReady = getRequiredUpdates();
+    updatesReady.then((_) {
+      startUpdates();
+    });
   }
 
   @override
@@ -51,17 +62,32 @@ class _UpdateUIState extends State<UpdateUI> {
     };
   }
 
+  Future<void> getRequiredUpdates() async {
+    for (int i = 0; i < widget.activeUpdates.length; i++) {
+      print("${widget.activeUpdates[i].name()}: Update checking");
+      if (await widget.activeUpdates[i].required()) {
+        print("${widget.activeUpdates[i].name()}: Update required");
+        setState(() {
+          updates.add(widget.activeUpdates[i]);
+        });
+      } else {
+        print("${widget.activeUpdates[i].name()}: Update not required");
+      }
+    }
+  }
+
   Future<void> startUpdates() async {
-    for (int i=0; i<widget.updates.length; i++)
-    {
+    for (int i = 0; i < updates.length; i++) {
       setState(() {
         updateIndex = i;
       });
-      await widget.updates[i].start();
-      await widget.updates[i].done();
+      await updates[i].start();
+      await updates[i].done();
     }
 
-    FadeNavigator(context).navigateToReplace(Login(), customName: Navigator.defaultRouteName);
+    FadeNavigator(
+      context,
+    ).navigateToReplace(Login(), customName: Navigator.defaultRouteName);
   }
 
   @override
@@ -75,8 +101,46 @@ class _UpdateUIState extends State<UpdateUI> {
           spacing: 20,
           children: [
             Text("Updating", style: TextStyle(fontSize: 24)),
-            _updateList(),
-            _progressBar(),
+            FutureBuilder(
+              future: updatesReady,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState != ConnectionState.done) {
+                  return Row(
+                    spacing: 8,
+                    children: [
+                      Icon(
+                        statusIconMap[UpdateStatus.working],
+                        color: statusIconColorMap[UpdateStatus.working],
+                      ),
+                      Text(
+                        "Building updates list",
+                        style: TextStyle(
+                          fontFamily: "monospace",
+                          fontSize: 12,
+                          color: statusTextColorMap[UpdateStatus.working],
+                        ),
+                      ),
+                    ],
+                  );
+                }
+                return _updateList();
+              },
+            ),
+            FutureBuilder(
+              future: updatesReady,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState != ConnectionState.done) {
+                  return Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text("Initializing..."),
+                      LinearProgressIndicator(),
+                    ],
+                  );
+                }
+                return _progressBar();
+              },
+            ),
           ],
         ),
       ),
@@ -86,9 +150,7 @@ class _UpdateUIState extends State<UpdateUI> {
   Widget _updateList() {
     return Column(
       children:
-          widget.updates
-              .map((Update update) => _updateListItem(update))
-              .toList(),
+          updates.map((Update update) => _updateListItem(update)).toList(),
     );
   }
 
@@ -111,23 +173,24 @@ class _UpdateUIState extends State<UpdateUI> {
   }
 
   Widget _progressBar() {
-    return StreamBuilder(stream: widget.updates[updateIndex].getProgressStream(), builder: (context, snapshot){
-      if (snapshot.connectionState != ConnectionState.active || snapshot.data == null) {
+    return StreamBuilder(
+      stream: updates[updateIndex].getProgressStream(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.active ||
+            snapshot.data == null) {
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [Text("Initializing..."), LinearProgressIndicator()],
+          );
+        }
         return Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text("Pending..."),
-            LinearProgressIndicator()
-          ]
-        );
-      }
-      return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
             Text(snapshot.data!.message),
-            LinearProgressIndicator(value: snapshot.data!.progress)
-          ]
+            LinearProgressIndicator(value: snapshot.data!.progress),
+          ],
         );
-    });
+      },
+    );
   }
 }

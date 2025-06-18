@@ -115,7 +115,6 @@ class AssetIsolate {
 
     // listen to incoming commands
     receivePort.listen((dynamic msg) async {
-      print("Isolate received a message: ${msg}");
       // Handle control messages
       if (msg is String && msg == "KILL") {
         // Handle special KILL command

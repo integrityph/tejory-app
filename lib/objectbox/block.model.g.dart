@@ -98,12 +98,7 @@ class BlockModel extends BaseBoxModel<Block, isar.Block> {
   }
 
   String calculateCPK(int? coin, String? hash) {
-    final sha256Hasher = Sha256().toSync().newHashSink();
-    sha256Hasher.add(CPK.toBytes(coin));
-    sha256Hasher.add(CPK.toBytes(hash));
-
-    sha256Hasher.close();
-    return String.fromCharCodes(CPK.encode7Bit(sha256Hasher.hashSync().bytes));
+    return CPK.calculateCPK([coin, hash]);
   }
 
   Block? getUniqueMV(int? coin, String? hash) {

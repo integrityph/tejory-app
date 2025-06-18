@@ -281,6 +281,7 @@ class LibSecp256k1FFI {
       print("LibSecp256k1: Attempting to initialize FFI...");
       if (Platform.isAndroid) {
         _lib = ffi.DynamicLibrary.open('libsecp256k1.so');
+        // _lib = ffi.DynamicLibrary.open('libcrypto_bundle.so');
       } else if (Platform.isIOS) {
         _lib = ffi.DynamicLibrary.process();
       } else {

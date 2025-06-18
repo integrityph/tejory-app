@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:blockchain_utils/blockchain_utils.dart';
-import 'package:cryptography/cryptography.dart' as crypto;
+import 'package:cryptography/cryptography.dart' as cryptography;
 import 'package:tejory/libsecp256k1ffi/libsecp256k1ffi.dart';
 
 class DerivationBIP32Key {
@@ -51,8 +51,8 @@ class DerivationBIP32Key {
       );
     }
 
-    final hmacSha512 = crypto.Hmac(crypto.Sha512());
-    final secretKey = crypto.SecretKeyData(utf8.encode(hmacKeyString));
+    final hmacSha512 = cryptography.Hmac(cryptography.Sha512());
+    final secretKey = cryptography.SecretKeyData(utf8.encode(hmacKeyString));
     final mac = hmacSha512.toSync().calculateMacSync(
       seedBytes,
       secretKeyData: secretKey,
@@ -424,9 +424,9 @@ class DerivationBIP32Key {
     } else {
       dataBytes = List<int>.from([...key.publicKey, ...index.toBytes()]);
     }
-    final hmacHalves = crypto.Hmac.sha512().toSync().calculateMacSync(
+    final hmacHalves = cryptography.Hmac.sha512().toSync().calculateMacSync(
       dataBytes,
-      secretKeyData: crypto.SecretKeyData(key.chainCode!.toBytes()),
+      secretKeyData: cryptography.SecretKeyData(key.chainCode!.toBytes()),
       nonce: [],
     );
 
@@ -452,9 +452,9 @@ class DerivationBIP32Key {
     EllipticCurveTypes type,
   ) {
     final dataBytes = List<int>.from([...publicKey, ...index.toBytes()]);
-    final hmacHalves = crypto.Hmac.sha512().toSync().calculateMacSync(
+    final hmacHalves = cryptography.Hmac.sha512().toSync().calculateMacSync(
       dataBytes,
-      secretKeyData: crypto.SecretKeyData(pubKey.chainCode!.toBytes()),
+      secretKeyData: cryptography.SecretKeyData(pubKey.chainCode!.toBytes()),
       nonce: [],
     );
 

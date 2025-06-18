@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:tejory/crypto-helper/other_helpers.dart';
+import 'package:tejory/libopensslffi/libopensslffi.dart';
 import 'package:tejory/libsecp256k1ffi/libsecp256k1ffi.dart';
 import 'package:tejory/singleton.dart';
 import 'package:tejory/ui/asset_list.dart';
@@ -75,7 +76,7 @@ class _LoginState extends State<Login> {
   Widget build(BuildContext context) {
     return Scaffold(
       floatingActionButton: Container(child: FutureBuilder(future: Singleton.getVersion(), builder:(context, ver){
-        return Text("${ver.data??""}${LibSecp256k1FFI.loaded()?"\nLibSecp256k1FFI: OK":""}", style:TextStyle(fontFamily: "monospace", fontSize: 10));
+        return Text("${ver.data??""}${LibSecp256k1FFI.loaded()?"\nLibSecp256k1FFI: OK":""}${LibOpenSSLFFI.loaded()?"\nLibOpenSSLFFI: OK":""}", style:TextStyle(fontFamily: "monospace", fontSize: 10));
       })),
       body: Container(
         child: Center(child: Column(

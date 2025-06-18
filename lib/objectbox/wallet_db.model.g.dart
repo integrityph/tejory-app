@@ -97,11 +97,7 @@ class WalletDBModel extends BaseBoxModel<WalletDB, isar.WalletDB> {
   }
 
   String calculateCPK(int id) {
-    final sha256Hasher = Sha256().toSync().newHashSink();
-    sha256Hasher.add(CPK.toBytes(id));
-
-    sha256Hasher.close();
-    return String.fromCharCodes(CPK.encode7Bit(sha256Hasher.hashSync().bytes));
+    return CPK.calculateCPK([id]);
   }
 
   WalletDB? getUniqueMV(int id) {

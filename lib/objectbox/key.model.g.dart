@@ -101,13 +101,7 @@ class KeyModel extends BaseBoxModel<Key, isar.Key> {
   }
 
   String calculateCPK(int? wallet, int? coin, String? path) {
-    final sha256Hasher = Sha256().toSync().newHashSink();
-    sha256Hasher.add(CPK.toBytes(wallet));
-    sha256Hasher.add(CPK.toBytes(coin));
-    sha256Hasher.add(CPK.toBytes(path));
-
-    sha256Hasher.close();
-    return String.fromCharCodes(CPK.encode7Bit(sha256Hasher.hashSync().bytes));
+    return CPK.calculateCPK([wallet, coin, path]);
   }
 
   Key? getUniqueMV(int? wallet, int? coin, String? path) {

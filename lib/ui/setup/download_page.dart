@@ -1,11 +1,12 @@
 import 'dart:math';
 
 import 'package:blockchain_utils/blockchain_utils.dart';
-import 'package:cryptography/cryptography.dart' as crypto;
+import 'package:cryptography/cryptography.dart' as cryptography;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:tejory/bip32/derivation_bip32_key.dart';
 import 'package:tejory/coins/wallet.dart';
+import 'package:tejory/libopensslffi/libopensslffi.dart';
 import 'package:tejory/objectbox/balance.dart';
 import 'package:tejory/objectbox/block.dart';
 import 'package:tejory/objectbox/wallet_db.dart';
@@ -424,21 +425,21 @@ class _DownloadPageState extends State<DownloadPage> {
     bool reprogramOnly,
   ) async {
     Map<String, dynamic> result = {};
-
-    var mnemonic = HDWalletHelpers.entropyToMnemonicStrings(
+    final mnemonic = HDWalletHelpers.entropyToMnemonicStrings(
       widget.entropy,
     ).join(" ");
-    String salt = "mnemonic";
-    var pb = crypto.Pbkdf2(
-      macAlgorithm: crypto.Hmac(crypto.Sha512()),
-      iterations: 2048,
-      bits: 64 * 8,
-    );
-    var pass = await pb.deriveKeyFromPassword(
-      password: mnemonic,
-      nonce: salt.codeUnits,
-    );
-    List<int> seedArr = await pass.extractBytes();
+    final salt = Uint8List.fromList("mnemonic".codeUnits);
+    // var pb = cryptography.Pbkdf2(
+    //   macAlgorithm: cryptography.Hmac(cryptography.Sha512()),
+    //   iterations: 2048,
+    //   bits: 64 * 8,
+    // );
+    // var pass = await pb.deriveKeyFromPassword(
+    //   password: mnemonic,
+    //   nonce: salt.codeUnits,
+    // );
+    // List<int> seedArr = await pass.extractBytes();
+    Uint8List? seedArr = await LibOpenSSLFFI.PBKDF2_SHA512(password: mnemonic, salt: salt, iterations: 2048, keyLength: 64);
 
     List<String> pathList;
     Wallet wallet = Wallet();
@@ -511,7 +512,7 @@ class _DownloadPageState extends State<DownloadPage> {
               print("pinCode: ${pinCode}");
               res = await wallet.signingWallet!.initialSetup(
                 "",
-                Uint8List.fromList(seedArr),
+                Uint8List.fromList(seedArr!),
                 pin: String.fromCharCodes(pinCode!),
                 puk: String.fromCharCodes(puk),
               );

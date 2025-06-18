@@ -99,11 +99,7 @@ class DataVersionModel extends BaseBoxModel<DataVersion, isar.DataVersion> {
   }
 
   String calculateCPK(String? name) {
-    final sha256Hasher = Sha256().toSync().newHashSink();
-    sha256Hasher.add(CPK.toBytes(name));
-
-    sha256Hasher.close();
-    return String.fromCharCodes(CPK.encode7Bit(sha256Hasher.hashSync().bytes));
+    return CPK.calculateCPK([name]);
   }
 
   DataVersion? getUniqueMV(String? name) {

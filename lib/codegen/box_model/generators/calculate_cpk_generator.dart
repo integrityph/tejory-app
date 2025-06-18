@@ -26,20 +26,15 @@ class CalculateCPKGenerator extends GeneratorForAnnotation<BoxModel> {
         })
         .join(', ');
 
-    final conditions = uniqueKeyFields
+    final callParameters = uniqueKeyFields
         .map((f) {
-          final fieldName = f.name;
-          return 'sha256Hasher.add(CPK.toBytes($fieldName));';
+          return '${f.name}';
         })
-        .join('\n');
+        .join(', ');
 
     return '''
       String calculateCPK($parameters) {
-        final sha256Hasher = Sha256().toSync().newHashSink();
-        $conditions
-
-        sha256Hasher.close();
-        return String.fromCharCodes(CPK.encode7Bit(sha256Hasher.hashSync().bytes));
+        return CPK.calculateCPK([$callParameters]);
       }
     ''';
   }

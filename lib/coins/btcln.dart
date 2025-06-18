@@ -75,16 +75,11 @@ class BTCLN extends CryptoCoin {
     }
 
     createNewWallet().then((_) {
-      print("btcln 1 ${watch.elapsedMilliseconds}");
       connect();
-      print("btcln 2 ${watch.elapsedMilliseconds}");
       getTxListFromAPI();
-      print("btcln 3 ${watch.elapsedMilliseconds}");
       streamLister();
-      print("btcln 4 ${watch.elapsedMilliseconds}");
       ready = true;
       setIsConnected(connected);
-      print("btcln 5 ${watch.elapsedMilliseconds}");
     });
   }
 
@@ -406,38 +401,28 @@ class BTCLN extends CryptoCoin {
   }
 
   Future<void> createNewWallet() async {
-    print("btcln 0.1 ${watch.elapsedMilliseconds}");
     var privKeyHex = getClientToken();
-    print("btcln 0.2 ${watch.elapsedMilliseconds}");
     if (privKeyHex.length != 64) {
       return;
     }
 
     print("btcln creating new wallet");
     var pubkeyHex = getClientPubkey();
-    print("btcln 0.3 ${watch.elapsedMilliseconds}");
     // var privKey1 = ECPrivate.fromHex(privKeyHex);
     var privKey = DerivationBIP32Key(privateKey: hex.decode(privKeyHex));
     var msgHash = hex.decode(pubkeyHex);
     var sig = privKey.signMessage(msgHash, messagePrefix: "\x18Lightning");
-    print("btcln 0.4 ${watch.elapsedMilliseconds}");
-    // var sig1 = privKey1.signMessage(msgHash, messagePrefix: "\x18Lightning");
     Map<String, dynamic> body = {"pubkey": pubkeyHex, "sig": hex.encode(sig??[])};
-    // Map<String, dynamic> body1 = {"pubkey": pubkeyHex, "sig": sig1};
     Map<String, String> header = {};
     print("btcln sending new wallet request to server new ${body}");
-    // print("btcln sending new wallet request to server olf ${body1}");
     var response = await rpcCall("create", body, customHeader: header);
-    print("btcln 0.5 ${watch.elapsedMilliseconds}");
     if (response != null && response.containsKey("token")) {
       print("btcln got token from server. response: ${response}");
       await setClientToken(response["token"]);
     } else {
       print("btcln didn't get token from server. response: ${response}");
     }
-    print("btcln 0.6 ${watch.elapsedMilliseconds}");
     await getTxListFromAPI(showNotifications: false);
-    print("btcln 0.7 ${watch.elapsedMilliseconds}");
   }
 
   @override
@@ -628,10 +613,7 @@ class BTCLN extends CryptoCoin {
   }
 
   Future<void> getTxListFromAPI({bool showNotifications = true}) async {
-    print("btcln 0.60 ${watch.elapsedMilliseconds}");
     var response = await rpcCall("gettransactions", {});
-    print("btcln 0.61 ${watch.elapsedMilliseconds}");
-
     if (response == null) {
       return;
     }
@@ -641,12 +623,9 @@ class BTCLN extends CryptoCoin {
     if (response["transactions"] == null) {
       return;
     }
-    print("btcln 0.62 ${watch.elapsedMilliseconds}");
     for (final txObj in response["transactions"]) {
       // tx = await isar.txDBs.getByHashCoinOutputIndex(txObj["TxHash"], id, 0);
-      print("btcln 0.63 ${watch.elapsedMilliseconds}");
       tx = Models.txDB.getUnique(id, txObj["TxHash"], 0);
-      print("btcln 0.64 ${watch.elapsedMilliseconds}");
       if (tx != null) {
         continue;
       }
@@ -665,9 +644,7 @@ class BTCLN extends CryptoCoin {
       tx.time = DateTime.parse(txObj["Date"]);
       tx.verified = true;
       tx.wallet = walletId;
-      print("btcln 0.65 ${watch.elapsedMilliseconds}");
       await tx.save();
-      print("btcln 0.66 ${watch.elapsedMilliseconds}");
 
       // var amountDouble = getDecimalAmount(BigInt.from(tx.amount ?? 0));
       // var balanceDouble = getDecimalAmount(balance);
@@ -681,7 +658,6 @@ class BTCLN extends CryptoCoin {
         sendNotification(tx);
       }
     }
-    print("btcln 0.67 ${watch.elapsedMilliseconds}");
   }
 
   void streamLister() async {

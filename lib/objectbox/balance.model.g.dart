@@ -102,12 +102,7 @@ class BalanceModel extends BaseBoxModel<Balance, isar.Balance> {
   }
 
   String calculateCPK(int? coin, int? wallet) {
-    final sha256Hasher = Sha256().toSync().newHashSink();
-    sha256Hasher.add(CPK.toBytes(coin));
-    sha256Hasher.add(CPK.toBytes(wallet));
-
-    sha256Hasher.close();
-    return String.fromCharCodes(CPK.encode7Bit(sha256Hasher.hashSync().bytes));
+    return CPK.calculateCPK([coin, wallet]);
   }
 
   Balance? getUniqueMV(int? coin, int? wallet) {

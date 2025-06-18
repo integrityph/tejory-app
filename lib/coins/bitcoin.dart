@@ -5,7 +5,6 @@ import 'dart:typed_data';
 import 'package:collection/collection.dart';
 import 'package:dnsolve/dnsolve.dart';
 import 'package:flutter/material.dart';
-import 'package:isar/isar.dart';
 import 'package:murmur3/murmur3.dart';
 import 'package:tejory/bip32/derivation_bip32_key.dart';
 import 'package:tejory/coins/bitcoin_tx_out.dart';
@@ -25,14 +24,10 @@ import 'package:tejory/objectbox/block.dart';
 import 'package:tejory/objectbox/key.dart' as keyCollection;
 import 'package:tejory/objectbox/next_key.dart';
 import 'package:tejory/objectbox/tx.dart';
-import 'package:tejory/objectbox/wallet_db.dart';
 import 'package:tejory/crypto-helper/bech32m.dart';
 import 'package:tejory/crypto-helper/hd_wallet.dart';
-import 'package:tejory/crypto-helper/other_helpers.dart';
-// import 'package:tejory/isar_models.dart';
 import 'package:tejory/box_models.g.dart';
 import 'package:tejory/objectbox.g.dart';
-import 'package:tejory/singleton.dart';
 import 'package:tejory/wallets/iwallet.dart';
 import 'package:tejory/wallets/tejorycard/bitcoin_applet.dart';
 import 'package:tejory/wallets/wallet_type.dart';
@@ -265,10 +260,8 @@ class Bitcoin extends CryptoCoin {
     Uint8List pubKeyHash = Uint8List(0);
     String path = "";
     List<String> scanAddressTypeList = ["P2PKH", "P2WPKH", "P2TR"];
-    Stopwatch watch = Stopwatch();
     for (var addressType in scanAddressTypeList) {
       for (int change = 0; change < 2; change++) {
-        watch.start();
         var purpose = getPurposeByAddressType(addressType);
 
         path = "m/$purpose'/0'/0'/$change";
@@ -313,16 +306,6 @@ class Bitcoin extends CryptoCoin {
                 "m/${purpose}'/0'/0'/$change/$index";
           }
         }
-        int derivations = lastIndex - startIndex + 1;
-        if (derivations < 0) {
-          derivations = 0;
-        }
-        double perDerivation = 0;
-        if (derivations != 0) {
-          perDerivation = watch.elapsedMilliseconds/derivations;
-        }
-        print("time for $path=${watch.elapsedMilliseconds} ${derivations} derivations ${perDerivation}ms perDerivation");
-        watch.reset();
       }
     }
     if (refreshBloomFilters) {
@@ -465,7 +448,6 @@ class Bitcoin extends CryptoCoin {
   }
 
   Future<bool> connect({String? ip}) async {
-    print("bitcoin.connect from Isolate");
     if (!online) {
       return false;
     }

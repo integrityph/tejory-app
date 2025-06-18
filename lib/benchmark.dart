@@ -6,29 +6,48 @@ import 'package:advance_math/advance_math.dart';
 import 'package:blockchain_utils/bip/bip.dart';
 import 'package:blockchain_utils/hex/hex.dart';
 import 'package:collection/collection.dart';
+import 'package:crypto/crypto.dart' as cryp;
 import 'package:cryptography/cryptography.dart' as crypto;
+import 'package:cryptography/cryptography.dart' as cryptography;
+import 'package:flutter/foundation.dart';
 import 'package:hex/hex.dart';
 import 'package:tejory/bip32/derivation_bip32_key.dart';
+import 'package:tejory/crypto-helper/hd_wallet.dart';
 import 'package:tejory/crypto-helper/other_helpers.dart';
+import 'package:tejory/libopensslffi/libopensslffi.dart';
 import 'package:tejory/libsecp256k1ffi/libsecp256k1ffi.dart';
 import 'package:tejory/ui/setup/seed_dropdown.dart';
 import 'package:tejory/ui/setup/word_list.dart';
 
-Future<void> runBenchmarks() async {
-  await benchmarkMnemonicsToSeedBU(25);
-  await benchmarkMnemonicsToSeedCrypto(25);
-  // await benchmarkMasterHDFromSeed(25);
-  await benchmarkMasterHDFromSeedFFI(25);
-  // await benchmarkKeyDerivation(5);
-  // await benchmarkKeyDerivationB44(100);
-  await benchmarkKeyDerivationFFI(5);
-  // await benchmarkPublicKeyDerivation(5);
-  await benchmarkPublicKeyDerivationFFI(5);
-  // await benchmarkPublicKeyAdd(5);
-  await benchmarkPublicKeyAddFFI(5);
-  // await benchmarkHexLib(1000);
-  await benchmarkHexBCU(1000);
+Future<dynamic> runBenchmarks(_) async {
+  await LibSecp256k1FFI.init();
+  await LibOpenSSLFFI.init();
+  // await benchmarkMnemonicsToSeedBU(25);
+  // await benchmarkMnemonicsToSeedCrypto(25);
+  // // await benchmarkMasterHDFromSeed(25);
+  // await benchmarkMasterHDFromSeedFFI(25);
+  // // await benchmarkKeyDerivation(5);
+  // // await benchmarkKeyDerivationB44(100);
+  // await benchmarkKeyDerivationFFI(5);
+  // // await benchmarkPublicKeyDerivation(5);
+  // await benchmarkPublicKeyDerivationFFI(5);
+  // // await benchmarkPublicKeyAdd(5);
+  // await benchmarkPublicKeyAddFFI(5);
+  // // await benchmarkHexLib(1000);
+  // await benchmarkHexBCU(1000);
   // await benchmarkHexMY(1000);
+  // await benchmarkSHA256(100000);
+  // await benchmarkSHA256FFI(100000);
+  // await benchmarkDoubleSHA256(100000);
+  // await benchmarkDoubleSHA256FFI(100000);
+  // await benchmarkIncrementalSHA256(10000);
+  // await benchmarkIncrementalSHA256FFI(10000);
+  // await benchmarkTaggedSHA256(10000);
+  // await benchmarkTaggedSHA256FFI(10000);
+  // await benchmarkHMACSHA512(10000);
+  // await benchmarkHMACSHA512FFI(10000);
+  await benchmarkPBKDHMACSHA512(50);
+  await benchmarkPBKDHMACSHA512FFI(50);
 }
 
 // Future<void> benchmarkMnemonicsToSeed(int iterations) async {
@@ -635,7 +654,330 @@ Future<void> benchmarkHexMY(int iterations) async {
     print('pubkey add took: ${stopwatch.elapsedMilliseconds} ms');
     results[len] = stopwatch.elapsedMilliseconds;
   }
+  print("hex encode results for $iterations results:");
+  print(" - avg: ${results.average} ms");
+  print(" - med: ${median(results)} ms");
+  print(" - max: ${results.max} ms");
+  print(" - min: ${results.min} ms");
+  print(" - std: ${stdDev(results)} ms");
+  return;
+}
+
+Future<void> benchmarkSHA256(int iterations) async {
+  print("=============================");
+  print("     Benchmarking SHA256     ");
+  print("=============================");
+  List<num> results = List.filled(4, 0);
+  for (int len = 1; len < 5; len++) {
+    List<int> data = List.generate(32 * (len * 10), (i) => (i * 7 + 11) % 256);
+    Stopwatch stopwatch = Stopwatch()..start();
+    for (int iteration = 0; iteration < iterations; iteration++) {
+      cryp.sha256.convert(data).bytes;
+    }
+    print('sha256 add took: ${stopwatch.elapsedMilliseconds} ms');
+    results[len - 1] = stopwatch.elapsedMilliseconds;
+  }
+  print("hex encode results for $iterations results:");
+  print(" - avg: ${results.average} ms");
+  print(" - med: ${median(results)} ms");
+  print(" - max: ${results.max} ms");
+  print(" - min: ${results.min} ms");
+  print(" - std: ${stdDev(results)} ms");
+  return;
+}
+
+Future<void> benchmarkSHA256FFI(int iterations) async {
+  print("==================================");
+  print("     Benchmarking SHA256 (FFI)    ");
+  print("==================================");
+  List<num> results = List.filled(4, 0);
+  for (int len = 1; len < 5; len++) {
+    List<int> data = List.generate(32 * (len * 10), (i) => (i * 7 + 11) % 256);
+    Stopwatch stopwatch = Stopwatch()..start();
+    for (int iteration = 0; iteration < iterations; iteration++) {
+      LibOpenSSLFFI.SHA256(data: Uint8List.fromList(data));
+    }
+    print('sha256 add took: ${stopwatch.elapsedMilliseconds} ms');
+    results[len - 1] = stopwatch.elapsedMilliseconds;
+  }
   print("hex encode results for all $iterations results:");
+  print(" - avg: ${results.average} ms");
+  print(" - med: ${median(results)} ms");
+  print(" - max: ${results.max} ms");
+  print(" - min: ${results.min} ms");
+  print(" - std: ${stdDev(results)} ms");
+  return;
+}
+
+Future<void> benchmarkDoubleSHA256(int iterations) async {
+  print("====================================");
+  print("     Benchmarking Double SHA256     ");
+  print("====================================");
+  List<num> results = List.filled(4, 0);
+  for (int len = 1; len < 5; len++) {
+    List<int> data = List.generate(32 * (len * 10), (i) => (i * 7 + 11) % 256);
+    Stopwatch stopwatch = Stopwatch()..start();
+    for (int iteration = 0; iteration < iterations; iteration++) {
+      cryp.sha256.convert(cryp.sha256.convert(data).bytes).bytes;
+    }
+    print('sha256 add took: ${stopwatch.elapsedMilliseconds} ms');
+    results[len - 1] = stopwatch.elapsedMilliseconds;
+  }
+  print("results for $iterations results:");
+  print(" - avg: ${results.average} ms");
+  print(" - med: ${median(results)} ms");
+  print(" - max: ${results.max} ms");
+  print(" - min: ${results.min} ms");
+  print(" - std: ${stdDev(results)} ms");
+  return;
+}
+
+Future<void> benchmarkDoubleSHA256FFI(int iterations) async {
+  print("=========================================");
+  print("     Benchmarking SHA256 Double (FFI)    ");
+  print("=========================================");
+  List<num> results = List.filled(4, 0);
+  for (int len = 1; len < 5; len++) {
+    List<int> data = List.generate(32 * (len * 10), (i) => (i * 7 + 11) % 256);
+    Stopwatch stopwatch = Stopwatch()..start();
+    for (int iteration = 0; iteration < iterations; iteration++) {
+      LibOpenSSLFFI.doubleSHA256(data: Uint8List.fromList(data));
+    }
+    print('sha256 add took: ${stopwatch.elapsedMilliseconds} ms');
+    results[len - 1] = stopwatch.elapsedMilliseconds;
+  }
+  print("results for all $iterations results:");
+  print(" - avg: ${results.average} ms");
+  print(" - med: ${median(results)} ms");
+  print(" - max: ${results.max} ms");
+  print(" - min: ${results.min} ms");
+  print(" - std: ${stdDev(results)} ms");
+  return;
+}
+
+Future<void> benchmarkIncrementalSHA256(int iterations) async {
+  print("=========================================");
+  print("     Benchmarking Incremental SHA256     ");
+  print("=========================================");
+  List<num> results = List.filled(4, 0);
+  for (int len = 1; len < 5; len++) {
+    List<List<int>> data = List.generate(
+      32 * (len * 10),
+      (i) => List.generate(10, (i) => i * 7 + 11 % 256),
+    );
+    Stopwatch stopwatch = Stopwatch()..start();
+    for (int iteration = 0; iteration < iterations; iteration++) {
+      final hash = crypto.Sha256().toSync().newHashSink();
+      for (final chunk in data) {
+        hash.add(chunk);
+      }
+      hash.close();
+      hash.hashSync();
+    }
+    print('sha256 add took: ${stopwatch.elapsedMilliseconds} ms');
+    results[len - 1] = stopwatch.elapsedMilliseconds;
+  }
+  print("results for $iterations results:");
+  print(" - avg: ${results.average} ms");
+  print(" - med: ${median(results)} ms");
+  print(" - max: ${results.max} ms");
+  print(" - min: ${results.min} ms");
+  print(" - std: ${stdDev(results)} ms");
+  return;
+}
+
+Future<void> benchmarkIncrementalSHA256FFI(int iterations) async {
+  print("==============================================");
+  print("     Benchmarking SHA256 Incremental (FFI)    ");
+  print("==============================================");
+  List<num> results = List.filled(4, 0);
+  for (int len = 1; len < 5; len++) {
+    List<Uint8List> data = List.generate(
+      32 * (len * 10),
+      (i) => Uint8List.fromList(List.generate(10, (i) => i * 7 + 11 % 256)),
+    );
+    Stopwatch stopwatch = Stopwatch()..start();
+    for (int iteration = 0; iteration < iterations; iteration++) {
+      LibOpenSSLFFI.incrementalSHA256(data: data);
+    }
+    print('sha256 add took: ${stopwatch.elapsedMilliseconds} ms');
+    results[len - 1] = stopwatch.elapsedMilliseconds;
+  }
+  print("results for all $iterations results:");
+  print(" - avg: ${results.average} ms");
+  print(" - med: ${median(results)} ms");
+  print(" - max: ${results.max} ms");
+  print(" - min: ${results.min} ms");
+  print(" - std: ${stdDev(results)} ms");
+  return;
+}
+
+Future<void> benchmarkTaggedSHA256(int iterations) async {
+  print("====================================");
+  print("     Benchmarking Tagged SHA256     ");
+  print("====================================");
+  List<num> results = List.filled(4, 0);
+  for (int len = 1; len < 5; len++) {
+    List<int> data = List.generate(32 * (len * 10), (i) => i * 7 + 11 % 256);
+    Stopwatch stopwatch = Stopwatch()..start();
+    for (int iteration = 0; iteration < iterations; iteration++) {
+      final tagHash = cryp.sha256.convert("TapTweak".codeUnits).bytes;
+      Uint8List.fromList(
+        cryp.sha256.convert([...tagHash, ...tagHash, ...data]).bytes,
+      );
+    }
+    print('sha256 add took: ${stopwatch.elapsedMilliseconds} ms');
+    results[len - 1] = stopwatch.elapsedMilliseconds;
+  }
+  print("results for $iterations results:");
+  print(" - avg: ${results.average} ms");
+  print(" - med: ${median(results)} ms");
+  print(" - max: ${results.max} ms");
+  print(" - min: ${results.min} ms");
+  print(" - std: ${stdDev(results)} ms");
+  return;
+}
+
+Future<void> benchmarkTaggedSHA256FFI(int iterations) async {
+  print("=========================================");
+  print("     Benchmarking SHA256 Tagged (FFI)    ");
+  print("=========================================");
+  List<num> results = List.filled(4, 0);
+  for (int len = 1; len < 5; len++) {
+    List<int> data = List.generate(32 * (len * 10), (i) => i * 7 + 11 % 256);
+    Stopwatch stopwatch = Stopwatch()..start();
+    for (int iteration = 0; iteration < iterations; iteration++) {
+      LibOpenSSLFFI.taggedHashSHA256(
+        data: Uint8List.fromList(data),
+        tag: Uint8List.fromList("TapTweak".codeUnits),
+      );
+    }
+    print('sha256 add took: ${stopwatch.elapsedMilliseconds} ms');
+    results[len - 1] = stopwatch.elapsedMilliseconds;
+  }
+  print("results for all $iterations results:");
+  print(" - avg: ${results.average} ms");
+  print(" - med: ${median(results)} ms");
+  print(" - max: ${results.max} ms");
+  print(" - min: ${results.min} ms");
+  print(" - std: ${stdDev(results)} ms");
+  return;
+}
+
+Future<void> benchmarkHMACSHA512(int iterations) async {
+  print("==================================");
+  print("     Benchmarking HMACSHA512      ");
+  print("==================================");
+  List<num> results = List.filled(4, 0);
+  for (int len = 1; len < 5; len++) {
+    List<int> data = List.generate(32 * (len * 10), (i) => i * 7 + 11 % 256);
+    Stopwatch stopwatch = Stopwatch()..start();
+    for (int iteration = 0; iteration < iterations; iteration++) {
+      final hmacSha512 = crypto.Hmac(crypto.Sha512());
+      final secretKeyObj = crypto.SecretKeyData("Bitcoin seed".codeUnits);
+      final mac = hmacSha512.toSync().calculateMacSync(
+        data,
+        secretKeyData: secretKeyObj,
+        nonce: <int>[],
+      );
+      final y = mac.bytes;
+    }
+    print('HAMCSHA512 add took: ${stopwatch.elapsedMilliseconds} ms');
+    results[len - 1] = stopwatch.elapsedMilliseconds;
+  }
+  print("results for all $iterations results:");
+  print(" - avg: ${results.average} ms");
+  print(" - med: ${median(results)} ms");
+  print(" - max: ${results.max} ms");
+  print(" - min: ${results.min} ms");
+  print(" - std: ${stdDev(results)} ms");
+  return;
+}
+
+Future<void> benchmarkHMACSHA512FFI(int iterations) async {
+  print("=====================================");
+  print("     Benchmarking HMACSHA512 (FFI)   ");
+  print("=====================================");
+  List<num> results = List.filled(4, 0);
+  for (int len = 1; len < 5; len++) {
+    List<int> data = List.generate(32 * (len * 10), (i) => i * 7 + 11 % 256);
+    Stopwatch stopwatch = Stopwatch()..start();
+    for (int iteration = 0; iteration < iterations; iteration++) {
+      LibOpenSSLFFI.HMACSHA512(
+        data: Uint8List.fromList(data),
+        secretKey: Uint8List.fromList("Bitcoin seed".codeUnits),
+      );
+    }
+    print('HAMCSHA512 add took: ${stopwatch.elapsedMilliseconds} ms');
+    results[len - 1] = stopwatch.elapsedMilliseconds;
+  }
+  print("results for all $iterations results:");
+  print(" - avg: ${results.average} ms");
+  print(" - med: ${median(results)} ms");
+  print(" - max: ${results.max} ms");
+  print(" - min: ${results.min} ms");
+  print(" - std: ${stdDev(results)} ms");
+  return;
+}
+
+Future<void> benchmarkPBKDHMACSHA512(int iterations) async {
+  print("====================================");
+  print("     Benchmarking PBKDHMACSHA512    ");
+  print("====================================");
+  List<num> results = List.filled(4, 0);
+  final salt = "mnemonic".codeUnits;
+  var mnemonic = HDWalletHelpers.entropyToMnemonicStrings(
+    List.filled(32, 1),
+  ).join(" ");
+  var pb = cryptography.Pbkdf2(
+    macAlgorithm: cryptography.Hmac(cryptography.Sha512()),
+    iterations: 2048,
+    bits: 64 * 8,
+  );
+  for (int len = 1; len < 5; len++) {
+    Stopwatch stopwatch = Stopwatch()..start();
+    for (int iteration = 0; iteration < iterations; iteration++) {
+      var pass = await pb.deriveKeyFromPassword(
+        password: mnemonic,
+        nonce: salt,
+      );
+      final y = await pass.extractBytes();
+    }
+    print('PBKDHMACSHA512 add took: ${stopwatch.elapsedMilliseconds} ms');
+    results[len - 1] = stopwatch.elapsedMilliseconds;
+  }
+  print("results for all $iterations results:");
+  print(" - avg: ${results.average} ms");
+  print(" - med: ${median(results)} ms");
+  print(" - max: ${results.max} ms");
+  print(" - min: ${results.min} ms");
+  print(" - std: ${stdDev(results)} ms");
+  return;
+}
+
+Future<void> benchmarkPBKDHMACSHA512FFI(int iterations) async {
+  print("=========================================");
+  print("     Benchmarking PBKDHMACSHA512 (FFI)   ");
+  print("=========================================");
+  List<num> results = List.filled(4, 0);
+  final salt = "mnemonic".codeUnits;
+  var mnemonic = HDWalletHelpers.entropyToMnemonicStrings(
+    List.filled(32, 1),
+  ).join(" ");
+  for (int len = 1; len < 5; len++) {
+    Stopwatch stopwatch = Stopwatch()..start();
+    for (int iteration = 0; iteration < iterations; iteration++) {
+      final x = await LibOpenSSLFFI.PBKDF2_SHA512(
+        password: mnemonic,
+        salt: Uint8List.fromList(salt),
+        iterations: 2048,
+        keyLength: 64,
+      );
+    }
+    print('PBKDHMACSHA512 add took: ${stopwatch.elapsedMilliseconds} ms');
+    results[len - 1] = stopwatch.elapsedMilliseconds;
+  }
+  print("results for all $iterations results:");
   print(" - avg: ${results.average} ms");
   print(" - med: ${median(results)} ms");
   print(" - max: ${results.max} ms");

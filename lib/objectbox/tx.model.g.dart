@@ -101,13 +101,7 @@ class TxDBModel extends BaseBoxModel<TxDB, isar.TxDB> {
   }
 
   String calculateCPK(int? coin, String? hash, int? outputIndex) {
-    final sha256Hasher = Sha256().toSync().newHashSink();
-    sha256Hasher.add(CPK.toBytes(coin));
-    sha256Hasher.add(CPK.toBytes(hash));
-    sha256Hasher.add(CPK.toBytes(outputIndex));
-
-    sha256Hasher.close();
-    return String.fromCharCodes(CPK.encode7Bit(sha256Hasher.hashSync().bytes));
+    return CPK.calculateCPK([coin, hash, outputIndex]);
   }
 
   TxDB? getUniqueMV(int? coin, String? hash, int? outputIndex) {

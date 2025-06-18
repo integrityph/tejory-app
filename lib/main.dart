@@ -1,6 +1,8 @@
+import 'package:flutter/src/foundation/isolates.dart';
 import 'package:flutter/material.dart';
 import 'package:tejory/api_keys/api_keys.dart';
 import 'package:tejory/benchmark.dart';
+import 'package:tejory/libopensslffi/libopensslffi.dart';
 import 'package:tejory/libsecp256k1ffi/libsecp256k1ffi.dart';
 import 'package:tejory/singleton.dart';
 import 'package:tejory/ui/login.dart';
@@ -16,39 +18,19 @@ final RouteObserver<ModalRoute<void>> routeObserver =
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await LibSecp256k1FFI.init();
+  await LibOpenSSLFFI.init();
   const APP_MODE = String.fromEnvironment('APP_MODE', defaultValue: '');
   if (APP_MODE == "benchmark") {
-    await runBenchmarks();
+    compute(runBenchmarks, null);
     return;
   }
+
   // initialize API keys
   APIKeys.init();
   await openIsar();
   await openObjectBox();
 
-  // Add a list of active updates
-  List<Update> activeUpdates = [
-    DBMigration(),
-    CPKCalculation(),
-    UpdateAssets(),
-  ];
-  List<Update> requiredUpdates = [];
-
-  for (int i=0; i<activeUpdates.length; i++) {
-    print("${activeUpdates[i].name()}: Update checking");
-    if (await activeUpdates[i].required()) {
-      print("${activeUpdates[i].name()}: Update required");
-      requiredUpdates.add(activeUpdates[i]);
-    } else {
-      print("${activeUpdates[i].name()}: Update not required");
-    }
-  };
-
-  if (requiredUpdates.length != 0) {
-    runApp(MyApp(requiredUpdates:requiredUpdates));
-  } else {
-    runApp(const MyApp());
-  }
+  runApp(const MyApp());
 }
 
 Future<Null> openIsar() async {
@@ -68,8 +50,7 @@ Future<Null> openObjectBox() async {
 }
 
 class MyApp extends StatelessWidget {
-  final List<Update>? requiredUpdates;
-  const MyApp({super.key, this.requiredUpdates});
+  const MyApp({super.key});
 
   // This widget is the root of your application.
   @override
@@ -79,7 +60,7 @@ class MyApp extends StatelessWidget {
       theme: Singleton.getBrightTheme(),
       darkTheme: Singleton.getDarkTheme(),
       themeMode: ThemeMode.system,
-      home: (requiredUpdates==null) ? Login() : UpdateUI(requiredUpdates!),
+      home: UpdateUI(),
       navigatorObservers: [routeObserver],
     );
   }
