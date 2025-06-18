@@ -5,11 +5,6 @@ import 'package:tejory/benchmark.dart';
 import 'package:tejory/libopensslffi/libopensslffi.dart';
 import 'package:tejory/libsecp256k1ffi/libsecp256k1ffi.dart';
 import 'package:tejory/singleton.dart';
-import 'package:tejory/ui/login.dart';
-import 'package:tejory/updates/cpk_calculation.dart';
-import 'package:tejory/updates/db_migration.dart';
-import 'package:tejory/updates/update.dart';
-import 'package:tejory/updates/update_assets.dart';
 import 'package:tejory/updates/update_ui.dart';
 
 final RouteObserver<ModalRoute<void>> routeObserver =

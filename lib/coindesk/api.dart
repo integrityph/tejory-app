@@ -86,7 +86,7 @@ Future<AssetsData?> getPrices() async {
 }
 
 Map<String, List<Map<String, dynamic>>> chartDataCache = {};
-Future<List<Map<String, dynamic>>?> getChartData(String symbol, {String interval = "d1", int count=30}) async {
+Future<List<Map<String, dynamic>>?> getChartData(String symbol, {String interval = "d1", int count=30, DateTime? endDate}) async {
   String intervalName;
   if (interval.startsWith("d")) {
     intervalName = "days";
@@ -103,11 +103,14 @@ Future<List<Map<String, dynamic>>?> getChartData(String symbol, {String interval
     aggregate = 1;
   }
 
-  if (chartDataCache.containsKey("$symbol-$interval-$count") && chartDataCache["$symbol-$interval-$count"]!.length != 0) {
-    return chartDataCache["$symbol-$interval-$count"];
+  if (chartDataCache.containsKey("$symbol-$interval-$count-${endDate?.toIso8601String()}") && chartDataCache["$symbol-$interval-$count-${endDate?.toIso8601String()}"]!.length != 0) {
+    return chartDataCache["$symbol-$interval-$count-${endDate?.toIso8601String()}"];
   }
 
-  String path = "index/cc/v1/historical/${intervalName}?market=cadli&instrument=${symbol}&limit=${count}&aggregate=${aggregate}&fill=false&apply_mapping=false&response_format=JSON&groups=OHLC";
+  String path = "index/cc/v1/historical/${intervalName}?market=cadli&instrument=${symbol}&limit=${count}&aggregate=${aggregate}&fill=true&apply_mapping=false&response_format=JSON&groups=OHLC";
+  if (endDate != null) {
+    path += "&to_ts=${endDate.millisecondsSinceEpoch~/1000}";
+  }
   var obj = await makeCall(path);
 
   if (obj == null) {
@@ -149,7 +152,7 @@ Future<List<Map<String, dynamic>>?> getChartData(String symbol, {String interval
     );
   }
 
-  chartDataCache["$symbol-$interval-$count"] = result;
+  chartDataCache["$symbol-$interval-$count-${endDate?.toIso8601String()}"] = result;
   return result;
 }
 

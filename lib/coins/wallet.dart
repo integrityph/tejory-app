@@ -2,11 +2,9 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:blockchain_utils/bip/bip.dart';
-import 'package:isar/isar.dart';
 import 'package:tejory/bip32/derivation_bip32_key.dart';
 import 'package:tejory/objectbox/wallet_db.dart';
 import 'package:tejory/box_models.g.dart';
-import 'package:tejory/singleton.dart';
 import 'package:tejory/wallets/iwallet.dart';
 import 'package:tejory/wallets/softwarewallet/software_wallet.dart';
 import 'package:tejory/wallets/tejorycard/tejory_card.dart';

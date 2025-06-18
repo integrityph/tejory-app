@@ -10,3 +10,4 @@ build/
 pass.txt
 commands
 .DS_Store
+build_log.txt

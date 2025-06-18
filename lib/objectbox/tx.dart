@@ -95,8 +95,6 @@ class TxDB {
     final box = Singleton.getObjectBoxDB();
 
     await box.getStore().runInTransaction(TxMode.write, () {
-      final model = TxDBModel();
-
       final List<TxDB> newTransactionsToProcess = [];
       final Set<String> hashesToLookup = {}; // To collect unique hashes for the query
 

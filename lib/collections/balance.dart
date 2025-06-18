@@ -1,6 +1,4 @@
 import 'package:isar/isar.dart';
-import 'package:tejory/collections/block.dart';
-import 'package:tejory/collections/tx.dart';
 import 'package:tejory/singleton.dart';
 part 'balance.g.dart';
 

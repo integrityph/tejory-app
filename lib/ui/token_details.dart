@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:isar/isar.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 import 'package:tejory/coins/visual_tx.dart';
 import 'package:tejory/crypto-helper/other_helpers.dart';
@@ -389,7 +388,7 @@ class _TokenDetails extends State<TokenDetails> with TickerProviderStateMixin {
                     child: Center(child: Text("Error: ${txDBList.error}")),
                   );
                 }
-                if (!txDBList.hasData || txDBList.data!.isEmpty) {
+                if (!txDBList.hasData || txDBList.data == null || txDBList.data!.isEmpty) {
                   // Empty state: return a sliver
                   return SliverToBoxAdapter(
                     child: Center(child: Text("No data found.")),

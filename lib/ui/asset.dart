@@ -1,7 +1,6 @@
 import 'dart:typed_data';
 import 'package:blockchain_utils/blockchain_utils.dart';
 import 'package:flutter/material.dart';
-import 'package:isar/isar.dart';
 import 'package:tejory/coins/asset_isolate.dart';
 import 'package:tejory/coins/bitcoin.dart';
 import 'package:tejory/coins/btcln.dart';

@@ -1,6 +1,5 @@
 // this implementation works with version openssl-3.5.0
 // https://github.com/openssl/openssl
-import 'dart:convert';
 import 'dart:ffi' as ffi;
 import 'package:blockchain_utils/helper/extensions/extensions.dart';
 import 'package:crypto/crypto.dart';

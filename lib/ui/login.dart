@@ -47,6 +47,7 @@ class _LoginState extends State<Login> {
       humanizeMoney: OtherHelpers.humanizeMoney,
     );
     Singleton.loaded = Singleton.assetList.assetListState.loadAssets();
+    Singleton.historicPriceService.start();
   }
 
   Future<bool> _authenticateWithBiometrics() async {

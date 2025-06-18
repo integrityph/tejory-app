@@ -1,6 +1,5 @@
 import 'dart:convert';
-import 'package:http/http.dart' as http;
-import 'package:tejory/crypto-helper/yahoo_finance.dart';
+import 'package:tejory/coindesk/api.dart' as coinsdesk;
 
 BlockchainApi blockchainApiFromJson(String str) =>
     BlockchainApi.fromJson(json.decode(str));
@@ -82,15 +81,23 @@ Future<double?> getBlockchainAPIHistoricPrice(
     epochDate = startingDate[symbol]?? epochDate;
   }
 
-  var epoch1 = date.subtract(Duration(days: 3)).millisecondsSinceEpoch ~/ 1000;
-  var epoch2 = date.millisecondsSinceEpoch ~/ 1000;
-  var URL = Uri.parse("https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?period1=${epoch1}&period2=${epoch2}&interval=1d&lang=en-US&region=US");
-  try {
-    final response = await http.get(URL);
-    YahooFinance yfObj = yahooFinanceFromJson(response.body);
-    return yfObj.chart.result[0].indicators.adjclose[0].adjclose[0];
-  } catch(e) {
-    return getBlockchainAPIHistoricPrice(symbol, date, errorCount:errorCount+1);
-    // return 0;
+  List<Map<String, dynamic>>? prices = await coinsdesk.getChartData(symbol, count:1, endDate: date);
+
+  if (prices == null || prices.isEmpty) {
+    return null;
   }
+
+  return prices[0]["close"];
+
+  // var epoch1 = date.subtract(Duration(days: 3)).millisecondsSinceEpoch ~/ 1000;
+  // var epoch2 = date.millisecondsSinceEpoch ~/ 1000;
+  // var URL = Uri.parse("https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?period1=${epoch1}&period2=${epoch2}&interval=1d&lang=en-US&region=US");
+  // try {
+  //   final response = await http.get(URL);
+  //   YahooFinance yfObj = yahooFinanceFromJson(response.body);
+  //   return yfObj.chart.result[0].indicators.adjclose[0].adjclose[0];
+  // } catch(e) {
+  //   return getBlockchainAPIHistoricPrice(symbol, date, errorCount:errorCount+1);
+  //   // return 0;
+  // }
 }

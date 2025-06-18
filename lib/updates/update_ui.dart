@@ -129,7 +129,7 @@ class _UpdateUIState extends State<UpdateUI> {
             FutureBuilder(
               future: updatesReady,
               builder: (context, snapshot) {
-                if (snapshot.connectionState != ConnectionState.done) {
+                if (snapshot.connectionState != ConnectionState.done || updates.isEmpty) {
                   return Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [

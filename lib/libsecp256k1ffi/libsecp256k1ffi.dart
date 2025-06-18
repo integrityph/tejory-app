@@ -260,13 +260,13 @@ class LibSecp256k1FFI {
   static PubkeyParseDart? _pubkeyParse;
   static PubkeyTweakAddDart? _pubkeyTweakAdd;
   static PubkeyCombineDart? _pubkeyCombine;
-  static Secp256k1NonceFunctionDart? _secp256k1NonceFunctionDart;
+  // static Secp256k1NonceFunctionDart? _secp256k1NonceFunctionDart;
   static EcdsaSignDart? _ecdsaSignDart;
   static EcdsaSignatureSerializeDerDart? _ecdsaSignatureSerializeDerDart;
-  static EcdsaSignatureSerializeCompactDart? _ecdsaSignatureSerializeCompactDart;
-  static EcdsaVerifyDart? _ecdsaVerifyDart;
-  static EcdsaSignatureParseDerDart? _ecdsaSignatureParseDerDart;
-  static EcdsaSignatureParseCompactDart? _ecdsaSignatureParseCompactDart;
+  // static EcdsaSignatureSerializeCompactDart? _ecdsaSignatureSerializeCompactDart;
+  // static EcdsaVerifyDart? _ecdsaVerifyDart;
+  // static EcdsaSignatureParseDerDart? _ecdsaSignatureParseDerDart;
+  // static EcdsaSignatureParseCompactDart? _ecdsaSignatureParseCompactDart;
 
   // Private constructor to prevent instantiation as it's all static
   LibSecp256k1FFI._();
@@ -361,22 +361,22 @@ class LibSecp256k1FFI {
           _lib!
               .lookup<ffi.NativeFunction<EcdsaSignatureSerializeDerC>>('secp256k1_ecdsa_signature_serialize_der')
               .asFunction<EcdsaSignatureSerializeDerDart>();
-      _ecdsaSignatureSerializeCompactDart =
-          _lib!
-              .lookup<ffi.NativeFunction<EcdsaSignatureSerializeCompactC>>('secp256k1_ecdsa_signature_serialize_compact')
-              .asFunction<EcdsaSignatureSerializeCompactDart>();
-      _ecdsaVerifyDart =
-          _lib!
-              .lookup<ffi.NativeFunction<EcdsaVerifyC>>('secp256k1_ecdsa_verify')
-              .asFunction<EcdsaVerifyDart>();
-      _ecdsaSignatureParseDerDart =
-          _lib!
-              .lookup<ffi.NativeFunction<EcdsaSignatureParseDerC>>('secp256k1_ecdsa_signature_parse_der')
-              .asFunction<EcdsaSignatureParseDerDart>();
-      _ecdsaSignatureParseCompactDart =
-          _lib!
-              .lookup<ffi.NativeFunction<EcdsaSignatureParseCompactC>>('secp256k1_ecdsa_signature_parse_compact')
-              .asFunction<EcdsaSignatureParseCompactDart>();
+      // _ecdsaSignatureSerializeCompactDart =
+      //     _lib!
+      //         .lookup<ffi.NativeFunction<EcdsaSignatureSerializeCompactC>>('secp256k1_ecdsa_signature_serialize_compact')
+      //         .asFunction<EcdsaSignatureSerializeCompactDart>();
+      // _ecdsaVerifyDart =
+      //     _lib!
+      //         .lookup<ffi.NativeFunction<EcdsaVerifyC>>('secp256k1_ecdsa_verify')
+      //         .asFunction<EcdsaVerifyDart>();
+      // _ecdsaSignatureParseDerDart =
+      //     _lib!
+      //         .lookup<ffi.NativeFunction<EcdsaSignatureParseDerC>>('secp256k1_ecdsa_signature_parse_der')
+      //         .asFunction<EcdsaSignatureParseDerDart>();
+      // _ecdsaSignatureParseCompactDart =
+      //     _lib!
+      //         .lookup<ffi.NativeFunction<EcdsaSignatureParseCompactC>>('secp256k1_ecdsa_signature_parse_compact')
+      //         .asFunction<EcdsaSignatureParseCompactDart>();
       print("LibSecp256k1: Core cryptographic functions looked up.");
 
       _isInitialized = true;
@@ -547,10 +547,11 @@ class LibSecp256k1FFI {
       );
 
       if (serializeSuccess == 1) {
-        final Uint8List resultBytes = Uint8List.fromList(
-          serializedPubKeyOutputPtr.asTypedList(actualOutputLenPtr.value),
-        );
-        return resultBytes;
+        // final Uint8List resultBytes = Uint8List.fromList(
+        //   serializedPubKeyOutputPtr.asTypedList(actualOutputLenPtr.value),
+        // );
+        // return resultBytes;
+        return _returnUint8List(serializedPubKeyOutputPtr, actualOutputLenPtr.value);
       } else {
         print("FFI Error: secp256k1_ec_pubkey_serialize failed.");
         return null;
@@ -638,9 +639,10 @@ class LibSecp256k1FFI {
       );
 
       if (success == 1) {
-        return Uint8List.fromList(
-          serializedResultPtr.asTypedList(actualOutputLenPtr.value),
-        );
+        // return Uint8List.fromList(
+        //   serializedResultPtr.asTypedList(actualOutputLenPtr.value),
+        // );
+        return _returnUint8List(serializedResultPtr, actualOutputLenPtr.value);
       } else {
         print(
           "FFI: secp256k1_ec_pubkey_serialize failed for child public key.",
@@ -726,9 +728,10 @@ class LibSecp256k1FFI {
       );
 
       if (success == 1) {
-        return serializedResultPtr
-            .asTypedList(actualOutputLenPtr.value)
-            .sublist(1);
+        // return serializedResultPtr
+        //     .asTypedList(actualOutputLenPtr.value)
+        //     .sublist(1);
+        return _returnUint8List(serializedResultPtr, actualOutputLenPtr.value).sublist(1);
       } else {
         print("FFI: secp256k1_ec_pubkey_serialize failed for combined key.");
         return null;
@@ -824,7 +827,8 @@ class LibSecp256k1FFI {
 
       if (success == 1) {
         // Copy the result to a Dart Uint8List
-        return derOutputPtr.asTypedList(derOutputLenPtr.value);
+        // return derOutputPtr.asTypedList(derOutputLenPtr.value);
+        return _returnUint8List(derOutputPtr, derOutputLenPtr.value);
       } else {
         print("FFI: secp256k1_ecdsa_signature_serialize_der failed.");
         return null;
@@ -963,5 +967,12 @@ class LibSecp256k1FFI {
     final ffi.Pointer<ffi.Uint8> inputPtr = arena<ffi.Uint8>(keyBytes.length);
     inputPtr.asTypedList(keyBytes.length).setAll(0, keyBytes);
     return _pubkeyParse!(_context!, keyStructPtr, inputPtr, keyBytes.length);
+  }
+
+  static Uint8List _returnUint8List(
+    ffi.Pointer<ffi.Uint8> pointer,
+    int length,
+  ) {
+    return Uint8List.fromList(pointer.asTypedList(length).clone());
   }
 }

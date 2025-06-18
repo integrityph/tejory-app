@@ -7,6 +7,7 @@ import 'package:isar/isar.dart';
 import 'package:objectbox/objectbox.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:tejory/coins/historic_price_service.dart';
 import 'package:tejory/collections/balance.dart' as isarmodel;
 import 'package:tejory/collections/block.dart' as isarmodel;
 import 'package:tejory/collections/coin.dart' as isarmodel;
@@ -48,6 +49,7 @@ class Singleton {
       FlutterLocalNotificationsPlugin();
   static Swap swap = new Swap();
   static bool notificationsEnabled = false;
+  static HistoricPriceService historicPriceService = HistoricPriceService();
 
   Singleton() {}
 

@@ -5,7 +5,6 @@ import 'package:tejory/coins/crypto_coin.dart';
 import 'package:tejory/coins/psbt.dart';
 import 'package:tejory/coins/pst.dart';
 import 'package:tejory/coins/tx.dart';
-import 'package:tejory/objectbox/wallet_db.dart';
 import 'package:tejory/comms/nfc.dart';
 import 'package:tejory/crypto-helper/other_helpers.dart';
 import 'package:tejory/singleton.dart';

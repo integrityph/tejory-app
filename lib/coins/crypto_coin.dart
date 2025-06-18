@@ -8,7 +8,6 @@ import 'package:tejory/coins/visual_tx.dart';
 import 'package:tejory/objectbox/balance.dart';
 import 'package:tejory/objectbox/block.dart';
 import 'package:tejory/objectbox/tx.dart';
-import 'package:tejory/objectbox/wallet_db.dart';
 import 'package:tejory/crypto-helper/other_helpers.dart';
 import 'package:tejory/singleton.dart';
 import 'package:tejory/wallets/wallet_type.dart';
