@@ -70,6 +70,12 @@ class _UpdateUIState extends State<UpdateUI> {
         setState(() {
           updates.add(widget.activeUpdates[i]);
         });
+        if (widget.activeUpdates[i].name() == "DB Migration") {
+          setState(() {
+          updates.add(widget.activeUpdates[i+1]);
+        });
+        i++;
+        }
       } else {
         print("${widget.activeUpdates[i].name()}: Update not required");
       }
