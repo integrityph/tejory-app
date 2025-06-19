@@ -476,7 +476,7 @@ class BTCLN extends CryptoCoin {
       tx.inAddress = txDBList[i].isDeposit! ? txDBList[i].lockingScript! : "";
       tx.outAddress = txDBList[i].isDeposit! ? "" : txDBList[i].lockingScript!;
       tx.time = txDBList[i].time!;
-      tx.usdAmount = txDBList[i].usdAmount!;
+      tx.usdAmount = txDBList[i].usdAmount;
       tx.isDeposit = txDBList[i].isDeposit!;
       txList.add(tx);
     }

@@ -88,7 +88,7 @@ class _TokenDetails extends State<TokenDetails> with TickerProviderStateMixin {
                   ),
                   SizedBox(height: 6),
                   Text(
-                    "1${asset.symbol} = ${OtherHelpers.humanizeMoney(tx.usdAmount, isFiat: true)}",
+                    "${tx.getFiatRate(asset)}",
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.normal,
@@ -124,7 +124,7 @@ class _TokenDetails extends State<TokenDetails> with TickerProviderStateMixin {
                   ),
                   SizedBox(height: 9),
                   Text(
-                    "${OtherHelpers.humanizeMoney(asset.getDecimalAmountInDouble(BigInt.from((tx.amount > 0 ? tx.amount : -tx.amount))) * tx.usdAmount, isFiat: true)}",
+                    "${tx.getFiatValue(asset)}",
                     style: TextStyle(
                       fontSize: 16,
                       fontFamily: "monospace",

@@ -1,5 +1,7 @@
 import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:tejory/coindesk/api.dart' as coinsdesk;
+import 'package:tejory/crypto-helper/yahoo_finance.dart';
 
 BlockchainApi blockchainApiFromJson(String str) =>
     BlockchainApi.fromJson(json.decode(str));
@@ -100,4 +102,27 @@ Future<double?> getBlockchainAPIHistoricPrice(
   //   return getBlockchainAPIHistoricPrice(symbol, date, errorCount:errorCount+1);
   //   // return 0;
   // }
+}
+
+Future<double?> getBlockchainAPIHistoricPriceYahoo(
+    String symbol, DateTime date, {int errorCount = 0}) async {
+  // Map<String, int> startingDate = {
+  //   "BTC-USD": 1257033600,
+  //   "ETH-USD": 1510185600,
+  // };
+  if (errorCount == 5) {
+    return null;
+  }
+
+  var epoch1 = date.subtract(Duration(days: 3)).millisecondsSinceEpoch ~/ 1000;
+  var epoch2 = date.millisecondsSinceEpoch ~/ 1000;
+  var URL = Uri.parse("https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?period1=${epoch1}&period2=${epoch2}&interval=1d&lang=en-US&region=US");
+  try {
+    final response = await http.get(URL);
+    YahooFinance yfObj = yahooFinanceFromJson(response.body);
+    return yfObj.chart.result[0].indicators.adjclose[0].adjclose[0];
+  } catch(e) {
+    return getBlockchainAPIHistoricPriceYahoo(symbol, date, errorCount:errorCount+1);
+    // return 0;
+  }
 }

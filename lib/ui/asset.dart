@@ -359,7 +359,6 @@ class Asset with ChangeNotifier {
   Future<Wallet> getWallet() async {
     int tempWalletId = getWalletId();
     Wallet wallet = Wallet(id: tempWalletId);
-    await wallet.loaded.future;
     return wallet;
   }
 

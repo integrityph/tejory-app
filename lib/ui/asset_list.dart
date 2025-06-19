@@ -83,7 +83,7 @@ class _AssetListState extends State<AssetList> with ChangeNotifier {
       Singleton.currentCurrency.usdMultiplier = 1.0;
       return;
     }
-    var usdMultiplier = await getBlockchainAPIHistoricPrice(
+    var usdMultiplier = await getBlockchainAPIHistoricPriceYahoo(
       "USD${currency.isoName}=X",
       DateTime.now(),
     );

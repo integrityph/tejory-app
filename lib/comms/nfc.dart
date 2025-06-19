@@ -82,12 +82,10 @@ class NFC implements Medium {
     String enterPINMessage = "Enter your PIN",
     String enterPIN2Message = "Please confirm your PIN again",
   }) async {
-    print("NFC starting session");
     bool? successful;
     List<int>? pinCodeNew = newPIN;
     if (context != null && PIN == null) {
       PINCodeDialog pinDialog = PINCodeDialog();
-      print("show PIN dialog");
       List<int>? PIN1 = await pinDialog.showPINModal(
         context,
         enterPINMessage,
@@ -97,7 +95,6 @@ class NFC implements Medium {
         return false;
       }
       if (isNewPIN || changePIN) {
-        print("show PIN dialog");
         List<int>? PIN2 = await pinDialog.showPINModal(
           context,
           enterPIN2Message,
@@ -112,6 +109,7 @@ class NFC implements Medium {
       }
       PIN = PIN1;
     }
+    stopNfcOperation = false;
     if (context != null) {
       showNFCModal(
         context,
@@ -123,7 +121,6 @@ class NFC implements Medium {
       onDiscovered: await (NfcTag tag) async {
         print("found tag");
         successful = await callback(tag, pinCode:PIN, pinCodeNew:pinCodeNew);
-        print("finished tag callback, successful=${successful}");
         if (successful != null && successful!) {
           NfcManager.instance.stopSession();
         }
@@ -133,9 +130,11 @@ class NFC implements Medium {
       pollingOptions: <NfcPollingOption>{NfcPollingOption.iso14443},
       onSessionErrorIos: await (error) async {
         NfcManager.instance.stopSession();
+        print("onSessionErrorIos ${error}");
         successful = false;
       },
     );
+
 
     while (successful == null) {
       if (stopNfcOperation) {

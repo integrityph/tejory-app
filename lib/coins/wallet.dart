@@ -20,46 +20,41 @@ class Wallet {
   DateTime? startYear;
   String? serialNumber;
   IWallet? signingWallet;
-  Completer<void> loaded;
 
-  Wallet({int? this.id}) : loaded = Completer() {
+
+  Wallet({int? this.id}) {
     if (this.id != null) {
       // create it from the db
       // Isar isar = Singleton.getDB();
       // WalletDB? walletDB =
       //     isar.walletDBs.filter().idEqualTo(this.id!).findFirstSync();
-      () async {
-        WalletDB? walletDB = await Models.walletDB.getById(this.id!);
-        if (walletDB == null) {
-          if (id != 0) {
-            print("WARNING: Wallet was not able to find wallet id $id");
-          }
-          return;
+      WalletDB? walletDB = Models.walletDB.getById(this.id!);
+      if (walletDB == null) {
+        if (id != 0) {
+          print("WARNING: Wallet was not able to find wallet id $id");
         }
+        return;
+      }
 
-        // id = walletDB.id;
-        extendedPrivKey = walletDB.extendedPrivKey;
-        type = walletDB.type;
-        fingerprint = walletDB.fingerPrint;
-        easyImport = walletDB.easyImport;
-        startYear = walletDB.startYear;
-        serialNumber = walletDB.serialNumber;
-        name = walletDB.name ?? "";
+      // id = walletDB.id;
+      extendedPrivKey = walletDB.extendedPrivKey;
+      type = walletDB.type;
+      fingerprint = walletDB.fingerPrint;
+      easyImport = walletDB.easyImport;
+      startYear = walletDB.startYear;
+      serialNumber = walletDB.serialNumber;
+      name = walletDB.name ?? "";
 
-        // create the signing wallet object
-        if (type == WalletType.phone) {
-          signingWallet = SoftwareWallet();
-        } else if (type == WalletType.tejoryCard) {
-          signingWallet = TejoryCard();
-        }
-        loaded.complete();
-      }();
+      // create the signing wallet object
+      if (type == WalletType.phone) {
+        signingWallet = SoftwareWallet();
+      } else if (type == WalletType.tejoryCard) {
+        signingWallet = TejoryCard();
+      }
     }
   }
 
   Future<int> save() async {
-    loaded = Completer();
-
     // change seed to extended private key
     int seedLength = extendedPrivKey?.length ?? 0;
     if (seedLength >= 16 && seedLength <= 32) {
@@ -111,7 +106,6 @@ class Wallet {
         signingWallet = TejoryCard();
       }
     }
-    loaded.complete();
     return id ?? 0;
   }
 }

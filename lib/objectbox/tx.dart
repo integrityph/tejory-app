@@ -1,6 +1,7 @@
 import 'package:tejory/codegen/box_model/box_model.dart';
 import 'package:tejory/codegen/box_model/ignore_in_isar_migration.dart';
 import 'package:tejory/codegen/box_model/unique_index.dart';
+import 'package:tejory/coins/historic_price_service.dart';
 import 'package:tejory/collections/tx.dart' as isar;
 import 'package:tejory/objectbox.g.dart';
 import 'package:tejory/objectbox/base_box_model.dart';
@@ -88,7 +89,12 @@ class TxDB {
       }();
     }
 
-    return TxDBModel().upsert(this);
+    await TxDBModel().upsert(this);
+    if (id != 0) {
+      HistoricPriceService.update(id);
+    }
+
+    return id;
   }
 
   Future<void> bulkSaveTx(List<TxDB> txsToSave) async {

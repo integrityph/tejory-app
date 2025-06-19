@@ -3171,11 +3171,11 @@ class Bitcoin extends CryptoCoin {
         txMap[tx.hash!] = VisualTx();
         txMap[tx.hash!]!.time = tx.time!;
         txMap[tx.hash!]!.fee = tx.fee!;
-        txMap[tx.hash!]!.usdAmount = tx.usdAmount ?? 0.0;
+        txMap[tx.hash!]!.usdAmount = tx.usdAmount;
       } else if (txMap[tx.hash]!.time == null) {
         txMap[tx.hash!]!.time = tx.time!;
         txMap[tx.hash!]!.fee = tx.fee!;
-        txMap[tx.hash!]!.usdAmount = tx.usdAmount ?? 0.0;
+        txMap[tx.hash!]!.usdAmount = tx.usdAmount;
       }
 
       if (tx.spendingTxHash != null) {

@@ -363,6 +363,9 @@ class _SwapPage extends State<SwapPage> with ChangeNotifier {
             borderRadius: BorderRadius.all(Radius.elliptical(5, 5))),
         child: IconButton(
             onPressed: () {
+              if (asset0 == null || asset1 == null) {
+                return;
+              }
               setState(() {
                 var tempAsset = asset0;
                 asset0 = asset1;

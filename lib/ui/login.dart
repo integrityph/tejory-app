@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:local_auth/local_auth.dart';
+import 'package:tejory/coins/historic_price_service.dart';
 import 'package:tejory/crypto-helper/other_helpers.dart';
 import 'package:tejory/libopensslffi/libopensslffi.dart';
 import 'package:tejory/libsecp256k1ffi/libsecp256k1ffi.dart';
@@ -47,7 +48,7 @@ class _LoginState extends State<Login> {
       humanizeMoney: OtherHelpers.humanizeMoney,
     );
     Singleton.loaded = Singleton.assetList.assetListState.loadAssets();
-    Singleton.historicPriceService.start();
+    HistoricPriceService.start();
   }
 
   Future<bool> _authenticateWithBiometrics() async {

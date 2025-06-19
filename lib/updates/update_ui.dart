@@ -3,6 +3,7 @@ import 'package:tejory/ui/login.dart';
 import 'package:tejory/ui/setup/page_animation.dart';
 import 'package:tejory/updates/cpk_calculation.dart';
 import 'package:tejory/updates/db_migration.dart';
+import 'package:tejory/updates/fix_duplicate_cpk.dart';
 import 'package:tejory/updates/update.dart';
 import 'package:tejory/updates/update_assets.dart';
 
@@ -11,6 +12,7 @@ class UpdateUI extends StatefulWidget {
   final List<Update> activeUpdates = [
     DBMigration(),
     CPKCalculation(),
+    FixDuplicateCPK(),
     UpdateAssets(),
   ];
 
@@ -72,9 +74,9 @@ class _UpdateUIState extends State<UpdateUI> {
         });
         if (widget.activeUpdates[i].name() == "DB Migration") {
           setState(() {
-          updates.add(widget.activeUpdates[i+1]);
-        });
-        i++;
+            updates.add(widget.activeUpdates[i + 1]);
+          });
+          i++;
         }
       } else {
         print("${widget.activeUpdates[i].name()}: Update not required");
@@ -135,7 +137,8 @@ class _UpdateUIState extends State<UpdateUI> {
             FutureBuilder(
               future: updatesReady,
               builder: (context, snapshot) {
-                if (snapshot.connectionState != ConnectionState.done || updates.isEmpty) {
+                if (snapshot.connectionState != ConnectionState.done ||
+                    updates.isEmpty) {
                   return Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [

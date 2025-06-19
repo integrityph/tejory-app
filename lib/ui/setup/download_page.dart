@@ -360,6 +360,7 @@ class _DownloadPageState extends State<DownloadPage> {
   ) async {
     print("_deriveKeysInBackground 0.0");
     await LibSecp256k1FFI.init();
+    await LibOpenSSLFFI.init();
     print("_deriveKeysInBackground 0.1");
     Bip32KeyNetVersions netVersions =
         args['netVersions'] as Bip32KeyNetVersions;
@@ -445,6 +446,7 @@ class _DownloadPageState extends State<DownloadPage> {
     List<keyCollection.Key> dbKeyList = [];
 
     derivationDone = () async {
+      print("DownloadPage.createHardwareWallet derivationDone reprogramOnly: $reprogramOnly");
       if (reprogramOnly) {
         return null;
       }
@@ -484,18 +486,23 @@ class _DownloadPageState extends State<DownloadPage> {
     }();
 
     wallet.type = widget.isSoftware ? WalletType.phone : WalletType.tejoryCard;
+    print("DownloadPage.createHardwareWallet reprogramOnly: $reprogramOnly");
     if (reprogramOnly) {
       wallet = Wallet(id: 1);
     }
     // we need to save to ensure the signing wallet is in side the wallet object
+    print("DownloadPage.createHardwareWallet 1");
     await wallet.save();
+    print("DownloadPage.createHardwareWallet 2");
 
     WalletSetupResponse? res;
     bool successful = false;
     List<int> puk = List.generate(4, (_) => Random.secure().nextInt(10));
     PUK = puk.join("");
+    print("DownloadPage.createHardwareWallet 3");
     while (!successful) {
       res = null;
+      print("DownloadPage.createHardwareWallet NFC loop ${wallet.type}");
       try {
         if (wallet.type == WalletType.tejoryCard) {
           Navigator.of(context).popUntil(ModalRoute.withName("DownloadPage"));

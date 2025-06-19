@@ -49,7 +49,6 @@ class Singleton {
       FlutterLocalNotificationsPlugin();
   static Swap swap = new Swap();
   static bool notificationsEnabled = false;
-  static HistoricPriceService historicPriceService = HistoricPriceService();
 
   Singleton() {}
 

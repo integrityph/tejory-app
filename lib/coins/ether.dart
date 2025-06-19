@@ -323,10 +323,14 @@ class Ether extends CryptoCoin {
     String path = "m/44'/60'/${account}'/0/0";
     // int nextIndex = getNextIndex(path);
     // path += "/${nextIndex}";
+		print("Ether.getReceivingAddress 0");
     var pubKey = await getPublicKey(path, compressed: false);
+		print("Ether.getReceivingAddress 1");
     var address = getAddress(pubKey);
+		print("Ether.getReceivingAddress 2");
     // Convert the RIPEMD-160 hash to a binary string
     var returnAddress = getAddressFromBytes(address);
+		print("Ether.getReceivingAddress 3");
 
     return returnAddress;
   }
@@ -546,7 +550,7 @@ class Ether extends CryptoCoin {
       tx.inAddress = txDBList[i].isDeposit! ? txDBList[i].lockingScript! : "";
       tx.outAddress = txDBList[i].isDeposit! ? "" : txDBList[i].lockingScript!;
       tx.time = txDBList[i].time!;
-      tx.usdAmount = txDBList[i].usdAmount!;
+      tx.usdAmount = txDBList[i].usdAmount;
       tx.isDeposit = txDBList[i].isDeposit!;
       txList.add(tx);
     }
@@ -683,11 +687,13 @@ class Ether extends CryptoCoin {
       response = await http.get(URL).timeout(Duration(seconds: 5));
       jObj = jsonDecode(response.body) as Map<String, dynamic>;
     } catch (e) {
+      print("Ether.getTxListFromAPI.http.get ERROR: $e");
       return;
     }
 
     Ethscan resultObj = Ethscan.fromJson(jObj);
     if (resultObj.result == null) {
+			print("Ether.getTxListFromAPI.http.get resultObj.result == null");
       return;
     }
     // var isar = Singleton.getDB();
@@ -696,6 +702,7 @@ class Ether extends CryptoCoin {
       // tx = await isar.txDBs.getByHashCoinOutputIndex(result.hash, id, 0);
       tx = await Models.txDB.getUnique(id, result.hash, 0);
       if (tx != null) {
+				print("Ether.getTxListFromAPI.http.get tx exists");
         continue;
       }
       tx = TxDB();

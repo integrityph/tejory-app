@@ -10,12 +10,16 @@ import 'package:tejory/objectbox/objectbox.dart';
 import 'package:tejory/singleton.dart';
 
 class HistoricPriceService {
-  HistoricPriceService();
-  Isolate? _isolate;
-  final _receivePort = ReceivePort();
-  late SendPort _sendPort;
+  const HistoricPriceService();
+  static Isolate? _isolate;
+  static final _receivePort = ReceivePort();
+  static late SendPort _sendPort;
+  static Completer _ready = Completer();
 
-  Future<void> start() async {
+  static Map<int, String?> _coinSymbolMap = {};
+  static Map<String, double> _priceCache = {};
+
+  static Future<void> start() async {
     // Listen for messages from the isolate
     _receivePort.listen((message) {
       if (message is SendPort) {
@@ -24,9 +28,12 @@ class HistoricPriceService {
         Map<String, dynamic> msg = {
           "token": rootIsolateToken,
           "box": Singleton.getObjectBoxDB().getStore().reference,
-					'api_keys': APIKeys.keys,
+          'api_keys': APIKeys.keys,
         };
         _sendPort.send(msg);
+      } else if (message is String && message == "ready") {
+        print("HistoricPriceService: ready");
+        _ready.complete();
       } else {
         print(
           "HistoricPriceService: ERROR: unknown message type ${message.runtimeType}. ${message}",
@@ -36,27 +43,26 @@ class HistoricPriceService {
 
     // Spawn the new isolate
     _isolate = await Isolate.spawn(
-      worker,
+      _worker,
       _receivePort.sendPort,
       onError: _receivePort.sendPort,
       onExit: _receivePort.sendPort,
     );
   }
 
-  void fetchPrice(int txId) {
+  static void update(int txId) async {
+    await _ready.future;
     _sendPort.send(<String, dynamic>{"txId": txId});
   }
 
-  static void worker(SendPort sendPort) {
+  static void _worker(SendPort sendPort) {
     print("HistoricPriceService: isolate stared");
     final _receivePort = ReceivePort();
     sendPort.send(_receivePort.sendPort);
-    print("HistoricPriceService: isolate port sent");
     ObjectBox? box;
     final priceFetchMutex = Mutex();
-    final Map<int, String?> coinSymbolMap = {};
 
-    final priceFetch = ([int? txId]) {
+    final updatePrice = ([int? txId]) {
       priceFetchMutex.protect(() async {
         print("HistoricPriceService: updating prices");
         if (box == null) {
@@ -64,77 +70,53 @@ class HistoricPriceService {
         }
         Condition<TxDB> q = TxDB_.usdAmount.isNull();
         if (txId != null) {
-          q &= TxDB_.id.equals(txId);
+          q = TxDB_.id.equals(txId);
         }
         final List<TxDB> txList = box!.txDBBox.query(q).build().find();
 
-        for (int i = 0; i < txList.length; i++) {
-          if (txList[i].usdAmount != null ||
-              txList[i].time == null ||
-              txList[i].coin == null) {
-            print("HistoricPriceService: not updating ${i}?!?!?");
+        for (final tx in txList) {
+          if (tx.usdAmount != null || tx.coin == null) {
             continue;
           }
-          if (txList[i].usdAmount == null && txList[i].time != null ||
-              txList[i].coin == null) {
-            if (!coinSymbolMap.containsKey(txList[i].coin)) {
-              coinSymbolMap[txList[i].coin!] =
-                  box!.coinBox
-                      .query(Coin_.id.equals(txList[i].coin!))
-                      .build()
-                      .findFirst()
-                      ?.yahooFinance;
-            }
-            print("HistoricPriceService: updating ${i}");
-            String? coinSymbol = coinSymbolMap[txList[i].coin];
-            print(
-              "HistoricPriceService: updating ${i} - coinSymbol: $coinSymbol",
-            );
-            if (coinSymbol == null) {
-              continue;
-            }
 
-            txList[i].usdAmount = await getBlockchainAPIHistoricPrice(
-              coinSymbol,
-              txList[i].time!,
-            );
-            print(
-              "HistoricPriceService: updating ${i} - coinSymbol: $coinSymbol - txList[i].usdAmount: ${txList[i].usdAmount}",
-            );
-            if (txList[i].usdAmount != null) {
-              await txList[i].save();
-              print("HistoricPriceService: updated");
-            } else {
-              print("HistoricPriceService: didn't updated");
-            }
+          if (!_coinSymbolMap.containsKey(tx.coin)) {
+            _coinSymbolMap[tx.coin!] =
+                box!.coinBox
+                    .query(Coin_.id.equals(tx.coin!))
+                    .build()
+                    .findFirst()
+                    ?.yahooFinance;
           }
+          String? symbol = _coinSymbolMap[tx.coin];
+          tx.usdAmount = await _fetchPrice(symbol, tx.time);
+
+          if (tx.usdAmount == null) {
+            print("HistoricPriceService: skipping update");
+            continue;
+          }
+          print("HistoricPriceService: saving update");
+          await tx.save();
         }
       });
     };
 
     _receivePort.listen((message) async {
       try {
-        print("HistoricPriceService: isolate received message ${message}");
         if (message is! Map<String, dynamic>) {
-          print(
-            "HistoricPriceService: message is not Map<String, dynamic>. ${message}",
-          );
           return;
         }
 
         // control messages
         if (message.containsKey("token")) {
-          print("HistoricPriceService: received initial configuration");
           BackgroundIsolateBinaryMessenger.ensureInitialized(message["token"]);
           await Singleton.initObjectBoxDB(fromBytes: message["box"]);
           box = Singleton.getObjectBoxDB();
+          APIKeys.keys = message['api_keys'];
 
-					APIKeys.keys = message['api_keys'];
+          sendPort.send("ready");
 
-          print("HistoricPriceService: done with initial configuration");
           while (true) {
-            print("HistoricPriceService: fetching prices from the loop");
-            priceFetch();
+            updatePrice();
             await Future.delayed(Duration(minutes: 5));
           }
         }
@@ -145,7 +127,7 @@ class HistoricPriceService {
         }
 
         if (message.containsKey("txId")) {
-          priceFetch(message["txId"]);
+          updatePrice(message["txId"]);
         }
       } catch (e) {
         print("HistoricPriceService: ERROR: $e");
@@ -153,12 +135,35 @@ class HistoricPriceService {
     });
   }
 
-  void stop() {
+  static void stop() {
     if (_isolate != null) {
       _isolate?.kill(priority: Isolate.immediate);
       _isolate = null;
       _receivePort.close();
       print("HistoricPriceService: Isolate stopped.");
     }
+  }
+
+  // helper functions
+  static String _formatDate(DateTime date) {
+    return "${date.millisecondsSinceEpoch ~/ 86400000}";
+  }
+
+  static Future<double?> _fetchPrice(String? symbol, DateTime? time) async {
+    if (time == null || symbol == null) {
+      return null;
+    }
+
+    // check if the price is already in cache
+    String cacheKey = "${symbol}-${_formatDate(time)}";
+    if (_priceCache.containsKey(cacheKey)) {
+      print("HistoricPriceService: price from cache");
+      return _priceCache[cacheKey];
+    }
+    double? price = await getBlockchainAPIHistoricPrice(symbol, time);
+    if (price != null) {
+      _priceCache[cacheKey] = price;
+    }
+    return price;
   }
 }
