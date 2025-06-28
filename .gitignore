@@ -11,3 +11,5 @@ pass.txt
 commands
 .DS_Store
 build_log.txt
+android/app/src/main/cpp/secp256k1.xcframework
+android/app/src/main/cpp/build

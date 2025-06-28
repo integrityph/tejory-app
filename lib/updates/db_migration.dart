@@ -91,7 +91,6 @@ class DBMigration extends Update {
   }
 
   static void migrationWorker(SendPort sendPort) {
-    Stopwatch watch = Stopwatch()..start();
     print("DBMigration: isolate stared");
     final _receivePort = ReceivePort();
     sendPort.send(_receivePort.sendPort);
@@ -207,7 +206,6 @@ class DBMigration extends Update {
             ),
           );
         }
-        print("DBMigration: Done completed in ${watch.elapsedMilliseconds}ms");
       } catch (e) {
         sendPort.send(
           UpdateProgress(

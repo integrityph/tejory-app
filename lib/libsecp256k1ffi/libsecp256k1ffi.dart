@@ -284,8 +284,8 @@ class LibSecp256k1FFI {
         // _lib = ffi.DynamicLibrary.open('libcrypto_bundle.so');
       } else if (Platform.isIOS) {
         // _lib = ffi.DynamicLibrary.process();
-        _lib = ffi.DynamicLibrary.open('secp256k1.framework/secp256k1');
-        // _lib = ffi.DynamicLibrary.open('libsecp256k1.dylib');
+        _lib = ffi.DynamicLibrary.open('secp256k1.framework/secp256k1'); // this works with the framework approach
+        // _lib = ffi.DynamicLibrary.open('libsecp256k1.dylib'); // this works with the dylib approach
       } else {
         print('LibSecp256k1: Unsupported platform for FFI');
         return;

@@ -27,7 +27,6 @@ Future<Map<String, dynamic>?> makeCall(String path, {int depth = 0}) async {
     Map<String, dynamic> jObj;
 
     try {
-      print('https://data-api.coindesk.com/${path}');
       response = await http
           .get(URL, headers: headers)
           .timeout(Duration(seconds: 5));

@@ -36,7 +36,6 @@ class BTCLN extends CryptoCoin {
   ).nextInt(rpcServer.length);
   bool ready = false;
   bool connected = false;
-  Stopwatch watch = Stopwatch();
 
   BTCLN(
     int walletId, {
@@ -68,7 +67,6 @@ class BTCLN extends CryptoCoin {
 
   @override
   Future<void> initCoin({List<Block>? blocks, List<TxDB>? txList, Balance? balanceDB}) async {
-    watch.start();
     if (balanceDB != null && balanceDB.coinBalance != null) {
       balance = BigInt.from(balanceDB.coinBalance!);
     }

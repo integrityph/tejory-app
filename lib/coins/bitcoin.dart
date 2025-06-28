@@ -2615,15 +2615,10 @@ class Bitcoin extends CryptoCoin {
     const ADDRESS_GAP_INTERNAL = 200;
 
     // recalculate out address list
-    print("setupTransactionsForPathChildren.getPublicKeyHashes before");
-    Stopwatch watch = Stopwatch()..start();
     await getPublicKeyHashes(
       refresh: true,
       externalGap: ADDRESS_GAP_EXTERNAL,
       internalGap: ADDRESS_GAP_INTERNAL,
-    );
-    print(
-      "setupTransactionsForPathChildren.getPublicKeyHashes ${watch.elapsedMilliseconds}",
     );
 
     // Get transactions for each cild external address upto ADDRESS_GAP

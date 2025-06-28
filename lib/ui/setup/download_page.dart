@@ -358,13 +358,10 @@ class _DownloadPageState extends State<DownloadPage> {
   static Future<List<Map<String, String?>>> _deriveKeysInBackground(
     Map<String, dynamic> args,
   ) async {
-    print("_deriveKeysInBackground 0.0");
     await LibSecp256k1FFI.init();
     await LibOpenSSLFFI.init();
-    print("_deriveKeysInBackground 0.1");
     Bip32KeyNetVersions netVersions =
         args['netVersions'] as Bip32KeyNetVersions;
-    print("_deriveKeysInBackground 0.2");
     DerivationBIP32Key dKey;
     try {
       dKey = DerivationBIP32Key.fromSeed(
@@ -376,7 +373,6 @@ class _DownloadPageState extends State<DownloadPage> {
       return [];
     }
 
-    print("_deriveKeysInBackground 1");
 
     List<Tuple<int, String>> derivationPathList =
         args['paths'] as List<Tuple<int, String>>;
@@ -388,10 +384,8 @@ class _DownloadPageState extends State<DownloadPage> {
       {'fingerprint': dKey.fingerPrint.toHex()},
     ];
 
-    print("_deriveKeysInBackground 2");
 
     for (var pathTuple in derivationPathList) {
-      print("_deriveKeysInBackground ${pathTuple.item2}");
       try {
         DerivationBIP32Key? derivedPubKey = await dKey.derivePath(
           pathTuple.item2,
@@ -414,7 +408,6 @@ class _DownloadPageState extends State<DownloadPage> {
         });
       }
     }
-    print("_deriveKeysInBackground DONE");
     return results;
   }
 

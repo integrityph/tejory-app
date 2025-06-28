@@ -81,16 +81,13 @@ class FixDuplicateCPK extends Update {
   }
 
   static void worker(SendPort sendPort) {
-    Stopwatch watch = Stopwatch()..start();
     print("FixDuplicateCPK: isolate stared");
     final _receivePort = ReceivePort();
     sendPort.send(_receivePort.sendPort);
-    print("FixDuplicateCPK: isolate port sent");
     ObjectBox? box;
 
     _receivePort.listen((message) async {
       try {
-        print("FixDuplicateCPK: isolate received message ${message}");
         if (message is Map<String, dynamic>) {
           BackgroundIsolateBinaryMessenger.ensureInitialized(message["token"]);
           await Singleton.initObjectBoxDB(fromBytes: message["box"]);
@@ -187,7 +184,6 @@ class FixDuplicateCPK extends Update {
             ),
           );
         }
-        print("FixDuplicateCPK: Done completed in ${watch.elapsedMilliseconds}ms");
       } catch (e) {
         print("FixDuplicateCPK: ERROR. $e");
         sendPort.send(

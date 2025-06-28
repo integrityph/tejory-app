@@ -16,8 +16,8 @@
 		97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
 		B83814582E0477CE009CA84D /* Pods_Runner.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 70A7C12C9016B0D40F2C46AD /* Pods_Runner.framework */; };
-		B838147D2E094ACC009CA84D /* secp256k1.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = B838147B2E094ABC009CA84D /* secp256k1.xcframework */; };
-		B838147E2E094ACC009CA84D /* secp256k1.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = B838147B2E094ABC009CA84D /* secp256k1.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		B83814932E096AEA009CA84D /* secp256k1.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = B83814912E096A9C009CA84D /* secp256k1.xcframework */; };
+		B83814942E096AEA009CA84D /* secp256k1.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = B83814912E096A9C009CA84D /* secp256k1.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -37,7 +37,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				B838147E2E094ACC009CA84D /* secp256k1.xcframework in Embed Frameworks */,
+				B83814942E096AEA009CA84D /* secp256k1.xcframework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -67,7 +67,7 @@
 		97C147001CF9000F007C117D /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		97C147021CF9000F007C117D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		B81F0AFE2DBB784E006E4963 /* RunnerRelease.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RunnerRelease.entitlements; sourceTree = "<group>"; };
-		B838147B2E094ABC009CA84D /* secp256k1.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = secp256k1.xcframework; sourceTree = "<group>"; };
+		B83814912E096A9C009CA84D /* secp256k1.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = secp256k1.xcframework; sourceTree = "<group>"; };
 		B89B8EEA2D965CB100BEEB73 /* Runner.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Runner.entitlements; sourceTree = "<group>"; };
 		B89B8EEB2DB2083300BEEB73 /* RunnerProfile.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RunnerProfile.entitlements; sourceTree = "<group>"; };
 		D7052A9CD2CB17D98F6FC0E6 /* Pods-Runner.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.release.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.release.xcconfig"; sourceTree = "<group>"; };
@@ -87,7 +87,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				B838147D2E094ACC009CA84D /* secp256k1.xcframework in Frameworks */,
+				B83814932E096AEA009CA84D /* secp256k1.xcframework in Frameworks */,
 				B83814582E0477CE009CA84D /* Pods_Runner.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -145,7 +145,7 @@
 				331C8082294A63A400263BE5 /* RunnerTests */,
 				33E0F227640C8E68CCAC7EF6 /* Pods */,
 				8A3B6902D1E81EB2941E877D /* Frameworks */,
-				B838147B2E094ABC009CA84D /* secp256k1.xcframework */,
+				B83814912E096A9C009CA84D /* secp256k1.xcframework */,
 			);
 			sourceTree = "<group>";
 		};
@@ -430,6 +430,7 @@
 		249021D3217E4FDB00AE95B9 /* Profile */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CLANG_ANALYZER_NONNULL = YES;
@@ -561,6 +562,7 @@
 		97C147031CF9000F007C117D /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = AppIcon;
 				CLANG_ANALYZER_NONNULL = YES;
@@ -621,6 +623,7 @@
 		97C147041CF9000F007C117D /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = AppIcon;
 				CLANG_ANALYZER_NONNULL = YES;

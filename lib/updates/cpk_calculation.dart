@@ -80,7 +80,6 @@ class CPKCalculation extends Update {
   }
 
   static void worker(SendPort sendPort) {
-    Stopwatch watch = Stopwatch()..start();
     print("CPKCalculation: isolate stared");
     final _receivePort = ReceivePort();
     sendPort.send(_receivePort.sendPort);
@@ -183,7 +182,6 @@ class CPKCalculation extends Update {
             ),
           );
         }
-        print("CPKCalculation: Done completed in ${watch.elapsedMilliseconds}ms");
       } catch (e) {
         print("CPKCalculation: ERROR. $e");
         sendPort.send(

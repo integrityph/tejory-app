@@ -32,7 +32,6 @@ class HistoricPriceService {
         };
         _sendPort.send(msg);
       } else if (message is String && message == "ready") {
-        print("HistoricPriceService: ready");
         _ready.complete();
       } else {
         print(
@@ -64,7 +63,6 @@ class HistoricPriceService {
 
     final updatePrice = ([int? txId]) {
       priceFetchMutex.protect(() async {
-        print("HistoricPriceService: updating prices");
         if (box == null) {
           return;
         }
@@ -91,10 +89,8 @@ class HistoricPriceService {
           tx.usdAmount = await _fetchPrice(symbol, tx.time);
 
           if (tx.usdAmount == null) {
-            print("HistoricPriceService: skipping update");
             continue;
           }
-          print("HistoricPriceService: saving update");
           await tx.save();
         }
       });
@@ -157,7 +153,6 @@ class HistoricPriceService {
     // check if the price is already in cache
     String cacheKey = "${symbol}-${_formatDate(time)}";
     if (_priceCache.containsKey(cacheKey)) {
-      print("HistoricPriceService: price from cache");
       return _priceCache[cacheKey];
     }
     double? price = await getBlockchainAPIHistoricPrice(symbol, time);

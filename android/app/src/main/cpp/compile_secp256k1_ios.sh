@@ -35,7 +35,7 @@ build_for_arch() {
     CURRENT_SDKROOT=$(xcrun --sdk ${SDK} --show-sdk-path)
     CLANG=$(xcrun --sdk ${SDK} -f clang)
 
-    CURRENT_CFLAGS="-arch ${ARCH} -isysroot ${CURRENT_SDKROOT} -miphoneos-version-min=${IOS_MIN_SDK_VERSION} -target ${CLANG_TARGET} -fPIC"
+    CURRENT_CFLAGS="-arch ${ARCH} -isysroot ${CURRENT_SDKROOT} -miphoneos-version-min=${IOS_MIN_SDK_VERSION} -target ${CLANG_TARGET} -fPIC -g"
     CURRENT_LDFLAGS="-L${CURRENT_SDKROOT}/usr/lib -target ${CLANG_TARGET}"
 
     if [ -f "${SOURCE_DIR}/Makefile" ]; then make distclean || true; fi
@@ -64,7 +64,7 @@ build_for_arch() {
     echo "--- Creating .framework bundle at ${FRAMEWORK_DIR} ---"
     mkdir -p "${FRAMEWORK_DIR}/Headers"
 
-        cat > "${FRAMEWORK_DIR}/Info.plist" <<EOF
+    cat > "${FRAMEWORK_DIR}/Info.plist" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -79,6 +79,8 @@ build_for_arch() {
 	<string>6.0</string>
 	<key>CFBundleName</key>
 	<string>${FRAMEWORK_NAME}</string>
+    <key>MinimumOSVersion</key>
+	<string>${IOS_MIN_SDK_VERSION}</string>
 	<key>CFBundlePackageType</key>
 	<string>FMWK</string>
 	<key>CFBundleShortVersionString</key>
@@ -93,7 +95,8 @@ EOF
     cp ".libs/lib${FRAMEWORK_NAME}.dylib" "${FRAMEWORK_DIR}/${FRAMEWORK_NAME}"
 
     # The destination path for the .a file needs the full path to the parent's build directory
-    # mkdir -p "${OUTPUT_DIR}/${ARCH}-${SDK}"
+    mkdir -p "${OUTPUT_DIR}/${ARCH}-${SDK}"
+    dsymutil "${DYLIB_FILE}" -o "${OUTPUT_DIR}/${ARCH}-${SDK}/${FRAMEWORK_NAME}.framework.dSYM"
     # cp "${DYLIB_FILE}" "${OUTPUT_DIR}/${ARCH}-${SDK}/libsecp256k1.dylib"
     echo "Successfully built ${ARCH}-${SDK}/libsecp256k1.dylib"
 
@@ -131,8 +134,12 @@ rm -rf "${BASE_DIR}/secp256k1.xcframework"
 
 xcodebuild -create-xcframework \
     -framework "${OUTPUT_DIR}/arm64-iphoneos/secp256k1.framework" \
+    -debug-symbols "${OUTPUT_DIR}/arm64-iphoneos/secp256k1.framework.dSYM" \
     -framework "${OUTPUT_DIR}/x86_64-iphonesimulator/secp256k1.framework" \
+    -debug-symbols "${OUTPUT_DIR}/x86_64-iphonesimulator/secp256k1.framework.dSYM" \
     -output "${BASE_DIR}/secp256k1.xcframework"
+
+rm -rf "${BASE_DIR}/build"
 
 echo "✅ Done! XCFramework created at ${BASE_DIR}/secp256k1.xcframework"
 echo "You can now add this XCFramework to your Xcode project."
