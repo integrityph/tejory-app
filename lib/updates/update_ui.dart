@@ -4,6 +4,7 @@ import 'package:tejory/ui/setup/page_animation.dart';
 import 'package:tejory/updates/cpk_calculation.dart';
 import 'package:tejory/updates/db_migration.dart';
 import 'package:tejory/updates/fix_duplicate_cpk.dart';
+import 'package:tejory/updates/por_check.dart';
 import 'package:tejory/updates/update.dart';
 import 'package:tejory/updates/update_assets.dart';
 
@@ -14,6 +15,7 @@ class UpdateUI extends StatefulWidget {
     CPKCalculation(),
     FixDuplicateCPK(),
     UpdateAssets(),
+    PoRCheck(),
   ];
 
   UpdateUI();
@@ -91,7 +93,12 @@ class _UpdateUIState extends State<UpdateUI> {
       });
       await updates[i].start();
       await updates[i].done();
+      setState(() {
+        updates = updates;
+      });
     }
+
+    await Future.delayed(Duration(seconds: 1));
 
     FadeNavigator(
       context,
@@ -131,7 +138,12 @@ class _UpdateUIState extends State<UpdateUI> {
                     ],
                   );
                 }
-                return _updateList();
+                // return StreamBuilder(
+                // stream: updates[updateIndex].getProgressStream(),
+                // builder: (context, snapshot) {
+                  return _updateList();
+                // }
+                // );
               },
             ),
             FutureBuilder(
