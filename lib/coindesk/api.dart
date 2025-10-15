@@ -59,7 +59,7 @@ Future<AssetsData?> getPrices() async {
     return null;
   }
 
-  List<Asset> assetlList = [];
+  List<Asset> assetList = [];
   Map<String, dynamic> assetMap;
   Map<String, dynamic>? valueMap;
   Map<String, dynamic> data = obj["Data"];
@@ -78,10 +78,10 @@ Future<AssetsData?> getPrices() async {
       "priceUsd":valueMap["PRICE"].toString(),
       "changePercent24Hr":valueMap["CURRENT_DAY_CHANGE_PERCENTAGE"].toString(),
     };
-    assetlList.add(Asset.fromJson(assetMap));
+    assetList.add(Asset.fromJson(assetMap));
   }
 
-  return AssetsData(assets: assetlList, version: 0);
+  return AssetsData(assets: assetList, version: 0);
 }
 
 Map<String, List<Map<String, dynamic>>> chartDataCache = {};
@@ -164,8 +164,8 @@ Future<void> streamPrices(List<String> symbolList, StreamPriceCallback callback)
   }
 // build asset list for the API
     var URL = Uri.parse(
-      // "wss://data-streamer.cryptocompare.com/?api_key=${API_KEY}",
-      "wss://data-streamer.cryptocompare.com/",
+      "wss://data-streamer.cryptocompare.com/?api_key=${API_KEY}",
+      // "wss://data-streamer.cryptocompare.com/",
     );
 
     final channel = WebSocketChannel.connect(URL);

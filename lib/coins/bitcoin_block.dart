@@ -41,7 +41,7 @@ class BitcoinBlock {
     hash =
         Uint8List.fromList(sha256.convert(sha256.convert(header).bytes).bytes);
 
-    // body strucure refence from this URL:
+    // body structure reference from this URL:
     // https://en.bitcoin.it/wiki/Protocol_documentation#filterload,_filteradd,_filterclear,_merkleblock
     int hashCount, byteCount;
     offset = 4;

@@ -585,15 +585,13 @@ class _AssetListState extends State<AssetList> with ChangeNotifier {
             itemCount: filteredAssets.length,
             itemBuilder: (context, index) {
               final asset = filteredAssets[index];
+              asset.loadIcons(context);
               return ListenableBuilder(
                 builder: (context, child) {
                   return InkWell(
                     child: Card(
                       child: ListTile(
-                        leading:
-                            (asset.coins.isEmpty || !asset.coins[0].isConnected)
-                                ? asset.iconOffline
-                                : asset.iconOnline,
+                        leading: asset.getIcon(),
                         title: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [

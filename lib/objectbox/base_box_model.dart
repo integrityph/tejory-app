@@ -1,7 +1,7 @@
 import 'package:objectbox/objectbox.dart';
 import 'package:tejory/objectbox.g.dart';
 
-abstract class BaseBoxModel<T ,IsarT> {
+abstract class BaseBoxModel<T> {
   const BaseBoxModel();
 
   List<T>? find({
@@ -12,5 +12,5 @@ abstract class BaseBoxModel<T ,IsarT> {
   });
   int? count({Condition<T>? q});
   T? getById(int id);
-  T fromIsar(IsarT val);
+  // T fromIsar(IsarT val);
 }

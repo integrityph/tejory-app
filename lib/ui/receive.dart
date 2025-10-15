@@ -6,20 +6,18 @@ import 'package:tejory/crypto-helper/other_helpers.dart';
 import 'package:tejory/singleton.dart';
 import 'package:tejory/keypad/keypad.dart';
 import 'package:tejory/ui/asset.dart';
-import 'network.dart';
+import '../coins/network.dart';
 import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 class Receiver extends StatefulWidget {
   String initialNetwork;
-  final Map<String, Set<Network>> networkList;
   final String initialToken;
   final String address;
   Asset? asset;
 
   Receiver({
     required this.initialNetwork,
-    required this.networkList,
     required this.initialToken,
     required this.address,
     this.asset,
@@ -348,8 +346,7 @@ class _ReceiverState extends State<Receiver> {
             });
           },
           items: () {
-            List<DropdownMenuItem<Network>> x = widget
-                .networkList[asset?.symbol ?? ""]!
+            List<DropdownMenuItem<Network>> x = (asset==null)?[]:asset!.coins[0].getNetworks()
                 .map<DropdownMenuItem<Network>>((Network network) {
               return DropdownMenuItem<Network>(
                 value: network,

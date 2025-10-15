@@ -18,7 +18,7 @@ class UpsertCPKGenerator extends GeneratorForAnnotation<BoxModel> {
     }
 
     final uniqueKeyFields = getUniqueIndexFields(element);
-    final className = element.name;
+    final className = element.name!;
     final classVariableName =
         '${className[0].toLowerCase()}${className.substring(1)}';
     final boxName = '${className[0].toLowerCase()}${className.substring(1)}Box';

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:math';
 
 import 'package:blockchain_utils/blockchain_utils.dart';
@@ -5,7 +6,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:tejory/bip32/derivation_bip32_key.dart';
 import 'package:tejory/coins/wallet.dart';
-import 'package:tejory/libopensslffi/libopensslffi.dart';
 import 'package:tejory/objectbox/balance.dart';
 import 'package:tejory/objectbox/block.dart';
 import 'package:tejory/objectbox/key.dart' as keyCollection;
@@ -14,6 +14,7 @@ import 'package:tejory/libsecp256k1ffi/libsecp256k1ffi.dart';
 import 'package:tejory/singleton.dart';
 import 'package:tejory/wallets/wallet_setup_response.dart';
 import 'package:tejory/wallets/wallet_type.dart';
+import 'package:boringssl_ffi/boringssl_ffi.dart' as bsll;
 
 class DownloadPage extends StatefulWidget {
   final List<int> entropy;
@@ -359,7 +360,7 @@ class _DownloadPageState extends State<DownloadPage> {
     Map<String, dynamic> args,
   ) async {
     await LibSecp256k1FFI.init();
-    await LibOpenSSLFFI.init();
+    // await LibOpenSSLFFI.init();
     Bip32KeyNetVersions netVersions =
         args['netVersions'] as Bip32KeyNetVersions;
     DerivationBIP32Key dKey;
@@ -431,7 +432,8 @@ class _DownloadPageState extends State<DownloadPage> {
     //   nonce: salt.codeUnits,
     // );
     // List<int> seedArr = await pass.extractBytes();
-    Uint8List? seedArr = await LibOpenSSLFFI.PBKDF2_SHA512(password: mnemonic, salt: salt, iterations: 2048, keyLength: 64);
+    // Uint8List? seedArr = await LibOpenSSLFFI.PBKDF2_SHA512(password: mnemonic, salt: salt, iterations: 2048, keyLength: 64);
+    Uint8List? seedArr = bsll.pbkdf2HMAC.deriveKeySHA512(utf8.encode(mnemonic) , salt, 2048, 64);
 
     List<String> pathList;
     Wallet wallet = Wallet();

@@ -1,3 +1,4 @@
+// dart format width=80
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
 part of 'wallet_db.dart';
@@ -20,7 +21,7 @@ extension WalletDBBoxModelHelpers on WalletDB {
 // StaticModelGenerator
 // **************************************************************************
 
-class WalletDBModel extends BaseBoxModel<WalletDB, isar.WalletDB> {
+class WalletDBModel extends BaseBoxModel<WalletDB> {
   const WalletDBModel();
 
   List<WalletDB>? find({
@@ -51,9 +52,7 @@ class WalletDBModel extends BaseBoxModel<WalletDB, isar.WalletDB> {
     }
   }
 
-  int? delete({
-    Condition<WalletDB>? q,
-  }) {
+  int? delete({Condition<WalletDB>? q}) {
     final objectbox = Singleton.getObjectBoxDB();
     var queryBuilder = objectbox.walletDBBox.query(q);
     final query = queryBuilder.build();
@@ -124,8 +123,9 @@ class WalletDBModel extends BaseBoxModel<WalletDB, isar.WalletDB> {
     }
 
     return box.getStore().runInTransaction(TxMode.write, () {
-      final query =
-          box.walletDBBox.query(uniqueConditionMV(walletDB.id)).build();
+      final query = box.walletDBBox
+          .query(uniqueConditionMV(walletDB.id))
+          .build();
       final existingId = query.findIds();
       query.close();
 
@@ -155,19 +155,5 @@ class WalletDBModel extends BaseBoxModel<WalletDB, isar.WalletDB> {
 
       return box.walletDBBox.put(walletDB);
     });
-  }
-
-  WalletDB fromIsar(isar.WalletDB src) {
-    WalletDB val = WalletDB();
-    val.id = src.id;
-    val.name = src.name;
-    val.type = src.type;
-    val.fingerPrint = src.fingerPrint;
-    val.extendedPrivKey = src.extendedPrivKey;
-    val.easyImport = src.easyImport;
-    val.startYear = src.startYear;
-    val.serialNumber = src.serialNumber;
-
-    return val;
   }
 }

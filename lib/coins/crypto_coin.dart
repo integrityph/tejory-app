@@ -10,6 +10,7 @@ import 'package:tejory/objectbox/block.dart';
 import 'package:tejory/objectbox/tx.dart';
 import 'package:tejory/crypto-helper/other_helpers.dart';
 import 'package:tejory/singleton.dart';
+import 'package:tejory/coins/network.dart';
 import 'package:tejory/wallets/wallet_type.dart';
 
 abstract class CryptoCoin with ChangeNotifier {
@@ -216,4 +217,18 @@ abstract class CryptoCoin with ChangeNotifier {
       return;
     }
   }
+
+  bool isCustodial() {
+    return false;
+  }
+
+  String? custodialMessage() {
+    return null;
+  }
+
+  String? custodialMessageLink() {
+    return null;
+  }
+
+  List<Network> getNetworks({String? address});
 }

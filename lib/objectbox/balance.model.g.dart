@@ -1,3 +1,4 @@
+// dart format width=80
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
 part of 'balance.dart';
@@ -20,7 +21,7 @@ extension BalanceBoxModelHelpers on Balance {
 // StaticModelGenerator
 // **************************************************************************
 
-class BalanceModel extends BaseBoxModel<Balance, isar.Balance> {
+class BalanceModel extends BaseBoxModel<Balance> {
   const BalanceModel();
 
   List<Balance>? find({
@@ -51,9 +52,7 @@ class BalanceModel extends BaseBoxModel<Balance, isar.Balance> {
     }
   }
 
-  int? delete({
-    Condition<Balance>? q,
-  }) {
+  int? delete({Condition<Balance>? q}) {
     final objectbox = Singleton.getObjectBoxDB();
     var queryBuilder = objectbox.balanceBox.query(q);
     final query = queryBuilder.build();
@@ -163,19 +162,5 @@ class BalanceModel extends BaseBoxModel<Balance, isar.Balance> {
 
       return box.balanceBox.put(balance);
     });
-  }
-
-  Balance fromIsar(isar.Balance src) {
-    Balance val = Balance();
-    val.id = src.id;
-    val.coin = src.coin;
-    val.wallet = src.wallet;
-    val.coinBalance = src.coinBalance;
-    val.usdBalance = src.usdBalance;
-    val.fiatBalanceDC = src.fiatBalanceDC;
-    val.lastUpdate = src.lastUpdate;
-    val.lastBlockUpdate = src.lastBlockUpdate;
-
-    return val;
   }
 }

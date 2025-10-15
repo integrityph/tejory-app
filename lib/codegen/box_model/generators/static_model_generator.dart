@@ -24,7 +24,7 @@ class StaticModelGenerator extends GeneratorForAnnotation<BoxModel> {
 
     final className = element.name;
     final generatedCode = '''
-    class ${className}Model extends BaseBoxModel<$className, isar.$className> {
+    class ${className}Model extends BaseBoxModel<$className> {
       const ${className}Model();
 
       ${generators.map((gen)=>gen.generateForAnnotatedElement(element, annotation, buildStep)).join("\n")}

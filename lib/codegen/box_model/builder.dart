@@ -3,7 +3,6 @@ import 'package:source_gen/source_gen.dart';
 import 'package:tejory/codegen/box_model/generators/count_generator.dart';
 import 'package:tejory/codegen/box_model/generators/delete_generator.dart';
 import 'package:tejory/codegen/box_model/generators/find_generator.dart';
-import 'package:tejory/codegen/box_model/generators/from_isar_generator.dart';
 import 'package:tejory/codegen/box_model/generators/get_by_id_generator.dart';
 import 'package:tejory/codegen/box_model/generators/get_cpk_generator.dart';
 import 'package:tejory/codegen/box_model/generators/calculate_cpk_generator.dart';
@@ -37,7 +36,7 @@ Builder boxModelBuilder(BuilderOptions options) {
       GetUniqueGeneratorCPK(),
       UpsertGenerator(),
       UpsertCPKGenerator(),
-      FromIsarGenerator(),
+      // FromIsarGenerator(),
     ])
   ], '.model.g.dart');
 }

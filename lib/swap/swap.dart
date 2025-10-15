@@ -3,10 +3,11 @@ import 'package:tejory/coins/crypto_coin.dart';
 import 'package:tejory/coins/tx.dart';
 import 'package:tejory/swap/dex.dart';
 import 'package:tejory/swap/liquidity_pool.dart';
+import 'package:tejory/swap/tejoryln.dart';
 import 'package:tejory/swap/uniswap.dart';
 
 class Swap {
-  Map<String, DEX> dexList = {"uniswap_v4": UniswapV4()};
+  Map<String, DEX> dexList = {"uniswap_v4": UniswapV4(), "loop":TejoryLN()};
   Map<String, List<LiquidityPool>> lpList = {};
 
   bool canSwap(CryptoCoin currency0, CryptoCoin currency1) {
@@ -115,5 +116,13 @@ class Swap {
       return null;
     }
     return await dex.unlockToken(currency0);
+  }
+
+  String estimatedTime(CryptoCoin currency0, currency1) {
+    DEX? dex = getDexForPair(currency0, currency1);
+    if (dex == null) {
+      return "---";
+    }
+    return dex.estimatedTime();
   }
 }

@@ -4,7 +4,7 @@ import 'package:tejory/crypto-helper/other_helpers.dart';
 import 'package:tejory/singleton.dart';
 import 'package:tejory/main.dart';
 import 'package:tejory/ui/send.dart';
-import 'network.dart';
+import '../coins/network.dart';
 import 'receive.dart';
 import 'asset.dart';
 
@@ -210,7 +210,7 @@ class _HomePageState extends State<HomePage>
               return SingleChildScrollView(
                 child: SizedBox(
                   height: 700,
-                  child: Sender(networkList: networkList, address: ''),
+                  child: Sender(address: ''),
                 ),
               );
             },
@@ -237,7 +237,6 @@ class _HomePageState extends State<HomePage>
                   height: 700,
                   child: Receiver(
                     initialNetwork: '',
-                    networkList: networkList,
                     address: '',
                     initialToken: '',
                   ),

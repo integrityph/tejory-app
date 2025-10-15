@@ -427,4 +427,9 @@ class UniswapV4 implements DEX {
 		
 		return tx;
 	}
+
+  @override
+  String estimatedTime() {
+    return "~ 1 minute";
+  }
 }

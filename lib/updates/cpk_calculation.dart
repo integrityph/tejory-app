@@ -215,7 +215,7 @@ class CPKCalculation extends Update {
 
 class CPKTask<T> {
   Box<T> box;
-  BaseBoxModel<T, dynamic> model;
+  BaseBoxModel<T> model;
   String name;
 
   CPKTask(this.box, this.model, this.name);

@@ -1,3 +1,4 @@
+// dart format width=80
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
 part of 'data_version.dart';
@@ -20,7 +21,7 @@ extension DataVersionBoxModelHelpers on DataVersion {
 // StaticModelGenerator
 // **************************************************************************
 
-class DataVersionModel extends BaseBoxModel<DataVersion, isar.DataVersion> {
+class DataVersionModel extends BaseBoxModel<DataVersion> {
   const DataVersionModel();
 
   List<DataVersion>? find({
@@ -51,9 +52,7 @@ class DataVersionModel extends BaseBoxModel<DataVersion, isar.DataVersion> {
     }
   }
 
-  int? delete({
-    Condition<DataVersion>? q,
-  }) {
+  int? delete({Condition<DataVersion>? q}) {
     final objectbox = Singleton.getObjectBoxDB();
     var queryBuilder = objectbox.dataVersionBox.query(q);
     final query = queryBuilder.build();
@@ -126,8 +125,9 @@ class DataVersionModel extends BaseBoxModel<DataVersion, isar.DataVersion> {
     }
 
     return box.getStore().runInTransaction(TxMode.write, () {
-      final query =
-          box.dataVersionBox.query(uniqueConditionMV(dataVersion.name)).build();
+      final query = box.dataVersionBox
+          .query(uniqueConditionMV(dataVersion.name))
+          .build();
       final existingId = query.findIds();
       query.close();
 
@@ -147,8 +147,9 @@ class DataVersionModel extends BaseBoxModel<DataVersion, isar.DataVersion> {
     }
 
     return box.getStore().runInTransaction(TxMode.write, () {
-      final query =
-          box.dataVersionBox.query(uniqueCondition(dataVersion.name)).build();
+      final query = box.dataVersionBox
+          .query(uniqueCondition(dataVersion.name))
+          .build();
       final existingId = query.findIds();
       query.close();
 
@@ -158,15 +159,5 @@ class DataVersionModel extends BaseBoxModel<DataVersion, isar.DataVersion> {
 
       return box.dataVersionBox.put(dataVersion);
     });
-  }
-
-  DataVersion fromIsar(isar.DataVersion src) {
-    DataVersion val = DataVersion();
-    val.id = src.id;
-    val.name = src.name;
-    val.hash = src.hash;
-    val.counter = src.counter;
-
-    return val;
   }
 }

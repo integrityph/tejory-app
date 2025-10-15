@@ -2,8 +2,9 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:blockchain_utils/blockchain_utils.dart';
-import 'package:cryptography/cryptography.dart' as cryptography;
+// import 'package:cryptography/cryptography.dart' as cryptography;
 import 'package:tejory/libsecp256k1ffi/libsecp256k1ffi.dart';
+import 'package:boringssl_ffi/boringssl_ffi.dart' as bsll;
 
 class DerivationBIP32Key {
   List<int>? privateKey;
@@ -50,15 +51,19 @@ class DerivationBIP32Key {
         "Seed length must be between 16 and 64 bytes. got ${seedBytes.length}",
       );
     }
-
-    final hmacSha512 = cryptography.Hmac(cryptography.Sha512());
-    final secretKey = cryptography.SecretKeyData(utf8.encode(hmacKeyString));
-    final mac = hmacSha512.toSync().calculateMacSync(
-      seedBytes,
-      secretKeyData: secretKey,
-      nonce: <int>[],
-    );
-    final I = mac.bytes; // 64-byte output
+    
+    final I = bsll.hmac.hmacSHA512(utf8.encode(hmacKeyString), seedBytes);
+    if (I == null) {
+      return;
+    }
+    // final hmacSha512 = cryptography.Hmac(cryptography.Sha512());
+    // final secretKey = cryptography.SecretKeyData(utf8.encode(hmacKeyString));
+    // final mac = hmacSha512.toSync().calculateMacSync(
+    //   seedBytes,
+    //   secretKeyData: secretKey,
+    //   nonce: <int>[],
+    // );
+    // final I = mac.bytes; // 64-byte output
 
     final List<int> masterPrivateKeyBytes = I.sublist(0, 32);
     final List<int> masterChainCodeBytes = I.sublist(32);
@@ -424,14 +429,20 @@ class DerivationBIP32Key {
     } else {
       dataBytes = List<int>.from([...key.publicKey, ...index.toBytes()]);
     }
-    final hmacHalves = cryptography.Hmac.sha512().toSync().calculateMacSync(
-      dataBytes,
-      secretKeyData: cryptography.SecretKeyData(key.chainCode!.toBytes()),
-      nonce: [],
-    );
+    final hmacHalves = bsll.hmac.hmacSHA512(key.chainCode!.toBytes(), dataBytes);
+    if (hmacHalves == null) {
+      return Tuple([],[]);
+    }
+    // final hmacHalves = cryptography.Hmac.sha512().toSync().calculateMacSync(
+    //   dataBytes,
+    //   secretKeyData: cryptography.SecretKeyData(key.chainCode!.toBytes()),
+    //   nonce: [],
+    // );
 
-    final ilBytes = hmacHalves.bytes.sublist(0, 32);
-    final irBytes = hmacHalves.bytes.sublist(32, 64);
+    // final ilBytes = hmacHalves.bytes.sublist(0, 32);
+    // final irBytes = hmacHalves.bytes.sublist(32, 64);
+    final ilBytes = hmacHalves.sublist(0, 32);
+    final irBytes = hmacHalves.sublist(32, 64);
     final scalar = LibSecp256k1FFI.addScalar(
       privKeyBytes: key.privateKey!,
       newScalarBytes: ilBytes,
@@ -452,14 +463,20 @@ class DerivationBIP32Key {
     EllipticCurveTypes type,
   ) {
     final dataBytes = List<int>.from([...publicKey, ...index.toBytes()]);
-    final hmacHalves = cryptography.Hmac.sha512().toSync().calculateMacSync(
-      dataBytes,
-      secretKeyData: cryptography.SecretKeyData(pubKey.chainCode!.toBytes()),
-      nonce: [],
-    );
+    final hmacHalves = bsll.hmac.hmacSHA512(pubKey.chainCode!.toBytes(), dataBytes);
+    if (hmacHalves == null) {
+      return Tuple([],[]);
+    }
+    // final hmacHalves = cryptography.Hmac.sha512().toSync().calculateMacSync(
+    //   dataBytes,
+    //   secretKeyData: cryptography.SecretKeyData(pubKey.chainCode!.toBytes()),
+    //   nonce: [],
+    // );
 
-    final ilBytes = hmacHalves.bytes.sublist(0, 32);
-    final irBytes = hmacHalves.bytes.sublist(32, 64);
+    // final ilBytes = hmacHalves.bytes.sublist(0, 32);
+    // final irBytes = hmacHalves.bytes.sublist(32, 64);
+    final ilBytes = hmacHalves.sublist(0, 32);
+    final irBytes = hmacHalves.sublist(32, 64);
     // final ilInt = BigintUtils.fromBytes(ilBytes);
     // final generator = EllipticCurveGetter.generatorFromType(type);
 

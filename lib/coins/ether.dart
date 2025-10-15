@@ -7,6 +7,7 @@ import 'package:flutter/src/widgets/framework.dart';
 import 'package:tejory/api_keys/api_keys.dart';
 import 'package:tejory/coins/const.dart';
 import 'package:tejory/coins/crypto_coin.dart';
+import 'package:tejory/coins/network.dart';
 import 'package:tejory/coins/psbt.dart';
 import 'package:tejory/coins/pst.dart';
 import 'package:tejory/coins/tx.dart';
@@ -873,5 +874,14 @@ class Ether extends CryptoCoin {
   @override
   String getTrackingURL(String txHash) {
     return "https://etherscan.io/tx/0x${txHash}";
+  }
+
+  @override
+  List<Network> getNetworks({String? address}) {
+    var networkList = [
+      Network("ETH", "Ethereum"),
+    ];
+
+    return networkList;
   }
 }

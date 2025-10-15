@@ -10,7 +10,7 @@ import 'package:tejory/crypto-helper/other_helpers.dart';
 import 'package:tejory/singleton.dart';
 import 'package:tejory/keypad/keypad.dart';
 import 'package:tejory/ui/asset.dart';
-import 'package:tejory/ui/network.dart';
+import 'package:tejory/coins/network.dart';
 import 'package:tejory/wallets/wallet_type.dart';
 
 class SwapPage extends StatefulWidget {
@@ -36,6 +36,7 @@ class _SwapPage extends State<SwapPage> with ChangeNotifier {
   bool ready = false;
   NFC nfc = NFC();
   Numpad numpad = Numpad();
+  String estimatedSwapTime = "---";
 
   void setReady(bool value) {
     ready = value;
@@ -73,12 +74,14 @@ class _SwapPage extends State<SwapPage> with ChangeNotifier {
       controller0.text = "0";
       controller1.text = "0";
       oneUnitRate = Future.value(BigInt.zero);
+      estimatedSwapTime = "---";
       selectedToken1 = value!;
       // set asset
       asset1 = Singleton.assetList.assetListState.findAsset(selectedToken1);
       if (asset1 != null) {
+        estimatedSwapTime = Singleton.swap.estimatedTime(asset0!.coins[0], asset1!.coins[0]);
         oneUnitRate = Singleton.swap
-            .swapRate(asset0!.coins[0], asset1!.coins[0], doubleAmountIn: 1.0);
+            .swapRate(asset0!.coins[0], asset1!.coins[0], doubleAmountIn: 1.0);        
       }
     });
   }
@@ -167,7 +170,15 @@ class _SwapPage extends State<SwapPage> with ChangeNotifier {
                               }
                               return _confirm();
                             }),
-                      )
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 18),
+                        child: Text("Estimated time for the swap"),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Text(estimatedSwapTime, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                      ),
                     ],
                   ),
                   numpad,
@@ -361,6 +372,7 @@ class _SwapPage extends State<SwapPage> with ChangeNotifier {
             color: Theme.of(context).colorScheme.secondary,
             border: Border.all(width: 1, color: Theme.of(context).colorScheme.primary),
             borderRadius: BorderRadius.all(Radius.elliptical(5, 5))),
+            height:40,
         child: IconButton(
             onPressed: () {
               if (asset0 == null || asset1 == null) {
@@ -572,9 +584,9 @@ class _SwapPage extends State<SwapPage> with ChangeNotifier {
           }
           Uint8List? signedBytes;
           if ((await asset0!.getWallet()).type == WalletType.phone) {
-            signedBytes = await signTxPhone(PSBT(), tx);
+            signedBytes = await signTxPhone(asset0!.makePST(tx), tx);
           } else if ((await asset0!.getWallet()).type == WalletType.tejoryCard) {
-            signedBytes = await signTxNFC(PSBT(), tx);
+            signedBytes = await signTxNFC(asset0!.makePST(tx), tx);
           }
           if (signedBytes == null) {
             _errorDialogBuilder(
@@ -613,7 +625,11 @@ class _SwapPage extends State<SwapPage> with ChangeNotifier {
                               if (v.data == null) {
                                 return Icon(Icons.pending);
                               }
-                              if (!v.data!.containsKey("result")) {
+                              if (!v.data!.containsKey("result") && !v.data!.containsKey("status")) {
+                                return Icon(Icons.error_outline_rounded,
+                                    color: Colors.red);
+                              }
+                              if (v.data!.containsKey("status") && v.data!["status"]!="ok") {
                                 return Icon(Icons.error_outline_rounded,
                                     color: Colors.red);
                               }
@@ -631,7 +647,7 @@ class _SwapPage extends State<SwapPage> with ChangeNotifier {
                             return Row(
                               children: [
                                 Icon(Icons.pending),
-                                Text("Transaction processing")
+                                Text("Transaction processing"),
                               ],
                             );
                           }

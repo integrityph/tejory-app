@@ -19,7 +19,7 @@ class CountGenerator extends GeneratorForAnnotation<BoxModel> {
       );
     }
 
-    final className = element.name;
+    final className = element.name!;
 
     final boxName = '${className[0].toLowerCase()}${className.substring(1)}Box';
 

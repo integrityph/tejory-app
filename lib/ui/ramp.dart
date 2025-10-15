@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -10,9 +11,7 @@ class RampPage extends StatefulWidget {
   _RampPage createState() => _RampPage();
 }
 
-
 class _RampPage extends State<RampPage> with ChangeNotifier {
-
   @override
   void initState() {
     super.initState();
@@ -25,15 +24,19 @@ class _RampPage extends State<RampPage> with ChangeNotifier {
 
   @override
   Widget build(BuildContext context) {
-    return Container(child: Center(child: Column(
-      children: [
-        ElevatedButton(
-            onPressed: (){
-              urlOpen("https://exchange.mercuryo.io");
-            },
-            child: const Text("Mercuryo"),
-          ),
-      ],
-    ),),);
+    return Container(
+      child: Center(
+        child: kDebugMode ? Column(
+          children: [
+            ElevatedButton(
+              onPressed: () {
+                urlOpen("https://exchange.mercuryo.io");
+              },
+              child: const Text("Mercuryo"),
+            ),
+          ],
+        ) : Text("This feature is available for beta testers only"),
+      ),
+    );
   }
 }

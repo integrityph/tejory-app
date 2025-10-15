@@ -1,3 +1,4 @@
+// dart format width=80
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
 part of 'tx.dart';
@@ -20,7 +21,7 @@ extension TxDBBoxModelHelpers on TxDB {
 // StaticModelGenerator
 // **************************************************************************
 
-class TxDBModel extends BaseBoxModel<TxDB, isar.TxDB> {
+class TxDBModel extends BaseBoxModel<TxDB> {
   const TxDBModel();
 
   List<TxDB>? find({
@@ -51,9 +52,7 @@ class TxDBModel extends BaseBoxModel<TxDB, isar.TxDB> {
     }
   }
 
-  int? delete({
-    Condition<TxDB>? q,
-  }) {
+  int? delete({Condition<TxDB>? q}) {
     final objectbox = Singleton.getObjectBoxDB();
     var queryBuilder = objectbox.txDBBox.query(q);
     final query = queryBuilder.build();
@@ -106,8 +105,9 @@ class TxDBModel extends BaseBoxModel<TxDB, isar.TxDB> {
 
   TxDB? getUniqueMV(int? coin, String? hash, int? outputIndex) {
     ObjectBox box = Singleton.getObjectBoxDB();
-    final query =
-        box.txDBBox.query(uniqueConditionMV(coin, hash, outputIndex)).build();
+    final query = box.txDBBox
+        .query(uniqueConditionMV(coin, hash, outputIndex))
+        .build();
     final result = query.findFirst();
     query.close();
     return result;
@@ -115,8 +115,9 @@ class TxDBModel extends BaseBoxModel<TxDB, isar.TxDB> {
 
   TxDB? getUnique(int? coin, String? hash, int? outputIndex) {
     ObjectBox box = Singleton.getObjectBoxDB();
-    final query =
-        box.txDBBox.query(uniqueCondition(coin, hash, outputIndex)).build();
+    final query = box.txDBBox
+        .query(uniqueCondition(coin, hash, outputIndex))
+        .build();
     final result = query.findFirst();
     query.close();
     return result;
@@ -164,30 +165,5 @@ class TxDBModel extends BaseBoxModel<TxDB, isar.TxDB> {
 
       return box.txDBBox.put(txDB);
     });
-  }
-
-  TxDB fromIsar(isar.TxDB src) {
-    TxDB val = TxDB();
-    val.id = src.id;
-    val.wallet = src.wallet;
-    val.coin = src.coin;
-    val.time = src.time;
-    val.amount = src.amount;
-    val.usdAmount = src.usdAmount;
-    val.isDeposit = src.isDeposit;
-    val.hash = src.hash;
-    val.spendingTxHash = src.spendingTxHash;
-    val.blockHash = src.blockHash;
-    val.fee = src.fee;
-    val.spent = src.spent;
-    val.confirmed = src.confirmed;
-    val.verified = src.verified;
-    val.failed = src.failed;
-    val.lockingScript = src.lockingScript;
-    val.lockingScriptType = src.lockingScriptType;
-    val.hdPath = src.hdPath;
-    val.outputIndex = src.outputIndex;
-
-    return val;
   }
 }

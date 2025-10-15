@@ -1,3 +1,4 @@
+// dart format width=80
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
 part of 'block.dart';
@@ -20,7 +21,7 @@ extension BlockBoxModelHelpers on Block {
 // StaticModelGenerator
 // **************************************************************************
 
-class BlockModel extends BaseBoxModel<Block, isar.Block> {
+class BlockModel extends BaseBoxModel<Block> {
   const BlockModel();
 
   List<Block>? find({
@@ -51,9 +52,7 @@ class BlockModel extends BaseBoxModel<Block, isar.Block> {
     }
   }
 
-  int? delete({
-    Condition<Block>? q,
-  }) {
+  int? delete({Condition<Block>? q}) {
     final objectbox = Singleton.getObjectBoxDB();
     var queryBuilder = objectbox.blockBox.query(q);
     final query = queryBuilder.build();
@@ -125,8 +124,9 @@ class BlockModel extends BaseBoxModel<Block, isar.Block> {
     }
 
     return box.getStore().runInTransaction(TxMode.write, () {
-      final query =
-          box.blockBox.query(uniqueConditionMV(block.coin, block.hash)).build();
+      final query = box.blockBox
+          .query(uniqueConditionMV(block.coin, block.hash))
+          .build();
       final existingId = query.findIds();
       query.close();
 
@@ -146,8 +146,9 @@ class BlockModel extends BaseBoxModel<Block, isar.Block> {
     }
 
     return box.getStore().runInTransaction(TxMode.write, () {
-      final query =
-          box.blockBox.query(uniqueCondition(block.coin, block.hash)).build();
+      final query = box.blockBox
+          .query(uniqueCondition(block.coin, block.hash))
+          .build();
       final existingId = query.findIds();
       query.close();
 
@@ -157,18 +158,5 @@ class BlockModel extends BaseBoxModel<Block, isar.Block> {
 
       return box.blockBox.put(block);
     });
-  }
-
-  Block fromIsar(isar.Block src) {
-    Block val = Block();
-    val.id = src.id;
-    val.coin = src.coin;
-    val.hash = src.hash;
-    val.height = src.height;
-    val.time = src.time;
-    val.filePath = src.filePath;
-    val.previousHash = src.previousHash;
-
-    return val;
   }
 }

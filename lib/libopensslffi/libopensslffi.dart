@@ -1,13 +1,16 @@
+/*
 // this implementation works with version openssl-3.5.0
 // https://github.com/openssl/openssl
+import 'dart:convert';
 import 'dart:ffi' as ffi;
 import 'package:blockchain_utils/helper/extensions/extensions.dart';
 import 'package:crypto/crypto.dart';
-import 'package:cryptography/cryptography.dart' as cryptography;
+// import 'package:cryptography/cryptography.dart' as cryptography;
 import 'package:ffi/ffi.dart';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:crypto/crypto.dart' as crypto;
+import 'package:boringssl_ffi/boringssl_ffi.dart' as bsll;
 
 // define classes
 final class SHA256_CTX extends ffi.Struct {
@@ -643,13 +646,18 @@ class LibOpenSSLFFI {
   }
 
   static Uint8List _pureDart_incrementalSHA256(List<Uint8List> data) {
-    final sha256Hasher = cryptography.Sha256().toSync().newHashSink();
-    for (final chunk in data) {
-      sha256Hasher.add(chunk);
+    final List<int> fullData =[];
+    for (final part in data) {
+      fullData.addAll(part);
     }
+    return bsll.sha256.hash(Uint8List.fromList(fullData))!;
+    // final sha256Hasher = cryptography.Sha256().toSync().newHashSink();
+    // for (final chunk in data) {
+    //   sha256Hasher.add(chunk);
+    // }
 
-    sha256Hasher.close();
-    return _ensureUint8List(sha256Hasher.hashSync().bytes);
+    // sha256Hasher.close();
+    // return _ensureUint8List(sha256Hasher.hashSync().bytes);
   }
 
   static Uint8List _pureDart_taggedHashSHA256(Uint8List tag, Uint8List data) {
@@ -660,14 +668,16 @@ class LibOpenSSLFFI {
   }
 
   static Uint8List _pureDart_HMACSHA512(Uint8List secretKey, Uint8List data) {
-    final hmacSha512 = cryptography.Hmac(cryptography.Sha512());
-    final secretKeyObj = cryptography.SecretKeyData(secretKey);
-    final mac = hmacSha512.toSync().calculateMacSync(
-      data,
-      secretKeyData: secretKeyObj,
-      nonce: <int>[],
-    );
-    return _ensureUint8List(mac.bytes);
+    final mac = bsll.hmac.hmacSHA512(secretKey, data);
+    // final hmacSha512 = cryptography.Hmac(cryptography.Sha512());
+    // final secretKeyObj = cryptography.SecretKeyData(secretKey);
+    // final mac = hmacSha512.toSync().calculateMacSync(
+    //   data,
+    //   secretKeyData: secretKeyObj,
+    //   nonce: <int>[],
+    // );
+    // return _ensureUint8List(mac.bytes);
+    return _ensureUint8List(mac!);
   }
 
   static Future<Uint8List> _pureDart_PBKDF2_SHA512({
@@ -676,16 +686,21 @@ class LibOpenSSLFFI {
     required int iterations,
     required int keyLength,
   }) async {
-    var pb = cryptography.Pbkdf2(
-      macAlgorithm: cryptography.Hmac(cryptography.Sha512()),
-      iterations: 2048,
-      bits: 64 * 8,
-    ).toSync();
-    final pass = await pb.deriveKeyFromPassword(
-      password: password,
-      nonce: salt,
-    );
-    return _ensureUint8List(await pass.extractBytes());
+    final result = bsll.pbkdf2HMAC.deriveKeySHA512(utf8.encode(password), salt, iterations, keyLength);
+    if (result == null) {
+      return Uint8List(0);
+    }
+    return result;
+    // var pb = cryptography.Pbkdf2(
+    //   macAlgorithm: cryptography.Hmac(cryptography.Sha512()),
+    //   iterations: 2048,
+    //   bits: 64 * 8,
+    // ).toSync();
+    // final pass = await pb.deriveKeyFromPassword(
+    //   password: password,
+    //   nonce: salt,
+    // );
+    // return _ensureUint8List(await pass.extractBytes());
   }
 
   // Helper functions
@@ -712,3 +727,4 @@ class LibOpenSSLFFI {
     return Uint8List.fromList(pointer.asTypedList(length).clone());
   }
 }
+*/

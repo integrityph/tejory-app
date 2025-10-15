@@ -132,7 +132,7 @@ class OtherHelpers {
     var p1 = AffinePoint.fromXY(a.X, a.Y);
 		var p2 = AffinePoint.fromXY(b.X, b.Y);
 
-    return Uint8List.fromList(hex.decode(curve.add(p1, p2).X.toRadixString(16).padLeft(64)));
+    return Uint8List.fromList(hex.decode(curve.add(p1, p2).X.toRadixString(16).padLeft(64, "0")));
   }
 
   static int getYParity(Uint8List pubKey, List<int> hash, Uint8List rawSig) {

@@ -3,12 +3,12 @@ import 'package:flutter/services.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:tejory/coins/historic_price_service.dart';
 import 'package:tejory/crypto-helper/other_helpers.dart';
-import 'package:tejory/libopensslffi/libopensslffi.dart';
 import 'package:tejory/libsecp256k1ffi/libsecp256k1ffi.dart';
 import 'package:tejory/singleton.dart';
 import 'package:tejory/ui/asset_list.dart';
 import 'package:tejory/ui/setup/page_animation.dart';
 import 'package:tejory/ui/tejory_page.dart';
+import 'package:boringssl_ffi/boringssl_ffi.dart' as bsll;
 
 class Login extends StatefulWidget {
   Login();
@@ -64,7 +64,7 @@ class _LoginState extends State<Login> {
       );
       print("authenticated: $authenticated");
     } on PlatformException catch (e) {
-      print(e);
+      print('authException: ${e}');
       return authenticated;
     }
     if (!mounted) {
@@ -78,7 +78,7 @@ class _LoginState extends State<Login> {
   Widget build(BuildContext context) {
     return Scaffold(
       floatingActionButton: Container(child: FutureBuilder(future: Singleton.getVersion(), builder:(context, ver){
-        return Text("${ver.data??""}${LibSecp256k1FFI.loaded()?"\nLibSecp256k1FFI: OK":""}${LibOpenSSLFFI.loaded()?"\nLibOpenSSLFFI: OK":""}", style:TextStyle(fontFamily: "monospace", fontSize: 10));
+        return Text("${ver.data??""}${LibSecp256k1FFI.loaded()?"\nLibSecp256k1FFI: OK":""}${(bsll.sha1.hash([])!=null)?"\nBoringSSLFFI: OK":""}", style:TextStyle(fontFamily: "monospace", fontSize: 10));
       })),
       body: Container(
         child: Center(child: Column(
@@ -112,13 +112,27 @@ class _LoginState extends State<Login> {
                 bool auth = false;
                 if (_supportState == _SupportState.supported) {
                   auth = await _authenticateWithBiometrics();
+                } else {
+                  const snackBar = SnackBar(content: Padding(
+                    padding: EdgeInsets.symmetric(vertical:8.0),
+                    child: Text('Please enable a PIN code or Biometrics to open the app'),
+                  ));
+                  ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                  await Future.delayed(Duration(seconds: 5));
                 }
                 if (auth) {
-                  if (Singleton.isar == null) {
+                  if (Singleton.objectbox == null) {
+                    const snackBar = SnackBar(content: Padding(
+                      padding: EdgeInsets.symmetric(vertical:8.0),
+                      child: Text('Unable to open your database. Please reinstall the add and import your wallet again'),
+                    ));
+                    ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                    await Future.delayed(Duration(seconds: 5));
+
                     SystemNavigator.pop();
                     return;
                   }
-                  FadeNavigator(context).navigateToReplace(Tejory(), customName: Navigator.defaultRouteName);
+                  FadeNavigator(context).navigateToReplace(Tejory(key: Singleton.tejoryScaffoldKey), customName: Navigator.defaultRouteName);
                 } else {
                   SystemNavigator.pop();
                 }

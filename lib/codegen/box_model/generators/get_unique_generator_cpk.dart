@@ -25,7 +25,7 @@ class GetUniqueGeneratorCPK extends GeneratorForAnnotation<BoxModel> {
         })
         .join(', ');
 
-    final className = element.name;
+    final className = element.name!;
     final boxName = '${className[0].toLowerCase()}${className.substring(1)}Box';
     final fieldNames = uniqueKeyFields
         .map((f) {

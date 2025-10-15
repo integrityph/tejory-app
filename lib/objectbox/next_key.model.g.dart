@@ -1,3 +1,4 @@
+// dart format width=80
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
 part of 'next_key.dart';
@@ -20,7 +21,7 @@ extension NextKeyBoxModelHelpers on NextKey {
 // StaticModelGenerator
 // **************************************************************************
 
-class NextKeyModel extends BaseBoxModel<NextKey, isar.NextKey> {
+class NextKeyModel extends BaseBoxModel<NextKey> {
   const NextKeyModel();
 
   List<NextKey>? find({
@@ -51,9 +52,7 @@ class NextKeyModel extends BaseBoxModel<NextKey, isar.NextKey> {
     }
   }
 
-  int? delete({
-    Condition<NextKey>? q,
-  }) {
+  int? delete({Condition<NextKey>? q}) {
     final objectbox = Singleton.getObjectBoxDB();
     var queryBuilder = objectbox.nextKeyBox.query(q);
     final query = queryBuilder.build();
@@ -106,8 +105,9 @@ class NextKeyModel extends BaseBoxModel<NextKey, isar.NextKey> {
 
   NextKey? getUniqueMV(int? wallet, int? coin, String? path) {
     ObjectBox box = Singleton.getObjectBoxDB();
-    final query =
-        box.nextKeyBox.query(uniqueConditionMV(wallet, coin, path)).build();
+    final query = box.nextKeyBox
+        .query(uniqueConditionMV(wallet, coin, path))
+        .build();
     final result = query.findFirst();
     query.close();
     return result;
@@ -115,8 +115,9 @@ class NextKeyModel extends BaseBoxModel<NextKey, isar.NextKey> {
 
   NextKey? getUnique(int? wallet, int? coin, String? path) {
     ObjectBox box = Singleton.getObjectBoxDB();
-    final query =
-        box.nextKeyBox.query(uniqueCondition(wallet, coin, path)).build();
+    final query = box.nextKeyBox
+        .query(uniqueCondition(wallet, coin, path))
+        .build();
     final result = query.findFirst();
     query.close();
     return result;
@@ -164,16 +165,5 @@ class NextKeyModel extends BaseBoxModel<NextKey, isar.NextKey> {
 
       return box.nextKeyBox.put(nextKey);
     });
-  }
-
-  NextKey fromIsar(isar.NextKey src) {
-    NextKey val = NextKey();
-    val.id = src.id;
-    val.wallet = src.wallet;
-    val.coin = src.coin;
-    val.path = src.path;
-    val.nextKey = src.nextKey;
-
-    return val;
   }
 }

@@ -1,3 +1,4 @@
+// dart format width=80
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
 part of 'lp.dart';
@@ -20,7 +21,7 @@ extension LPBoxModelHelpers on LP {
 // StaticModelGenerator
 // **************************************************************************
 
-class LPModel extends BaseBoxModel<LP, isar.LP> {
+class LPModel extends BaseBoxModel<LP> {
   const LPModel();
 
   List<LP>? find({
@@ -51,9 +52,7 @@ class LPModel extends BaseBoxModel<LP, isar.LP> {
     }
   }
 
-  int? delete({
-    Condition<LP>? q,
-  }) {
+  int? delete({Condition<LP>? q}) {
     final objectbox = Singleton.getObjectBoxDB();
     var queryBuilder = objectbox.lPBox.query(q);
     final query = queryBuilder.build();
@@ -107,8 +106,9 @@ class LPModel extends BaseBoxModel<LP, isar.LP> {
 
   LP? getUniqueMV(String? currency0, String? currency1) {
     ObjectBox box = Singleton.getObjectBoxDB();
-    final query =
-        box.lPBox.query(uniqueConditionMV(currency0, currency1)).build();
+    final query = box.lPBox
+        .query(uniqueConditionMV(currency0, currency1))
+        .build();
     final result = query.findFirst();
     query.close();
     return result;
@@ -116,8 +116,9 @@ class LPModel extends BaseBoxModel<LP, isar.LP> {
 
   LP? getUnique(String? currency0, String? currency1) {
     ObjectBox box = Singleton.getObjectBoxDB();
-    final query =
-        box.lPBox.query(uniqueCondition(currency0, currency1)).build();
+    final query = box.lPBox
+        .query(uniqueCondition(currency0, currency1))
+        .build();
     final result = query.findFirst();
     query.close();
     return result;
@@ -153,8 +154,9 @@ class LPModel extends BaseBoxModel<LP, isar.LP> {
     }
 
     return box.getStore().runInTransaction(TxMode.write, () {
-      final query =
-          box.lPBox.query(uniqueCondition(lP.currency0, lP.currency1)).build();
+      final query = box.lPBox
+          .query(uniqueCondition(lP.currency0, lP.currency1))
+          .build();
       final existingId = query.findIds();
       query.close();
 
@@ -164,18 +166,5 @@ class LPModel extends BaseBoxModel<LP, isar.LP> {
 
       return box.lPBox.put(lP);
     });
-  }
-
-  LP fromIsar(isar.LP src) {
-    LP val = LP();
-    val.id = src.id;
-    val.currency0 = src.currency0;
-    val.currency1 = src.currency1;
-    val.fee = src.fee;
-    val.tickSpacing = src.tickSpacing;
-    val.address = src.address;
-    val.dex = src.dex;
-
-    return val;
   }
 }

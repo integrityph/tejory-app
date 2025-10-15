@@ -281,11 +281,9 @@ class LibSecp256k1FFI {
       print("LibSecp256k1: Attempting to initialize FFI...");
       if (Platform.isAndroid) {
         _lib = ffi.DynamicLibrary.open('libsecp256k1.so');
-        // _lib = ffi.DynamicLibrary.open('libcrypto_bundle.so');
       } else if (Platform.isIOS) {
         // _lib = ffi.DynamicLibrary.process();
         _lib = ffi.DynamicLibrary.open('secp256k1.framework/secp256k1'); // this works with the framework approach
-        // _lib = ffi.DynamicLibrary.open('libsecp256k1.dylib'); // this works with the dylib approach
       } else {
         print('LibSecp256k1: Unsupported platform for FFI');
         return;
@@ -878,7 +876,7 @@ class LibSecp256k1FFI {
     var p2 = AffinePoint.fromXY(b.X, b.Y);
 
     return Uint8List.fromList(
-      hex.decode(curve.add(p1, p2).X.toRadixString(16).padLeft(64)),
+      hex.decode(curve.add(p1, p2).X.toRadixString(16).padLeft(64, "0")),
     );
   }
 

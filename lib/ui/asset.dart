@@ -96,13 +96,27 @@ class Asset with ChangeNotifier {
   }
 
   void loadIcons(BuildContext context) async {
-    iconOnline = Image.asset(
-      'assets/${symbol.toLowerCase()}.png',
-      width: 40,
-      height: 40,
-      errorBuilder: (context, error, stackTrace) {
-        return Icon(Icons.error);
-      },
+    bool isCustodial = false;
+    if (coins.isNotEmpty) {
+      isCustodial = coins[0].isCustodial();
+    }
+    iconOnline = Stack(
+      children: [
+        Image.asset(
+          'assets/${symbol.toLowerCase()}.png',
+          width: 40,
+          height: 40,
+          errorBuilder: (context, error, stackTrace) {
+            return Icon(Icons.error);
+          },
+        ),
+        if (isCustodial)
+          Positioned(
+            bottom: -5,
+            right: -5,
+            child: Text("🏦", style: TextStyle(fontSize: 16)),
+          ),
+      ],
     );
 
     iconOffline = Image.asset(
@@ -115,6 +129,10 @@ class Asset with ChangeNotifier {
       colorBlendMode: BlendMode.saturation,
       color: Theme.of(context).colorScheme.secondary,
     );
+  }
+
+  Widget getIcon() {
+    return (coins.isEmpty || !coins[0].isConnected) ? iconOffline : iconOnline;
   }
 
   void updatePrice(Asset newPriceData) {

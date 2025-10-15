@@ -3,27 +3,28 @@ import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:isar/isar.dart';
 import 'package:objectbox/objectbox.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tejory/coins/historic_price_service.dart';
-import 'package:tejory/collections/balance.dart' as isarmodel;
-import 'package:tejory/collections/block.dart' as isarmodel;
-import 'package:tejory/collections/coin.dart' as isarmodel;
-import 'package:tejory/collections/data_version.dart' as isarmodel;
-import 'package:tejory/collections/key.dart' as isarmodel;
-import 'package:tejory/collections/lp.dart' as isarmodel;
-import 'package:tejory/collections/next_key.dart' as isarmodel;
-import 'package:tejory/collections/tx.dart' as isarmodel;
-import 'package:tejory/collections/wallet_db.dart' as isarmodel;
+// import 'package:tejory/collections/balance.dart.bak' as isarmodel;
+// import 'package:tejory/collections/block.dart' as isarmodel;
+// import 'package:tejory/collections/coin.dart' as isarmodel;
+// import 'package:tejory/collections/data_version.dart' as isarmodel;
+// import 'package:tejory/collections/key.dart' as isarmodel;
+// import 'package:tejory/collections/lp.dart' as isarmodel;
+// import 'package:tejory/collections/next_key.dart' as isarmodel;
+// import 'package:tejory/collections/tx.dart' as isarmodel;
+// import 'package:tejory/collections/wallet_db.dart' as isarmodel;
 import 'package:tejory/objectbox/objectbox.dart';
 import 'package:tejory/swap/swap.dart';
 import 'package:tejory/ui/asset_list.dart';
 import 'package:tejory/ui/currency.dart';
+import 'package:tejory/ui/tejory_page.dart';
 
 class Singleton {
-  static Isar? isar;
+  // static Isar? isar;
   static ObjectBox? objectbox;
   static AssetList assetList = AssetList.newBlank();
   static String? QRAddress = null;
@@ -49,6 +50,8 @@ class Singleton {
       FlutterLocalNotificationsPlugin();
   static Swap swap = new Swap();
   static bool notificationsEnabled = false;
+  static bool dismissCustodialMessage = false;
+  static final GlobalKey<TejoryState> tejoryScaffoldKey = GlobalKey<TejoryState>();
 
   Singleton() {}
 
@@ -149,29 +152,6 @@ class Singleton {
     );
   }
 
-  static Future<void> initDB({bool showInspector = false}) async {
-    final dir = await getApplicationDocumentsDirectory();
-    isar = await Isar.open(
-      [
-        isarmodel.KeySchema,
-        isarmodel.TxDBSchema,
-        isarmodel.CoinSchema,
-        isarmodel.WalletDBSchema,
-        isarmodel.BalanceSchema,
-        isarmodel.NextKeySchema,
-        isarmodel.BlockSchema,
-        isarmodel.DataVersionSchema,
-        isarmodel.LPSchema,
-      ],
-      inspector: showInspector,
-      directory: dir.path,
-    );
-  }
-
-  static Isar getDB() {
-    return isar!;
-  }
-
   static Future<void> initObjectBoxDB({ByteData? fromBytes}) async {
     // FOR DEBUG ONLY. This should be removed before the switch to ObjectBox
     // if (fromBytes == null && kDebugMode) {
@@ -179,10 +159,10 @@ class Singleton {
     // }
 
     objectbox = await ObjectBox.create(fromBytes:fromBytes);
-    if (Admin.isAvailable() && fromBytes == null && kDebugMode) {
-      // Keep a reference until no longer needed or manually closed.
-      boxAdmin = Admin(objectbox!.getStore());
-    }
+    // if (Admin.isAvailable() && fromBytes == null && kDebugMode) {
+    //   // Keep a reference until no longer needed or manually closed.
+    //   boxAdmin = Admin(objectbox!.getStore());
+    // }
   }
 
   static ObjectBox getObjectBoxDB() {
@@ -343,5 +323,11 @@ class Singleton {
     //   context,
     //   MaterialPageRoute<void>(builder: (context) => SecondScreen(payload)),
     // );
+  }
+
+  static void setDismissCustodialMessage(bool val) async {
+    dismissCustodialMessage = val;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('hideCustodialMessage', dismissCustodialMessage);
   }
 }

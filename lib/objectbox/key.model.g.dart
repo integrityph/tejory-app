@@ -1,3 +1,4 @@
+// dart format width=80
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
 part of 'key.dart';
@@ -20,7 +21,7 @@ extension KeyBoxModelHelpers on Key {
 // StaticModelGenerator
 // **************************************************************************
 
-class KeyModel extends BaseBoxModel<Key, isar.Key> {
+class KeyModel extends BaseBoxModel<Key> {
   const KeyModel();
 
   List<Key>? find({
@@ -51,9 +52,7 @@ class KeyModel extends BaseBoxModel<Key, isar.Key> {
     }
   }
 
-  int? delete({
-    Condition<Key>? q,
-  }) {
+  int? delete({Condition<Key>? q}) {
     final objectbox = Singleton.getObjectBoxDB();
     var queryBuilder = objectbox.keyBox.query(q);
     final query = queryBuilder.build();
@@ -106,8 +105,9 @@ class KeyModel extends BaseBoxModel<Key, isar.Key> {
 
   Key? getUniqueMV(int? wallet, int? coin, String? path) {
     ObjectBox box = Singleton.getObjectBoxDB();
-    final query =
-        box.keyBox.query(uniqueConditionMV(wallet, coin, path)).build();
+    final query = box.keyBox
+        .query(uniqueConditionMV(wallet, coin, path))
+        .build();
     final result = query.findFirst();
     query.close();
     return result;
@@ -163,17 +163,5 @@ class KeyModel extends BaseBoxModel<Key, isar.Key> {
 
       return box.keyBox.put(key);
     });
-  }
-
-  Key fromIsar(isar.Key src) {
-    Key val = Key();
-    val.id = src.id;
-    val.wallet = src.wallet;
-    val.coin = src.coin;
-    val.path = src.path;
-    val.pubKey = src.pubKey;
-    val.chainCode = src.chainCode;
-
-    return val;
   }
 }

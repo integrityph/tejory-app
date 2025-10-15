@@ -1,3 +1,4 @@
+// dart format width=80
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
 part of 'coin.dart';
@@ -20,7 +21,7 @@ extension CoinBoxModelHelpers on Coin {
 // StaticModelGenerator
 // **************************************************************************
 
-class CoinModel extends BaseBoxModel<Coin, isar.Coin> {
+class CoinModel extends BaseBoxModel<Coin> {
   const CoinModel();
 
   List<Coin>? find({
@@ -51,9 +52,7 @@ class CoinModel extends BaseBoxModel<Coin, isar.Coin> {
     }
   }
 
-  int? delete({
-    Condition<Coin>? q,
-  }) {
+  int? delete({Condition<Coin>? q}) {
     final objectbox = Singleton.getObjectBoxDB();
     var queryBuilder = objectbox.coinBox.query(q);
     final query = queryBuilder.build();
@@ -154,32 +153,5 @@ class CoinModel extends BaseBoxModel<Coin, isar.Coin> {
 
       return box.coinBox.put(coin);
     });
-  }
-
-  Coin fromIsar(isar.Coin src) {
-    Coin val = Coin();
-    val.id = src.id;
-    val.name = src.name;
-    val.hdCode = src.hdCode;
-    val.symbol = src.symbol;
-    val.image = src.image;
-    val.yahooFinance = src.yahooFinance;
-    val.decimals = src.decimals;
-    val.hrpBech32 = src.hrpBech32;
-    val.webId = src.webId;
-    val.peerSeedType = src.peerSeedType;
-    val.peerSource = src.peerSource;
-    val.defaultPort = src.defaultPort;
-    val.magic = src.magic;
-    val.blockZeroHash = src.blockZeroHash;
-    val.netVersionPublicHex = src.netVersionPublicHex;
-    val.netVersionPrivateHex = src.netVersionPrivateHex;
-    val.contractHash = src.contractHash;
-    val.template = src.template;
-    val.usdPrice = src.usdPrice;
-    val.active = src.active;
-    val.workerIsolateRequired = src.workerIsolateRequired;
-
-    return val;
   }
 }

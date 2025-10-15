@@ -6,9 +6,11 @@ import 'package:tejory/crypto-helper/other_helpers.dart';
 import 'package:tejory/box_models.g.dart';
 import 'package:tejory/objectbox.g.dart';
 import 'package:tejory/singleton.dart';
-import 'package:tejory/ui/network.dart';
+import 'package:tejory/coins/network.dart';
 import 'package:tejory/ui/receive.dart';
 import 'package:tejory/ui/send.dart';
+import 'package:tejory/ui/setup/page_animation.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'asset.dart';
 import 'package:tejory/coindesk/api.dart' as coindesk;
 
@@ -26,6 +28,7 @@ class _TokenDetails extends State<TokenDetails> with TickerProviderStateMixin {
   List<Map<String, dynamic>>? chartData;
   int assetIndex = 0;
   late AnimationController controller;
+  bool dismissCustodialMessage = Singleton.dismissCustodialMessage;
 
   @override
   void initState() {
@@ -38,16 +41,9 @@ class _TokenDetails extends State<TokenDetails> with TickerProviderStateMixin {
   }
 
   Future<List<VisualTx>> getTxDbList() async {
-    // var txDBList =
-    //     await Singleton.getDB().txDBs
-    //         .filter()
-    //         .coinEqualTo(asset.coinId)
-    //         .findAll();
-    var txDBList = await Models.txDB.find(q:
-      TxDB_.coin.equals(asset.coinId!),
-    );
+    var txDBList = await Models.txDB.find(q: TxDB_.coin.equals(asset.coinId!));
 
-    if (txDBList==null) {
+    if (txDBList == null) {
       return [];
     }
 
@@ -58,10 +54,12 @@ class _TokenDetails extends State<TokenDetails> with TickerProviderStateMixin {
       return val;
     });
 
+    print("this one too");
+
     return vTxList;
   }
 
-  Widget getTxItem(VisualTx tx) {
+  Widget getTxItemOld(VisualTx tx) {
     return Container(
       padding: EdgeInsets.only(top: 8, bottom: 8),
       decoration: BoxDecoration(
@@ -82,31 +80,71 @@ class _TokenDetails extends State<TokenDetails> with TickerProviderStateMixin {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Transfer - ${tx.isDeposit ? "Incoming" : "Outgoing"}',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                  Row(
+                    children: [
+                      Icon(
+                        tx.isDeposit
+                            ? Icons.arrow_circle_down
+                            : Icons.arrow_circle_up,
+                        color: tx.isDeposit ? Colors.green : Colors.red,
+                      ),
+                      SizedBox(width: 2),
+                      Text(
+                        '${tx.isDeposit ? "Received" : "Sent"}',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      SizedBox(width: 8),
+                      Text(
+                        DateFormat("hh:mm a").format(tx.time!),
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.normal,
+                        ),
+                      ),
+                    ],
                   ),
-                  SizedBox(height: 6),
-                  Text(
-                    "${tx.getFiatRate(asset)}",
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.normal,
-                    ),
+                  SizedBox(height: 2),
+
+                  // Text(
+                  //   "${tx.getFiatRate(asset)}",
+                  //   style: TextStyle(
+                  //     fontSize: 12,
+                  //     fontWeight: FontWeight.normal,
+                  //   ),
+                  // ),
+                  // Text(
+                  //   "${tx.time!.year.toString()}-${tx.time!.month.toString().padLeft(2, '0')}-${tx.time!.day.toString().padLeft(2, '0')} ${tx.time!.hour.toString().padLeft(2, '0')}:${tx.time!.minute.toString().padLeft(2, '0')}",
+                  //   style: TextStyle(
+                  //     fontSize: 12,
+                  //     fontWeight: FontWeight.normal,
+                  //   ),
+                  // ),
+                  Row(
+                    children: [
+                      SizedBox(width: 27),
+                      Text(
+                        DateFormat("MMM d, yyyy").format(tx.time!),
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.normal,
+                        ),
+                      ),
+                    ],
                   ),
-                  Text(
-                    "Fee: ${(asset.getDecimalAmountInDouble(BigInt.from(tx.fee))).toStringAsFixed(8)}",
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.normal,
-                    ),
-                  ),
-                  Text(
-                    "${tx.time!.year.toString()}-${tx.time!.month.toString().padLeft(2, '0')}-${tx.time!.day.toString().padLeft(2, '0')} ${tx.time!.hour.toString().padLeft(2, '0')}:${tx.time!.minute.toString().padLeft(2, '0')}",
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.normal,
-                    ),
+                  Row(
+                    children: [
+                      SizedBox(width: 27),
+                      Text(
+                        "Fee: ${(asset.getDecimalAmountInDouble(BigInt.from(tx.fee))).toStringAsFixed(8)}",
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.normal,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -114,7 +152,7 @@ class _TokenDetails extends State<TokenDetails> with TickerProviderStateMixin {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    "${tx.isDeposit ? "+" : "-"} ${(asset.getDecimalAmountInDouble(BigInt.from((tx.amount > 0 ? tx.amount : -tx.amount)))).toStringAsFixed(8)}",
+                    "${tx.isDeposit ? "+" : "-"}${(asset.getDecimalAmountInDouble(BigInt.from((tx.amount > 0 ? tx.amount : -tx.amount)))).toStringAsFixed(8)}",
                     style: TextStyle(
                       fontSize: 18,
                       fontFamily: "monospace",
@@ -122,11 +160,11 @@ class _TokenDetails extends State<TokenDetails> with TickerProviderStateMixin {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  SizedBox(height: 9),
+                  SizedBox(height: 3),
                   Text(
                     "${tx.getFiatValue(asset)}",
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: 20,
                       fontFamily: "monospace",
                       color: tx.isDeposit ? Colors.green : Colors.red,
                       fontWeight: FontWeight.bold,
@@ -136,13 +174,149 @@ class _TokenDetails extends State<TokenDetails> with TickerProviderStateMixin {
               ),
             ],
           ),
-          Text(
-            "${(tx.outAddress != "") ? tx.outAddress : tx.inAddress}",
-            style: TextStyle(fontSize: 12, fontWeight: FontWeight.normal),
-          ),
+          if (tx.outAddress != "" || tx.inAddress != "")
+            Text(
+              "${(tx.outAddress != "") ? tx.outAddress : tx.inAddress}",
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.normal),
+            ),
         ],
       ),
     );
+  }
+
+  Widget getTxItem(VisualTx tx) {
+    return Card(
+      margin: EdgeInsets.symmetric(vertical: 8, horizontal: 2),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          tx.isDeposit
+                              ? Icons.arrow_circle_down
+                              : Icons.arrow_circle_up,
+                          color: tx.isDeposit ? Colors.green : Colors.red,
+                        ),
+                        SizedBox(width: 2),
+                        Text(
+                          '${tx.isDeposit ? "Received" : "Sent"}',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        SizedBox(width: 8),
+                        Text(
+                          DateFormat("hh:mm a").format(tx.time!),
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.normal,
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 2),
+
+                    // Text(
+                    //   "${tx.getFiatRate(asset)}",
+                    //   style: TextStyle(
+                    //     fontSize: 12,
+                    //     fontWeight: FontWeight.normal,
+                    //   ),
+                    // ),
+                    // Text(
+                    //   "${tx.time!.year.toString()}-${tx.time!.month.toString().padLeft(2, '0')}-${tx.time!.day.toString().padLeft(2, '0')} ${tx.time!.hour.toString().padLeft(2, '0')}:${tx.time!.minute.toString().padLeft(2, '0')}",
+                    //   style: TextStyle(
+                    //     fontSize: 12,
+                    //     fontWeight: FontWeight.normal,
+                    //   ),
+                    // ),
+                    Row(
+                      children: [
+                        SizedBox(width: 27),
+                        Text(
+                          DateFormat("MMM d, yyyy").format(tx.time!),
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.normal,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Row(
+                      children: [
+                        SizedBox(width: 27),
+                        Text(
+                          "Fee: ${(asset.getDecimalAmountInDouble(BigInt.from(tx.fee))).toStringAsFixed(8)}",
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.normal,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      "${tx.isDeposit ? "+" : "-"}${(asset.getDecimalAmountInDouble(BigInt.from((tx.amount > 0 ? tx.amount : -tx.amount)))).toStringAsFixed(8)}",
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontFamily: "monospace",
+                        color: tx.isDeposit ? Colors.green : Colors.red,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    SizedBox(height: 3),
+                    Text(
+                      "${tx.getFiatValue(asset)}",
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontFamily: "monospace",
+                        color: tx.isDeposit ? Colors.green : Colors.red,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            if (tx.outAddress != "" || tx.inAddress != "")
+              // Text(
+              //   "${(tx.outAddress != "") ? tx.outAddress : tx.inAddress}",
+              //   style: TextStyle(fontSize: 13, fontWeight: FontWeight.normal),
+              // ),
+              FittedBox(
+                fit: BoxFit.contain, // This tells it to scale down to fit
+                child: Text(
+                  "${(tx.outAddress != "") ? tx.outAddress : tx.inAddress}",
+                  style: TextStyle(
+                    fontFamily: 'monospace',
+                  ), // No need for a font size!
+                  maxLines: 1,
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  urlOpen(String URL) {
+    final Uri url = Uri.parse(URL);
+    launchUrl(url);
   }
 
   @override
@@ -156,14 +330,21 @@ class _TokenDetails extends State<TokenDetails> with TickerProviderStateMixin {
         appBar: AppBar(
           title: Row(
             children: [
-              SizedBox(
-                height: 24,
-                child: Image.asset("assets/${asset.symbol.toLowerCase()}.png"),
-              ),
-              SizedBox(width: 10),
-              Text(
-                '${asset.name} (${asset.symbol})',
-                style: TextStyle(fontSize: 20),
+              SizedBox(height: 24, child: asset.getIcon()),
+              SizedBox(width: 5),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text('${asset.name}', style: TextStyle(fontSize: 20)),
+                  Text(
+                    ' ${asset.symbol}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontFamily: "monospace",
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -175,20 +356,87 @@ class _TokenDetails extends State<TokenDetails> with TickerProviderStateMixin {
               builder: (context, w) {
                 return SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.only(left:8.0),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
+                    padding: const EdgeInsets.only(left: 8.0),
+                    child: Column(
                       children: [
-                        Text(
-                          "${(asset.lastChange >= 0) ? "▲" : "▼"}${OtherHelpers.humanizeMoney(asset.priceUsd, isFiat: true, addFiatSymbol: true)}",
-                          style: TextStyle(
-                            fontSize: 24,
-                            color:
-                                (asset.lastChange >= 0)
-                                    ? Colors.green
-                                    : Colors.red,
-                          ),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Text(
+                              "${(asset.lastChange >= 0) ? "▲" : "▼"}${OtherHelpers.humanizeMoney(asset.priceUsd, isFiat: true, addFiatSymbol: true)}",
+                              style: TextStyle(
+                                fontSize: 24,
+                                color:
+                                    (asset.lastChange >= 0)
+                                        ? Colors.green
+                                        : Colors.red,
+                              ),
+                            ),
+                          ],
                         ),
+                        if (asset.coins[0].isCustodial() &&
+                            !dismissCustodialMessage)
+                          Card(
+                            child: Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        "🏦",
+                                        style: TextStyle(fontSize: 18),
+                                      ),
+                                      Expanded(
+                                        child: Text(
+                                          asset.coins[0].custodialMessage()!,
+                                          style: TextStyle(fontSize: 14),
+                                          maxLines: 3,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  Row(
+                                    spacing: 8,
+                                    children: [
+                                      if (asset.coins[0]
+                                              .custodialMessageLink() !=
+                                          null)
+                                        ElevatedButton(
+                                          child: Text(
+                                            "Learn More",
+                                            style: TextStyle(fontSize: 14),
+                                          ),
+                                          onPressed: () {
+                                            urlOpen(
+                                              asset.coins[0]
+                                                  .custodialMessageLink()!,
+                                            );
+                                          },
+                                        ),
+                                      ElevatedButton(
+                                        child: Text(
+                                          "Dismiss",
+                                          style: TextStyle(fontSize: 14),
+                                        ),
+                                        onPressed: () {
+                                          Singleton.setDismissCustodialMessage(
+                                            true,
+                                          );
+                                          setState(() {
+                                            dismissCustodialMessage = true;
+                                          });
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
                       ],
                     ),
                   ),
@@ -224,7 +472,11 @@ class _TokenDetails extends State<TokenDetails> with TickerProviderStateMixin {
                       child: SizedBox(
                         height: 200,
                         child: SfCartesianChart(
-                          primaryXAxis: DateTimeAxis(dateFormat: DateFormat.MMMd(), intervalType: DateTimeIntervalType.days, maximumLabels:5),
+                          primaryXAxis: DateTimeAxis(
+                            dateFormat: DateFormat.MMMd(),
+                            intervalType: DateTimeIntervalType.days,
+                            maximumLabels: 5,
+                          ),
                           primaryYAxis: NumericAxis(
                             maximum: maxY,
                             minimum: minY,
@@ -295,7 +547,6 @@ class _TokenDetails extends State<TokenDetails> with TickerProviderStateMixin {
                               child: SizedBox(
                                 height: 735,
                                 child: Sender(
-                                  networkList: networkList,
                                   address: '',
                                   asset: asset,
                                 ),
@@ -330,7 +581,6 @@ class _TokenDetails extends State<TokenDetails> with TickerProviderStateMixin {
                                 height: 700,
                                 child: Receiver(
                                   initialNetwork: '',
-                                  networkList: networkList,
                                   address: '',
                                   initialToken: asset.id,
                                   asset: asset,
@@ -359,7 +609,10 @@ class _TokenDetails extends State<TokenDetails> with TickerProviderStateMixin {
                           ],
                         ),
                       ),
-                      onPressed: () {},
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        Singleton.tejoryScaffoldKey.currentState?.changeTab(1);
+                      },
                     ),
                   ),
                 ],
@@ -388,14 +641,16 @@ class _TokenDetails extends State<TokenDetails> with TickerProviderStateMixin {
                     child: Center(child: Text("Error: ${txDBList.error}")),
                   );
                 }
-                if (!txDBList.hasData || txDBList.data == null || txDBList.data!.isEmpty) {
+                if (!txDBList.hasData ||
+                    txDBList.data == null ||
+                    txDBList.data!.isEmpty) {
                   // Empty state: return a sliver
                   return SliverToBoxAdapter(
                     child: Center(child: Text("No data found.")),
                   );
                 }
                 return SliverPadding(
-                  padding: EdgeInsetsGeometry.only(right: 8, left:8),
+                  padding: EdgeInsetsGeometry.only(right: 8, left: 8),
                   sliver: SliverList(
                     delegate: SliverChildBuilderDelegate((
                       BuildContext context,

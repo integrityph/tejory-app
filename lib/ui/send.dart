@@ -12,20 +12,20 @@ import 'package:tejory/ui/qrscanner.dart';
 import 'package:tejory/coins/pst.dart';
 import 'package:tejory/wallets/wallet_type.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'network.dart';
+import '../coins/network.dart';
 
 class Sender extends StatefulWidget {
   final String? network;
-  final Map<String, Set<Network>> networkList;
   final Asset? asset;
   final String address;
   final bool sendMax = false;
+  final bool startInQR;
 
   Sender({
-    required this.networkList,
     required this.address,
     this.network,
     this.asset = null,
+    this.startInQR = false,
   });
 
   @override
@@ -58,6 +58,9 @@ class _SenderState extends State<Sender> {
   bool _isMax = false;
   NFC nfc = NFC();
   Numpad numpad = Numpad();
+  late final bool startInQR;
+  List<Asset> currentAssetList = [];
+  List<Network> currentNetworkList = [];
 
   @override
   void initState() {
@@ -81,66 +84,96 @@ class _SenderState extends State<Sender> {
     feeAmountDouble = OtherHelpers.humanizeMoney(0.0);
     feeAmountFiatDouble = OtherHelpers.humanizeMoney(0.0, isFiat: true);
     totalAmountDouble = OtherHelpers.humanizeMoney(0.0);
+
+    if (widget.startInQR) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        // This code will run after the build is complete
+        var result = Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (context) => QRScanner()));
+
+        result.then((val) {
+          if (val == null) {
+            return;
+          }
+          if (val is String) {
+            addressController.text = val;
+            processAddress();
+          }
+        });
+      });
+    }
   }
 
   void processAddress() {
-    if (!addressController.text.startsWith("lnbc")) {
-      if (selectedNetwork == "BTC_LIGHTNING") {
-        setState(() {
-          selectedToken = "";
-          asset = null;
-          selectedNetworkObj = null;
-          selectedNetwork = "";
-
-          balance = BigInt.zero;
-          balanceStr = "";
-          balanceFiatStr = "";
-          symbol = "";
-
-          amountController.text = "";
-          amountFiatController.text = "";
-
-          amountDouble = OtherHelpers.humanizeMoney(0.0);
-          feeAmountDouble = OtherHelpers.humanizeMoney(0.0);
-          feeAmountFiatDouble = OtherHelpers.humanizeMoney(0.0, isFiat: true);
-          totalAmountDouble = OtherHelpers.humanizeMoney(0.0);
-        });
+    // lint the address for LN
+    if (addressController.text.toLowerCase().startsWith("lnbc") ||
+        addressController.text.toLowerCase().startsWith("lightning:")) {
+      var finalInvoice = addressController.text;
+      var changed = false;
+      if (finalInvoice != finalInvoice.toLowerCase()) {
+        finalInvoice = finalInvoice.toLowerCase();
+        changed = true;
       }
-      return;
-    }
-    var BTCLN = Singleton.assetList.assetListState.findAsset("BTCLN");
-    var amount = BTCLN!.getAmountFromAddress(addressController.text);
-    if (amount == null) {
-      if (selectedNetwork == "BTC_LIGHTNING") {
-        setState(() {
-          selectedToken = "";
-          asset = null;
-          selectedNetworkObj = null;
-          selectedNetwork = "";
-
-          balance = BigInt.zero;
-          balanceStr = "";
-          balanceFiatStr = "";
-          symbol = "";
-
-          amountController.text = "";
-          amountFiatController.text = "";
-
-          amountDouble = OtherHelpers.humanizeMoney(0.0);
-          feeAmountDouble = OtherHelpers.humanizeMoney(0.0);
-          feeAmountFiatDouble = OtherHelpers.humanizeMoney(0.0, isFiat: true);
-          totalAmountDouble = OtherHelpers.humanizeMoney(0.0);
-        });
+      if (finalInvoice.startsWith("lightning:")) {
+        finalInvoice = finalInvoice.replaceFirst("lightning:", "");
+        changed = true;
       }
-      return;
+      if (changed) {
+        addressController.text = finalInvoice;
+      }
     }
+
+    // reset state
+    setState(() {
+      selectedToken = "";
+      asset = null;
+      selectedNetworkObj = null;
+      selectedNetwork = "";
+
+      balance = BigInt.zero;
+      balanceStr = "";
+      balanceFiatStr = "";
+      symbol = "";
+
+      amountController.text = "";
+      amountFiatController.text = "";
+
+      amountDouble = OtherHelpers.humanizeMoney(0.0);
+      feeAmountDouble = OtherHelpers.humanizeMoney(0.0);
+      feeAmountFiatDouble = OtherHelpers.humanizeMoney(0.0, isFiat: true);
+      totalAmountDouble = OtherHelpers.humanizeMoney(0.0);
+    });
 
     setState(() {
-      selectedToken = BTCLN.id;
-      asset = BTCLN;
-      selectedNetworkObj = networkList["BTCLN"]!.firstWhere((net) {
-        return net.networkSymbol == "BTC_LIGHTNING";
-      });
+      currentAssetList = Singleton.assetList.assetListState.filteredAssets
+          .where((asset) => asset.isValidAddress(addressController.text))
+          .toList();
+    });
+
+    if (currentAssetList.isEmpty) {
+      return;
+    }
+
+    currentNetworkList = [];
+    if (currentAssetList.length == 1) {
+      asset = currentAssetList[0];
+      currentNetworkList = asset!.coins[0].getNetworks(
+        address: addressController.text,
+      );
+
+      // validate the network
+      if (currentNetworkList.isEmpty) {
+        asset = null;
+        return;
+      }
+    }
+
+    FocusManager.instance.primaryFocus?.unfocus();
+
+    if (asset != null) {
+      selectedToken = asset!.id;
+      selectedNetworkObj = currentNetworkList[0];
       selectedNetwork = selectedNetworkObj!.networkSymbol;
 
       balance = asset!.getBalance();
@@ -152,27 +185,54 @@ class _SenderState extends State<Sender> {
         addFiatSymbol: false,
       );
       symbol = asset!.symbol;
-      var cryptoAmount = asset!.getDecimalAmount(amount);
-      amountController.text = cryptoAmount;
-      FocusManager.instance.primaryFocus?.unfocus();
 
-      () async {
-        var fee = await asset!.calculateFee(addressController.text, amount);
-        var feeDouble = asset!.getDecimalAmountInDouble(fee);
-        var amountDouble = asset!.getDecimalAmountInDouble(amount);
+      if (selectedNetworkObj!.requiresAmount) {
+        var amount = asset!.getAmountFromAddress(addressController.text);
+        // verify the amount is correct
+        if (amount == null) {
+          // this is an invalid amount
+          // reset state
+          selectedToken = "";
+          asset = null;
+          selectedNetworkObj = null;
+          selectedNetwork = "";
 
-        setState(() {
-          feeAmountDouble = OtherHelpers.humanizeMoney(feeDouble);
-          feeAmountFiatDouble = OtherHelpers.humanizeMoney(
-            feeDouble * asset!.priceUsd,
-            isFiat: true,
-          );
-          totalAmountDouble = OtherHelpers.humanizeMoney(
-            amountDouble + feeDouble,
-          );
-        });
-      }();
-    });
+          balance = BigInt.zero;
+          balanceStr = "";
+          balanceFiatStr = "";
+          symbol = "";
+
+          amountController.text = "";
+          amountFiatController.text = "";
+
+          amountDouble = OtherHelpers.humanizeMoney(0.0);
+          feeAmountDouble = OtherHelpers.humanizeMoney(0.0);
+          feeAmountFiatDouble = OtherHelpers.humanizeMoney(0.0, isFiat: true);
+          totalAmountDouble = OtherHelpers.humanizeMoney(0.0);
+          return;
+        }
+
+        var cryptoAmount = asset!.getDecimalAmount(amount);
+        amountController.text = cryptoAmount;
+
+        () async {
+          var fee = await asset!.calculateFee(addressController.text, amount);
+          var feeDouble = asset!.getDecimalAmountInDouble(fee);
+          var amountDouble = asset!.getDecimalAmountInDouble(amount);
+
+          setState(() {
+            feeAmountDouble = OtherHelpers.humanizeMoney(feeDouble);
+            feeAmountFiatDouble = OtherHelpers.humanizeMoney(
+              feeDouble * asset!.priceUsd,
+              isFiat: true,
+            );
+            totalAmountDouble = OtherHelpers.humanizeMoney(
+              amountDouble + feeDouble,
+            );
+          });
+        }();
+      }
+    }
   }
 
   void updateFiatAmounts() {
@@ -333,6 +393,13 @@ class _SenderState extends State<Sender> {
       amountFiatController.removeListener(updateFiatAmounts);
       amountFiatController.text = "";
       amountFiatController.addListener(updateFiatAmounts);
+
+      currentNetworkList = asset!.coins[0].getNetworks(address:addressController.text);
+      if (currentNetworkList.length == 1) {
+        selectedNetworkObj = currentNetworkList[0];
+        selectedNetwork = selectedNetworkObj!.networkSymbol;
+        
+      }
     });
   }
 
@@ -353,15 +420,19 @@ class _SenderState extends State<Sender> {
               Padding(
                 padding: const EdgeInsets.only(top: 5.0, left: 10),
                 child: Column(
+                  spacing: 8,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _address(),
-                    _dropdownSelectToken(),
-                    _selectNetwork(),
-                    _enterAmount(),
-                    _availableBalance(),
-                    _enterAmountFiat(),
-                    _availableBalanceFiat(),
+                    currentAssetList.length>1?
+                    _dropdownSelectToken():
+                    _tokenDisplay(),
+                    // _selectNetwork(),
+                    _networkDisplay(),
+                    Column(children: [_enterAmount(), _availableBalance()]),
+                    Column(
+                      children: [_enterAmountFiat(), _availableBalanceFiat()],
+                    ),
                   ],
                 ),
               ),
@@ -402,6 +473,23 @@ class _SenderState extends State<Sender> {
     );
   }
 
+  Widget _tokenDisplay() {
+    if (asset == null) {
+      return Text(
+        "Unknown token",
+        style: TextStyle(fontSize: 14, fontFamily: "monospace"),
+      );
+    }
+    return Row(
+      spacing: 4,
+      children: [
+        SizedBox(height: 24, child: asset!.getIcon()),
+        Text(asset!.name, style: TextStyle(fontSize: 18)),
+        Text("(${asset!.symbol})"),
+      ],
+    );
+  }
+
   Widget _dropdownSelectToken() {
     return DropdownButton<String>(
       value: selectedToken,
@@ -409,25 +497,33 @@ class _SenderState extends State<Sender> {
       icon: Icon(Icons.arrow_drop_down),
       underline: Container(
         height: 0.5,
-        color:
-            Theme.of(context).brightness == Brightness.dark
-                ? Colors.white
-                : Colors.black54,
+        color: Theme.of(context).brightness == Brightness.dark
+            ? Colors.white
+            : Colors.black54,
       ),
-      onChanged:
-          (selectedNetworkObj?.requiresAmount ?? false)
-              ? null
-              : handleTokenChange,
+      onChanged: (val) {
+        handleTokenChange(val);
+        
+        // asset = 
+        // currentNetworkList = asset!.coins[0].getNetworks(address: addressController.text);
+        // if (currentNetworkList.length == 1){
+        //   selectedNetworkObj = currentNetworkList[0];
+        //   selectedNetwork = selectedNetworkObj!.networkSymbol;
+        // }
+        // if (selectedNetworkObj?.requiresAmount??false) {
+        //   handleTokenChange(val);
+        // }
+        
+      },
       items: () {
-        List<DropdownMenuItem<String>> x =
-            Singleton.assetList.assetListState.filteredAssets
-                .map<DropdownMenuItem<String>>((Asset _asset) {
-                  return DropdownMenuItem<String>(
-                    value: _asset.id,
-                    child: Text("${_asset.symbol} (${_asset.name})"),
-                  );
-                })
-                .toList();
+        List<DropdownMenuItem<String>> x = currentAssetList
+            .map<DropdownMenuItem<String>>((Asset _asset) {
+              return DropdownMenuItem<String>(
+                value: _asset.id,
+                child: Text("${_asset.symbol} (${_asset.name})"),
+              );
+            })
+            .toList();
         x.insert(
           0,
           DropdownMenuItem<String>(
@@ -454,16 +550,14 @@ class _SenderState extends State<Sender> {
               enabled: !(selectedNetworkObj?.requiresAmount ?? false),
               enableIMEPersonalizedLearning: false,
               enableInteractiveSelection: false,
-              onTap:
-                  (Platform.operatingSystem == "ios")
-                      ? () {
-                        numpad.state.openKeyboard(amountController);
-                      }
-                      : null,
-              keyboardType:
-                  (Platform.operatingSystem == "ios")
-                      ? TextInputType.none
-                      : TextInputType.number,
+              onTap: (Platform.operatingSystem == "ios")
+                  ? () {
+                      numpad.state.openKeyboard(amountController);
+                    }
+                  : null,
+              keyboardType: (Platform.operatingSystem == "ios")
+                  ? TextInputType.none
+                  : TextInputType.number,
               inputFormatters: [
                 FilteringTextInputFormatter.allow(RegExp(r'^[0-9\]+[\.0-9]*')),
               ],
@@ -497,23 +591,21 @@ class _SenderState extends State<Sender> {
                 padding: EdgeInsets.all(7),
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
-              onPressed:
-                  (selectedNetworkObj?.requiresAmount ?? false)
-                      ? null
-                      : () {
-                        amountController.removeListener(updateAmounts);
-                        amountController.text = balanceStr;
-                        amountController.addListener(updateAmounts);
-                        _isMax = true;
-                        updateAmounts();
-                      },
+              onPressed: (selectedNetworkObj?.requiresAmount ?? false)
+                  ? null
+                  : () {
+                      amountController.removeListener(updateAmounts);
+                      amountController.text = balanceStr;
+                      amountController.addListener(updateAmounts);
+                      _isMax = true;
+                      updateAmounts();
+                    },
               child: Text(
                 "Max",
                 style: TextStyle(
-                  color:
-                      !(selectedNetworkObj?.requiresAmount ?? false)
-                          ? Colors.blueAccent
-                          : Colors.grey,
+                  color: !(selectedNetworkObj?.requiresAmount ?? false)
+                      ? Colors.blueAccent
+                      : Colors.grey,
                   fontSize: 15,
                   fontWeight: FontWeight.w900,
                 ),
@@ -536,16 +628,14 @@ class _SenderState extends State<Sender> {
               enabled: !(selectedNetworkObj?.requiresAmount ?? false),
               enableIMEPersonalizedLearning: false,
               enableInteractiveSelection: false,
-              onTap:
-                  (Platform.operatingSystem == "ios")
-                      ? () {
-                        numpad.state.openKeyboard(amountFiatController);
-                      }
-                      : null,
-              keyboardType:
-                  (Platform.operatingSystem == "ios")
-                      ? TextInputType.none
-                      : TextInputType.number,
+              onTap: (Platform.operatingSystem == "ios")
+                  ? () {
+                      numpad.state.openKeyboard(amountFiatController);
+                    }
+                  : null,
+              keyboardType: (Platform.operatingSystem == "ios")
+                  ? TextInputType.none
+                  : TextInputType.number,
               inputFormatters: [
                 FilteringTextInputFormatter.allow(RegExp(r'^[0-9\]+[\.0-9]*')),
               ],
@@ -579,23 +669,21 @@ class _SenderState extends State<Sender> {
                 padding: EdgeInsets.all(7),
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
-              onPressed:
-                  (selectedNetworkObj?.requiresAmount ?? false)
-                      ? null
-                      : () {
-                        amountFiatController.removeListener(updateFiatAmounts);
-                        amountFiatController.text = balanceFiatStr;
-                        amountFiatController.addListener(updateFiatAmounts);
-                        _isMax = true;
-                        updateFiatAmounts();
-                      },
+              onPressed: (selectedNetworkObj?.requiresAmount ?? false)
+                  ? null
+                  : () {
+                      amountFiatController.removeListener(updateFiatAmounts);
+                      amountFiatController.text = balanceFiatStr;
+                      amountFiatController.addListener(updateFiatAmounts);
+                      _isMax = true;
+                      updateFiatAmounts();
+                    },
               child: Text(
                 "Max",
                 style: TextStyle(
-                  color:
-                      !(selectedNetworkObj?.requiresAmount ?? false)
-                          ? Colors.blueAccent
-                          : Colors.grey,
+                  color: !(selectedNetworkObj?.requiresAmount ?? false)
+                      ? Colors.blueAccent
+                      : Colors.grey,
                   fontSize: 15,
                   fontWeight: FontWeight.w900,
                 ),
@@ -635,55 +723,71 @@ class _SenderState extends State<Sender> {
     );
   }
 
-  Widget _selectNetwork() {
-    return DropdownButton<String>(
-      value: selectedNetwork,
-      isExpanded: true,
-      icon: Icon(Icons.arrow_drop_down),
-      underline: Container(
-        height: 0.5,
-        color:
-            Theme.of(context).brightness == Brightness.dark
-                ? Colors.white
-                : Colors.black54,
-      ),
-      onChanged:
-          (selectedNetworkObj?.requiresAmount ?? false)
-              ? null
-              : (String? value) {
-                setState(() {
-                  selectedNetwork = value ?? "";
-                  selectedNetworkObj = networkList[selectedToken]?.firstWhere((
-                    net,
-                  ) {
-                    return net.networkSymbol == selectedNetwork;
-                  });
-                });
-              },
-      items: () {
-        List<DropdownMenuItem<String>> x =
-            widget.networkList[asset?.symbol ?? ""]!
-                .map<DropdownMenuItem<String>>((Network network) {
-                  return DropdownMenuItem<String>(
-                    value: network.networkSymbol,
-                    child: Text(network.networkName),
-                  );
-                })
-                .toList();
-        x.insert(
-          0,
-          DropdownMenuItem<String>(
-            value: "",
-            child: Text(
-              "Select Network",
-              style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15),
-            ),
-          ),
-        );
-        return x;
-      }(),
+  Widget _networkDisplay() {
+    if (selectedNetworkObj == null || asset == null) {
+      return Text(
+        "Unknown network",
+        style: TextStyle(fontSize: 14, fontFamily: "monospace"),
+      );
+    }
+    return Row(
+      spacing: 4,
+      children: [
+        SizedBox(height: 24, child: asset!.getIcon()),
+        Text(
+          "Network: ${selectedNetworkObj!.networkName}",
+          style: TextStyle(fontSize: 16),
+        ),
+      ],
     );
   }
+
+  // Widget _selectNetwork() {
+  //   return DropdownButton<String>(
+  //     value: selectedNetwork,
+  //     isExpanded: true,
+  //     icon: Icon(Icons.arrow_drop_down),
+  //     underline: Container(
+  //       height: 0.5,
+  //       color: Theme.of(context).brightness == Brightness.dark
+  //           ? Colors.white
+  //           : Colors.black54,
+  //     ),
+  //     onChanged: (selectedNetworkObj?.requiresAmount ?? false)
+  //         ? null
+  //         : (String? value) {
+  //             setState(() {
+  //               selectedNetwork = value ?? "";
+  //               selectedNetworkObj = asset?.coins[0].getNetworks().firstWhere((
+  //                 net,
+  //               ) {
+  //                 return net.networkSymbol == selectedNetwork;
+  //               });
+  //             });
+  //           },
+  //     items: () {
+  //       List<DropdownMenuItem<String>> x = currentNetworkList
+  //           .map<DropdownMenuItem<String>>((Network network) {
+  //             return DropdownMenuItem<String>(
+  //               value: network.networkSymbol,
+  //               child: Text(network.networkName),
+  //             );
+  //           })
+  //           .toList();
+  //       x.insert(
+  //         0,
+  //         DropdownMenuItem<String>(
+  //           value: "",
+  //           child: Text(
+  //             "Select Network",
+  //             style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15),
+  //           ),
+  //         ),
+  //       );
+  //       return x;
+  //     }(),
+  //   );
+  // }
 
   Widget _address() {
     return Center(
@@ -704,7 +808,7 @@ class _SenderState extends State<Sender> {
               onPressed: () {
                 var result = Navigator.of(
                   context,
-                ).push(MaterialPageRoute(builder: (context) => Qrscanner()));
+                ).push(MaterialPageRoute(builder: (context) => QRScanner()));
 
                 result.then((val) {
                   if (val == null) {
@@ -808,7 +912,7 @@ class _SenderState extends State<Sender> {
           showDialog(
             context: context,
             builder: (context) {
-              return AlertDialog(content: Text('Input a number'));
+              return AlertDialog(content: Text('Please specify the amount to send'));
             },
           );
           return;
@@ -818,7 +922,7 @@ class _SenderState extends State<Sender> {
           showDialog(
             context: context,
             builder: (context) {
-              return AlertDialog(content: Text('Input a valid address'));
+              return AlertDialog(content: Text('Invalid address'));
             },
           );
           return;
@@ -912,7 +1016,7 @@ class _SenderState extends State<Sender> {
                     child: Padding(
                       padding: const EdgeInsets.only(bottom: 10.0),
                       child: Text(
-                        'Transaction Sent Successfully',
+                        'Processing Transaction',
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ),
@@ -921,9 +1025,22 @@ class _SenderState extends State<Sender> {
                     child: Padding(
                       padding: const EdgeInsets.only(bottom: 10.0),
                       child: Icon(
-                        Icons.check_circle,
-                        color: Colors.green,
+                        Icons.schedule,
+                        color: Colors.amber,
                         size: 46,
+                      ),
+                    ),
+                  ),
+                  Center(
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 10.0),
+                      child: Text(
+                        'Processing your transaction.\nCheck your notifications for status updates.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w400,
+                        ),
                       ),
                     ),
                   ),
@@ -969,26 +1086,26 @@ class _SenderState extends State<Sender> {
                       ),
                     ),
                   ),
-                  (URL != "")
+                  URL.isNotEmpty
                       ? Center(
-                        child: TextButton(
-                          style: ButtonStyle(
-                            backgroundColor: WidgetStateProperty.all(
-                              Colors.blue,
+                          child: TextButton(
+                            style: ButtonStyle(
+                              backgroundColor: WidgetStateProperty.all(
+                                Colors.blue,
+                              ),
+                            ),
+                            onPressed: () {
+                              urlOpen(URL);
+                            },
+                            child: Text(
+                              "Track Transaction",
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
                             ),
                           ),
-                          onPressed: () {
-                            urlOpen(URL);
-                          },
-                          child: Text(
-                            "Track Transaction",
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                      )
+                        )
                       : Container(),
                 ],
               ),

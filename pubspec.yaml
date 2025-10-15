@@ -16,10 +16,10 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 0.7.1+525
+version: 0.8.4+534
 
 environment:
-  sdk: ">=3.7.2 <4.0.0"
+  sdk: ">=3.8.0 <4.0.0"
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -34,10 +34,10 @@ dependencies:
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
-  isar: ^3.1.0+1
-  isar_flutter_libs: ^3.1.0+1
-  objectbox: ^4.1.0
-  objectbox_flutter_libs: ^4.1.0
+  # isar: ^3.1.0+1
+  # isar_flutter_libs: ^3.1.0+1
+  objectbox: ^4.3.1
+  objectbox_flutter_libs: ^4.3.1
   path_provider: ^2.1.5
   blockchain_utils: ^5.0.0
   dart_des: ^1.0.2
@@ -54,40 +54,41 @@ dependencies:
   ecdsa: ^0.1.2
   intl: ^0.20.2
   url_launcher: ^6.3.1
-  qr_code_scanner: ^1.0.1
+  # qr_code_scanner: ^1.0.1
+  mobile_scanner: ^7.1.0
   qr_flutter: ^4.1.0
   shared_preferences: ^2.5.3
-  sensors_plus: ^6.1.1
+  sensors_plus: ^7.0.0
   base58check: ^2.0.0
   local_auth: ^2.3.0
   flutter_local_notifications: ^19.2.1
-  syncfusion_flutter_charts: ^29.2.5
-  package_info_plus: ^8.3.0
-  advance_math: ^5.3.2
-  cryptography: ^2.7.0
+  syncfusion_flutter_charts: ^31.1.19
+  package_info_plus: ^9.0.0
+  # advance_math: ^5.3.1
+  # cryptography: ^2.7.0
   hex: ^0.2.0
   boringssl_ffi:
     git:
       url: https://github.com/integrityph/boringssl_ffi
-      ref: v0.0.1
+      ref: v0.0.3
 
 dev_dependencies:
-  flutter_test:
-    sdk: flutter
+  # flutter_test:
+  #   sdk: flutter
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
   # activated in the `analysis_options.yaml` file located at the root of your
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
-  flutter_lints: ^5.0.0
-  isar_generator: ^3.1.0+1
-  objectbox_generator: ^4.1.0
-  build_runner: ^2.4.13
+  flutter_lints: ^6.0.0
+  # isar_generator: ^3.1.0+1
+  objectbox_generator: ^4.3.1
+  build_runner: ^2.7.1
   flutter_launcher_icons: ^0.14.3
   # test: ^1.25.9
-  source_gen: ^1.5.0
-  analyzer: ^5.13.0
+  source_gen: ^3.1.0
+  analyzer: ^8.2.0
 
 flutter_launcher_icons:
   android: "launcher_icon"

@@ -65,6 +65,11 @@ class TxDB {
     //   }
     // }
 
+    await TxDBModel().upsert(this);
+    if (id != 0) {
+      HistoricPriceService.update(id);
+    }
+
     if (hdPath != null) {
       () async {
         List<String> pathParts = hdPath!.split("/");
@@ -89,10 +94,7 @@ class TxDB {
       }();
     }
 
-    await TxDBModel().upsert(this);
-    if (id != 0) {
-      HistoricPriceService.update(id);
-    }
+    
 
     return id;
   }

@@ -92,7 +92,7 @@ dependencies {
 	// Note: when the objectbox package updates, check if the Android
 	// library below needs to be updated as well.
 	// TODO Replace <version> with the one noted in the release notes (https://github.com/objectbox/objectbox-dart/releases)
-	debugImplementation("io.objectbox:objectbox-android-objectbrowser:4.1.0")
+	debugImplementation("io.objectbox:objectbox-android-objectbrowser:4.3.1")
 }
 
 flutter {

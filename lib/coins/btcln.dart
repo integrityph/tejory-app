@@ -8,6 +8,7 @@ import 'package:tejory/bip32/derivation_bip32_key.dart';
 import 'package:tejory/coins/bitcoin_tx.dart';
 import 'package:tejory/coins/bitcoin_tx_out.dart';
 import 'package:tejory/coins/crypto_coin.dart';
+import 'package:tejory/coins/network.dart';
 import 'package:tejory/coins/psbt.dart';
 import 'package:tejory/coins/pst.dart';
 import 'package:tejory/coins/tx.dart';
@@ -47,7 +48,7 @@ class BTCLN extends CryptoCoin {
     int? coinId,
     String? netVersionPublicHex,
     String? netVersionPrivateHex,
-  }) : super.newCoin("Bitcoin Lightning", "BTCLN", 8) {
+  }) : super.newCoin("Lightning Bitcoin", "BTCLN", 8) {
     super.port = port;
     super.id = coinId;
     super.peerSource = peerSource;
@@ -375,7 +376,7 @@ class BTCLN extends CryptoCoin {
       var response = await rpcCall("payinvoice", body);
 
       var amountDouble = getDecimalAmount(BigInt.from(amount));
-      if (response?["status"] != "ok") {
+      if (response == null || response["status"] != "ok") {
         String errMsg = response!["err_msg"] ?? "";
         Singleton.sendNotification(
           "Error in Send Transaction",
@@ -393,7 +394,8 @@ class BTCLN extends CryptoCoin {
         "amount": amount.toString(),
       };
       // var response = await rpcCall("transfer", body);
-      return rpcCall("transfer", body);
+      // print(address);
+      return await rpcCall("transfer", body);
     }
   }
 
@@ -555,7 +557,7 @@ class BTCLN extends CryptoCoin {
     try {
       response = await http
           .post(URL, headers: headers, body: body)
-          .timeout(Duration(seconds: 5));
+          .timeout(Duration(seconds: 20));
     } catch (e) {
       setIsConnected(false);
       return rpcCall(method, bodyObj, depth: depth + 1);
@@ -729,8 +731,11 @@ class BTCLN extends CryptoCoin {
 
   @override
   bool isValidAddress(String address) {
-    // TODO: add invoice and Bitcoin address validation
-    return true;
+    if (!address.startsWith("lnbc")) {
+      return false;
+    }
+    var invoiceMap = parseInvoice(address);
+    return invoiceMap != null;
   }
 
   @override
@@ -796,5 +801,106 @@ class BTCLN extends CryptoCoin {
   @override
   String getTrackingURL(String txHash) {
     return "";
+  }
+
+  @override
+  bool isCustodial() {
+    return true;
+  }
+
+  @override
+  String? custodialMessage() {
+    return "Tejory securely holds these funds on your behalf to enable instant transactions.";
+  }
+
+  @override
+  String? custodialMessageLink() {
+    return "https://tejory.io/en/transparency/";
+  }
+
+  Future<BigInt?> getLoopOutFees(BigInt amount) async {
+    Map<String, dynamic> reqObj = {
+      "amount":amount.toString()
+    };
+    Map<String, dynamic>? resObj = await rpcCall("estimateloopoutfee", reqObj);
+    if (resObj == null) {
+      return null;
+    }
+
+    // {"fee":2808,"status":"ok"}
+    if (resObj["status"] != "ok") {
+      return null;
+    }
+
+    int fee = resObj["fee"];
+
+    return BigInt.from(fee);
+  }
+
+    Future<BigInt?> getLoopInFees(BigInt amount) async {
+    Map<String, dynamic> reqObj = {
+      "amount":amount.toString()
+    };
+    Map<String, dynamic>? resObj = await rpcCall("estimateloopinfee", reqObj);
+    if (resObj == null) {
+      return null;
+    }
+
+    // {"fee":2808,"status":"ok"}
+    if (resObj["status"] != "ok") {
+      return null;
+    }
+
+    int fee = resObj["fee"];
+
+    return BigInt.from(fee);
+  }
+
+  Future<bool> loopOut(BigInt amountIn, String address) async {
+    Map<String, dynamic> reqObj = {
+      "amount":amountIn.toString(),
+      "address":address,
+    };
+    Map<String, dynamic>? resObj = await rpcCall("transfer", reqObj);
+    if (resObj == null) {
+      return false;
+    }
+
+    // {"fee":2808,"status":"ok"}
+    if (resObj["status"] != "ok") {
+      return false;
+    }
+
+    return true;
+  }
+
+  Future<String?> loopIn(BigInt amountIn) async {
+    Map<String, dynamic> reqObj = {
+      "amount":amountIn.toString(),
+    };
+    Map<String, dynamic>? resObj = await rpcCall("loopin", reqObj);
+    if (resObj == null) {
+      return null;
+    }
+
+    // {"fee":2808,"status":"ok"}
+    if (resObj["status"] != "ok") {
+      return null;
+    }
+
+    if (!resObj.containsKey("address") || !(resObj["address"] is String)) {
+      return null;
+    }
+
+    return resObj["address"];
+  }
+
+  @override
+  List<Network> getNetworks({String? address}) {
+    var networkList = [
+      Network("BTC_LIGHTNING", "Bitcoin (Lightning)", requiresAmount: true)
+    ];
+
+    return networkList;
   }
 }

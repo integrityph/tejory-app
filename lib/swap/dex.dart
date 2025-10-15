@@ -8,4 +8,5 @@ abstract class DEX {
 	Future<Tx?> swap(CryptoCoin currency0, CryptoCoin currency1, BigInt amountIn, BigInt minAmountOut);
   Future<bool> checkToken(CryptoCoin token);
   Future<List<Tx>?> unlockToken(CryptoCoin token);
+  String estimatedTime();
 }
