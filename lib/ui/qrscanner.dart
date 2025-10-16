@@ -1,7 +1,5 @@
-import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
-// import 'package:qr_code_scanner/qr_code_scanner.dart';
 import 'package:tejory/ui/tejory_page.dart';
 
 void main() => runApp(MaterialApp(home: Tejory()));

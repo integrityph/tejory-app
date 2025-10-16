@@ -3,10 +3,9 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:intl/intl.dart';
 import 'package:tejory/box_models.g.dart';
 import 'package:tejory/objectbox.g.dart';
-import 'package:tejory/singleton.dart'; // <-- Add this import for clipboard functionality
+import 'package:tejory/singleton.dart';
 
 class Diagnostics extends StatefulWidget {
   const Diagnostics({super.key});
@@ -209,7 +208,7 @@ class _DiagnosticState extends State<Diagnostics> {
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-      color: theme.colorScheme.errorContainer.withOpacity(0.7),
+      color: theme.colorScheme.errorContainer.withValues(alpha: 0.5),
       elevation: 0,
       shape: RoundedRectangleBorder(
         side: BorderSide(color: warningColor, width: 1.5),

@@ -2,7 +2,6 @@ import 'package:tejory/codegen/box_model/box_model.dart';
 import 'package:tejory/codegen/box_model/ignore_in_isar_migration.dart';
 import 'package:tejory/codegen/box_model/unique_index.dart';
 import 'package:tejory/coins/historic_price_service.dart';
-import 'package:tejory/collections/tx.dart' as isar;
 import 'package:tejory/objectbox.g.dart';
 import 'package:tejory/objectbox/base_box_model.dart';
 import 'package:tejory/objectbox/cpk.dart';
@@ -53,18 +52,6 @@ class TxDB {
   }
 
   Future<int> save() async {
-    // TODO: handle this in the isolate service
-    // if (usdAmount == null && time != null) {
-    //   String coinSymbol =
-    //       Singleton.assetList.assetListState
-    //           .getAssetById(coin ?? 0)
-    //           ?.yahooFinance ??
-    //       "";
-    //   if (coinSymbol != "") {
-    //     usdAmount = await getBlockchainAPIHistoricPrice(coinSymbol, time!);
-    //   }
-    // }
-
     await TxDBModel().upsert(this);
     if (id != 0) {
       HistoricPriceService.update(id);

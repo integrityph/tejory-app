@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:tejory/ui/login.dart';
 import 'package:tejory/ui/setup/page_animation.dart';
 import 'package:tejory/updates/cpk_calculation.dart';
-import 'package:tejory/updates/db_migration.dart';
 import 'package:tejory/updates/fix_duplicate_cpk.dart';
 import 'package:tejory/updates/por_check.dart';
 import 'package:tejory/updates/update.dart';

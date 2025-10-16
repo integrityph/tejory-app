@@ -4,7 +4,6 @@ import 'package:tejory/crypto-helper/other_helpers.dart';
 import 'package:tejory/singleton.dart';
 import 'package:tejory/main.dart';
 import 'package:tejory/ui/send.dart';
-import '../coins/network.dart';
 import 'receive.dart';
 import 'asset.dart';
 

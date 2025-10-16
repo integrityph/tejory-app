@@ -135,7 +135,6 @@ class Bitcoin extends CryptoCoin {
       });
       return;
     }
-
     populateBlockChain();
 
     utxoSet = {};
@@ -260,7 +259,6 @@ class Bitcoin extends CryptoCoin {
     for (var addressType in scanAddressTypeList) {
       for (int change = 0; change < 2; change++) {
         var purpose = getPurposeByAddressType(addressType);
-
         path = "m/$purpose'/0'/0'/$change";
         int lastIndex = (change == 0) ? externalGap : internalGap;
         NextKey? nextKey = Models.nextKey.getUnique(walletId, id, path);
@@ -946,9 +944,9 @@ class Bitcoin extends CryptoCoin {
     // }
     getBlocks = false;
     int index = 24;
-    int invCount = 0;
+    // int invCount = 0;
     int invBytes = 0;
-    (invCount, invBytes) = parseVarint(msg, index);
+    (_, invBytes) = parseVarint(msg, index);
     List<int> payload = [];
     index += invBytes;
 
@@ -960,8 +958,6 @@ class Bitcoin extends CryptoCoin {
         index += 36;
         continue;
       }
-
-      print("tx[0]: ${tx[0]}");
 
       blockCounter++;
 
@@ -1819,11 +1815,11 @@ class Bitcoin extends CryptoCoin {
 
   Uint8List getPublicKey(String path) {
     var pathParts = path.split("/");
-    DerivationBIP32Key parentAccount = getExtendedPublicKey(
-      pathParts.sublist(0, pathParts.length - 1).join("/"),
-    );
+    var parentPath = pathParts.sublist(0, pathParts.length - 1).join("/");
+    DerivationBIP32Key parentAccount = getExtendedPublicKey(parentPath);
+    var childIndex = int.parse(pathParts[pathParts.length - 1]);
     var childKey = parentAccount.childKey(
-      Bip32KeyIndex(int.parse(pathParts[pathParts.length - 1])),
+      Bip32KeyIndex(childIndex),
     );
     var returnPubKey = Uint8List.fromList(childKey!.publicKey);
 

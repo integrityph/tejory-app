@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:tejory/custom_icons_icons.dart';
 import 'package:tejory/singleton.dart';
-import 'package:tejory/coins/network.dart';
 import 'package:tejory/ui/ramp.dart';
 import 'package:tejory/ui/send.dart';
 import 'package:tejory/ui/swap.dart';

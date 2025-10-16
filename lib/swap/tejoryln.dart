@@ -1,6 +1,4 @@
 import 'package:tejory/coins/bitcoin.dart';
-import 'package:tejory/coins/bitcoin_tx.dart';
-import 'package:tejory/coins/bitcoin_tx_out.dart';
 import 'package:tejory/coins/btcln.dart' show BTCLN;
 import 'package:tejory/coins/crypto_coin.dart';
 import 'package:tejory/coins/tx.dart';

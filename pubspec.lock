@@ -85,8 +85,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "v0.0.3"
-      resolved-ref: baa88691eaefa5b62c904bdd8f6e9996591b0faf
+      ref: "v0.1.0"
+      resolved-ref: d75ce2e3f7e60d80dad87da5cb5a3045522f5285
       url: "https://github.com/integrityph/boringssl_ffi"
     source: git
     version: "0.0.1"
