@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:tejory/api_keys/api_keys.dart';
-import 'package:tejory/libsecp256k1ffi/libsecp256k1ffi.dart';
+// import 'package:secp256k1_ffi/secp256k1_ffi.dart';
 import 'package:tejory/singleton.dart';
 import 'package:tejory/updates/update_ui.dart';
 // import 'package:boringssl_ffi/boringssl_ffi.dart' as bsll;
@@ -9,7 +9,7 @@ final RouteObserver<ModalRoute<void>> routeObserver = RouteObserver<ModalRoute<v
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await LibSecp256k1FFI.init();
+  // await LibSecp256k1FFI.init();
   // await LibOpenSSLFFI.init();
   // const APP_MODE = String.fromEnvironment('APP_MODE', defaultValue: '');
 

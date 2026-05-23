@@ -13,7 +13,8 @@ class NFC implements Medium {
   NFC();
 
   Future<bool> isAvailable() async {
-    return await NfcManager.instance.isAvailable();
+    final availability = await NfcManager.instance.checkAvailability();
+    return availability == NfcAvailability.enabled;
   }
 
   Future<dynamic> showNFCModal(

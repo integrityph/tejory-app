@@ -4,7 +4,6 @@ import 'dart:isolate';
 import 'package:flutter/services.dart';
 import 'package:tejory/api_keys/api_keys.dart';
 import 'package:tejory/coins/crypto_coin.dart';
-import 'package:tejory/libsecp256k1ffi/libsecp256k1ffi.dart';
 import 'package:tejory/singleton.dart';
 import 'package:tejory/ui/asset.dart';
 
@@ -143,7 +142,7 @@ class AssetIsolate {
         // initialize API keys
         APIKeys.keys = apiKey;
 
-        await LibSecp256k1FFI.init();
+        // await LibSecp256k1FFI.init();
 
         // initialize coin from config
         coin = Asset.fromConfig(coinConfig);
@@ -177,7 +176,12 @@ class AssetIsolate {
           break;
         case "initCoin":
           try {
-            await coin!.initCoin(blocks: msgMap["params"]["blocks"], txList: msgMap["params"]["txList"], balanceDB: msgMap["params"]["balanceDB"]);
+            await coin!.initCoin(
+              blocks: msgMap["params"]["blocks"],
+              txList: msgMap["params"]["txList"],
+              balanceDB: msgMap["params"]["balanceDB"],
+              keys: msgMap["params"]["keys"],
+            );
           } catch (e) {
             error = e;
           }
@@ -205,7 +209,47 @@ class AssetIsolate {
           break;
         case "callInternalFunction":
           try {
-            coin!.callInternalFunction(msgMap["params"]["method"], msgMap["params"]["params"]);
+            result = await coin!.callInternalFunction(msgMap["params"]["method"], msgMap["params"]["params"]);
+          } catch (e) {
+            error = e;
+          }
+          break;
+        case "getReceivingAddress":
+          try {
+            result = await coin!.getReceivingAddress(
+              network: msgMap["params"]["network"],
+              amount: msgMap["params"]["amount"],
+            );
+          } catch (e) {
+            error = e;
+          }
+          break;
+        case "setSeReady":
+          try {
+            coin!.setSeReady();
+          } catch (e) {
+            error = e;
+          }
+          break;
+        case "makeTransaction":
+          try {
+            result = await coin!.makeTransaction(
+              msgMap["params"]["toAddress"],
+              msgMap["params"]["amount"],
+              noChange: msgMap["params"]["noChange"],
+            );
+          } catch (e, stack) {
+            error = e;
+            print(stack);
+          }
+          break;
+        case "calculateFee":
+          try {
+            result = await coin!.calculateFee(
+              msgMap["params"]["toAddress"],
+              msgMap["params"]["amount"],
+              noChange: msgMap["params"]["noChange"],
+            );
           } catch (e) {
             error = e;
           }
@@ -219,6 +263,7 @@ class AssetIsolate {
         "command": msgMap["command"],
         "error": error,
         "response": result,
+        "uuid": msgMap["uuid"],
       };
       if (error != null) {
         print("isolate error: ${resMap}");

@@ -7,7 +7,6 @@ import 'package:collection/collection.dart';
 import 'package:dnsolve/dnsolve.dart';
 import 'package:flutter/material.dart';
 import 'package:murmur3/murmur3.dart';
-import 'package:tejory/bip32/derivation_bip32_key.dart';
 import 'package:tejory/coins/bitcoin_tx_out.dart';
 import 'package:tejory/coins/bitcoin_block.dart';
 import 'package:tejory/coins/btc_helper.dart';
@@ -20,7 +19,6 @@ import 'package:tejory/coins/bitcoin_tx_in.dart';
 import 'package:tejory/coins/tx.dart';
 import 'package:tejory/coins/visual_tx.dart';
 import 'package:tejory/coins/wallet.dart';
-import 'package:tejory/libsecp256k1ffi/libsecp256k1ffi.dart';
 import 'package:tejory/objectbox/balance.dart';
 import 'package:tejory/objectbox/block.dart';
 import 'package:tejory/objectbox/key.dart' as keyCollection;
@@ -42,6 +40,8 @@ import 'package:crypto/crypto.dart';
 import 'dart:collection';
 import 'package:mutex/mutex.dart';
 import 'package:http/http.dart' as http;
+import 'package:secp256k1_ffi/secp256k1_ffi.dart';
+import 'package:bip32_key_derivation/bip32_key_derivation.dart';
 
 class Bitcoin extends CryptoCoin {
   // String? __mnemonicSeed;
@@ -64,8 +64,8 @@ class Bitcoin extends CryptoCoin {
   Map<String, String> pubKeyAddressPathMap = {};
   Map<String, String> txBlockHash = {};
   Queue<String> blockChain = Queue<String>();
-  Queue<Tuple<String, DateTime>> blockTimestamp =
-      Queue<Tuple<String, DateTime>>();
+  Queue<(String, DateTime)> blockTimestamp =
+      Queue<(String, DateTime)>();
   Map<String, BitcoinTxOut> utxoSet = {};
 
   final int MAX_BLOCKS = 3;
@@ -76,6 +76,7 @@ class Bitcoin extends CryptoCoin {
   final counterMutex = Mutex();
   final msgMutex = Mutex();
   final heightMutex = Mutex();
+  final addressMutex = Mutex();
   bool getBlocks = false;
   String currentPeerIP = "";
   int loopId = 0;
@@ -124,6 +125,7 @@ class Bitcoin extends CryptoCoin {
     List<Block>? blocks,
     List<TxDB>? txList,
     Balance? balanceDB,
+    List<keyCollection.Key>? keys,
   }) async {
     if (balanceDB != null && balanceDB.coinBalance != null) {
       balance = BigInt.from(balanceDB.coinBalance!);
@@ -209,7 +211,7 @@ class Bitcoin extends CryptoCoin {
   }
 
   @override
-  void callInternalFunction(String method, Map<String, dynamic> params) {
+  Future<dynamic> callInternalFunction(String method, Map<String, dynamic> params) async {
     switch (method) {
       case "getPublicKeyHashes":
         getPublicKeyHashes(
@@ -223,15 +225,11 @@ class Bitcoin extends CryptoCoin {
   }
 
   Future<List<Uint8List>> getPublicKeyHashes({
-    bool? refresh = false,
-    int? externalGap = 200,
-    int? internalGap = 200,
-    bool? refreshBloomFilters = false,
+    bool refresh = false,
+    int externalGap = 200,
+    int internalGap = 200,
+    bool refreshBloomFilters = false,
   }) async {
-    refresh = refresh ?? false;
-    externalGap = externalGap ?? 200;
-    internalGap = internalGap ?? 200;
-    refreshBloomFilters = refreshBloomFilters ?? false;
     if (isUIInstance) {
       getAssetIsolatePort().send(<String, dynamic>{
         "command": "callInternalFunction",
@@ -247,68 +245,71 @@ class Bitcoin extends CryptoCoin {
       });
       return [];
     }
-    if (addressList.isNotEmpty && !refresh) {
-      return addressList;
-    }
-    // DONE: scan through the HD wallet and get all BTC addresses
-    // addressList = [];
-    Uint8List pubKey = Uint8List(0);
-    Uint8List pubKeyHash = Uint8List(0);
-    String path = "";
-    List<String> scanAddressTypeList = ["P2PKH", "P2WPKH", "P2TR"];
-    for (var addressType in scanAddressTypeList) {
-      for (int change = 0; change < 2; change++) {
-        var purpose = getPurposeByAddressType(addressType);
-        path = "m/$purpose'/0'/0'/$change";
-        int lastIndex = (change == 0) ? externalGap : internalGap;
-        NextKey? nextKey = Models.nextKey.getUnique(walletId, id, path);
-        if (nextKey != null && nextKey.nextKey != null) {
-          lastIndex += nextKey.nextKey!;
-        }
-        int? lastProcessedIndex = lastAddedIndex[path];
-        // If we didn't derive any addresses from the path, we should set the startIndex at
-        // -1 because the next step assumes startIndex is the last processed index
-        if (lastProcessedIndex == null) {
-          lastProcessedIndex = -1;
-        }
-        for (int index = lastProcessedIndex + 1; index < lastIndex; index++) {
-          pubKey = getPublicKey("$path/$index");
-          lastAddedIndex[path] = index;
-          if (addressType == "P2TR") {
-            pubKey = tweakPublicKey(pubKey);
-            // print(
-            //   "m/${purpose}'/0'/0'/$change/$index - ${getAddressFromBytes(pubKey, addressType: "P2TR")} - ${hex.encode(pubKey)}",
-            // );
-            addressList.add(pubKey);
-            pubKeyAddressPathMap[String.fromCharCodes(pubKey)] =
-                "m/${purpose}'/0'/0'/$change/$index";
-            pubKeyAddressMap[String.fromCharCodes(pubKey)] =
-                String.fromCharCodes(pubKey);
-          } else {
-            addressList.add(pubKey);
-            pubKeyHash = getAddress(addressList.last, addressType);
-            addressList.add(pubKeyHash);
-            // print(
-            //   "m/${purpose}'/0'/0'/$change/$index - ${getAddressFromBytes(pubKeyHash, addressType: addressType)} - ${hex.encode(pubKeyHash)}",
-            // );
-            pubKeyAddressMap[String.fromCharCodes(pubKeyHash)] =
-                String.fromCharCodes(pubKey);
-            pubKeyAddressPathMap[String.fromCharCodes(pubKeyHash)] =
-                "m/${purpose}'/0'/0'/$change/$index";
-            pubKeyAddressPathMap[String.fromCharCodes(pubKey)] =
-                "m/${purpose}'/0'/0'/$change/$index";
+    return addressMutex.protect(() async {
+      if (addressList.isNotEmpty && !refresh) {
+        return addressList;
+      }
+
+      // DONE: scan through the HD wallet and get all BTC addresses
+      // addressList = [];
+      Uint8List pubKey = Uint8List(0);
+      Uint8List pubKeyHash = Uint8List(0);
+      String path = "";
+      List<String> scanAddressTypeList = ["P2PKH", "P2WPKH", "P2TR"];
+      for (var addressType in scanAddressTypeList) {
+        for (int change = 0; change < 2; change++) {
+          var purpose = getPurposeByAddressType(addressType);
+          path = "m/$purpose'/0'/0'/$change";
+          int lastIndex = (change == 0) ? externalGap : internalGap;
+          NextKey? nextKey = Models.nextKey.getUnique(walletId, id, path);
+          if (nextKey != null && nextKey.nextKey != null) {
+            lastIndex += nextKey.nextKey!;
+          }
+          int? lastProcessedIndex = lastAddedIndex[path];
+          // If we didn't derive any addresses from the path, we should set the startIndex at
+          // -1 because the next step assumes startIndex is the last processed index
+          if (lastProcessedIndex == null) {
+            lastProcessedIndex = -1;
+          }
+          for (int index = lastProcessedIndex + 1; index < lastIndex; index++) {
+            pubKey = getPublicKey("$path/$index");
+            lastAddedIndex[path] = index;
+            if (addressType == "P2TR") {
+              pubKey = tweakPublicKey(pubKey);
+              // debugPrint(
+              //   "m/${purpose}'/0'/0'/$change/$index - ${getAddressFromBytes(pubKey, addressType: "P2TR")} - ${hex.encode(pubKey)}",
+              // );
+              addressList.add(pubKey);
+              pubKeyAddressPathMap[String.fromCharCodes(pubKey)] =
+                  "m/${purpose}'/0'/0'/$change/$index";
+              pubKeyAddressMap[String.fromCharCodes(pubKey)] =
+                  String.fromCharCodes(pubKey);
+            } else {
+              addressList.add(pubKey);
+              pubKeyHash = getAddress(addressList.last, addressType);
+              addressList.add(pubKeyHash);
+              // debugPrint(
+              //   "m/${purpose}'/0'/0'/$change/$index - ${getAddressFromBytes(pubKeyHash, addressType: addressType)} - ${hex.encode(pubKeyHash)}",
+              // );
+              pubKeyAddressMap[String.fromCharCodes(pubKeyHash)] =
+                  String.fromCharCodes(pubKey);
+              pubKeyAddressPathMap[String.fromCharCodes(pubKeyHash)] =
+                  "m/${purpose}'/0'/0'/$change/$index";
+              pubKeyAddressPathMap[String.fromCharCodes(pubKey)] =
+                  "m/${purpose}'/0'/0'/$change/$index";
+            }
           }
         }
       }
-    }
-    if (refreshBloomFilters) {
-      () async {
-        Uint8List payload = await msgFilterLoad(addressList);
-        sendMessage(makeMsg('filterload', payload));
-      }();
-    }
+      if (refreshBloomFilters) {
+        () async {
+          Uint8List payload = await msgFilterLoad(addressList);
+          sendMessage(makeMsg('filterload', payload));
+        }();
+      }
 
-    return addressList;
+      return addressList;
+    });
   }
 
   Future<String> getPeer() async {
@@ -451,7 +452,7 @@ class Bitcoin extends CryptoCoin {
 
     currentPeerIP = "";
     txBlockHash = {};
-    blockTimestamp = Queue<Tuple<String, DateTime>>();
+    blockTimestamp = Queue<(String, DateTime)>();
     setIsConnected(false);
     _remainingBlockCount = 0;
     remainingTxCount = 0;
@@ -794,8 +795,8 @@ class Bitcoin extends CryptoCoin {
     DateTime? txTimeStamp = () {
       DateTime? tempDate;
       blockTimestamp.forEach((item) {
-        if (item.item1 == blkHash) {
-          tempDate = item.item2;
+        if (item.$1 == blkHash) {
+          tempDate = item.$2;
         }
       });
       return tempDate;
@@ -829,7 +830,7 @@ class Bitcoin extends CryptoCoin {
     }
 
     // blockMap[blkHash] = blk;
-    blockTimestamp.add(Tuple(blkHash, blk.timestamp));
+    blockTimestamp.add((blkHash, blk.timestamp));
     if (blockTimestamp.length > MAX_BLOCKS) {
       blockTimestamp.removeFirst();
     }
@@ -1168,7 +1169,7 @@ class Bitcoin extends CryptoCoin {
       Wallet wallet = Wallet(id: walletId);
 
       if (wallet.fingerprint == null) {
-        final hdw = DerivationBIP32Key.fromExtendedKey(
+        final hdw = BIP32DerivationKey.fromExtendedKey(
           extendedPrivateKey!,
           getNetVersion(),
         );
@@ -1677,9 +1678,9 @@ class Bitcoin extends CryptoCoin {
   }
 
   // Future<Bip32Slip10Secp256k1?> getNearestParentKey(String path) async {
-  DerivationBIP32Key? getNearestParentKey(String path) {
+  BIP32DerivationKey? getNearestParentKey(String path) {
     if (extendedPrivateKey != null) {
-      final hdw = DerivationBIP32Key.fromExtendedKey(
+      final hdw = BIP32DerivationKey.fromExtendedKey(
         extendedPrivateKey!,
         getNetVersion(),
       );
@@ -1714,7 +1715,7 @@ class Bitcoin extends CryptoCoin {
     List<int> pubkey = hex.decode(key.pubKey!);
     Bip32KeyNetVersions? keyNetVer = getNetVersion();
 
-    final hdw = DerivationBIP32Key(
+    final hdw = BIP32DerivationKey(
       publicKey: pubkey,
       chainCode: Bip32ChainCode(hex.decode(key.chainCode!)),
       depth: Bip32Depth(pathParts.length),
@@ -1725,14 +1726,16 @@ class Bitcoin extends CryptoCoin {
     return hdw;
   }
 
-  DerivationBIP32Key getExtendedPublicKey(String path) {
+  BIP32DerivationKey getExtendedPublicKey(String path) {
     keyCollection.Key? key = Models.key.getUnique(walletId, id, path);
-    DerivationBIP32Key? pubkey;
+    BIP32DerivationKey? pubkey;
 
     // if the key is not if the DB, create it and save it
     if (key == null) {
       pubkey = getNearestParentKey(path);
       pubkey = pubkey!.derivePath(path);
+
+      debugPrint("pubkey is null? ${pubkey == null}");
 
       key = keyCollection.Key();
       key.chainCode = pubkey!.chainCode!.toHex();
@@ -1746,7 +1749,7 @@ class Bitcoin extends CryptoCoin {
       List<int> keyBytes = hex.decode(key.pubKey!);
       Bip32Depth depth = Bip32Depth(path.split("/").length);
       Bip32KeyIndex index = Bip32KeyIndex(int.parse(path.split("/").last));
-      pubkey = DerivationBIP32Key(
+      pubkey = BIP32DerivationKey(
         publicKey: keyBytes,
         chainCode: chainCode,
         depth: depth,
@@ -1769,7 +1772,7 @@ class Bitcoin extends CryptoCoin {
   Future<Uint8List> getChangeAddress({int account = 0}) async {
     String purpose = getPurposeByAddressType(DEFAULT_TX_TYPE);
     String accountPath = "m/${purpose}'/0'/${account}'/${INTERNAL_INDEX}";
-    DerivationBIP32Key parentAccount = await getExtendedPublicKey(accountPath);
+    BIP32DerivationKey parentAccount = await getExtendedPublicKey(accountPath);
     // var parentAccount = DerivationBIP32Key.fromExtendedKey(
     //   extendedPubKey,
     //   getNetVersion(),
@@ -1800,8 +1803,8 @@ class Bitcoin extends CryptoCoin {
       pubKey = Uint8List.fromList([0x02, ...pubKey.sublist(1)]);
     }
     var tweak = taggedHash("TapTweak", pubKey.sublist(1));
-    var pubTweak = DerivationBIP32Key(privateKey: tweak).publicKey;
-    var tweakedPoint = LibSecp256k1FFI.pointAdd(pubKey, pubTweak);
+    var pubTweak = BIP32DerivationKey(privateKey: tweak).publicKey;
+    var tweakedPoint = secp256k1FFI.publicKey.tweakAdd(pubKey, pubTweak.sublist(1));
 
     return Uint8List.fromList(tweakedPoint!);
   }
@@ -1816,7 +1819,7 @@ class Bitcoin extends CryptoCoin {
   Uint8List getPublicKey(String path) {
     var pathParts = path.split("/");
     var parentPath = pathParts.sublist(0, pathParts.length - 1).join("/");
-    DerivationBIP32Key parentAccount = getExtendedPublicKey(parentPath);
+    BIP32DerivationKey parentAccount = getExtendedPublicKey(parentPath);
     var childIndex = int.parse(pathParts[pathParts.length - 1]);
     var childKey = parentAccount.childKey(
       Bip32KeyIndex(childIndex),
@@ -2194,7 +2197,7 @@ class Bitcoin extends CryptoCoin {
       }
       String sHex = hex.encode(sig.sublist(sIndex));
       BigInt s = BigInt.parse(sHex, radix: 16);
-      if (s < halfn) {
+      if (s < halfn || isSchnorr) {
         continue;
       }
       s = n - s;

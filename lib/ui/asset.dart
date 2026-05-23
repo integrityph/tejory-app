@@ -3,11 +3,12 @@ import 'package:blockchain_utils/blockchain_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:tejory/coins/asset_isolate.dart';
 import 'package:tejory/coins/bitcoin.dart';
-import 'package:tejory/coins/btcln.dart';
+import 'package:tejory/coins/btkn.dart';
 import 'package:tejory/coins/crypto_coin.dart';
 import 'package:tejory/coins/erc-20.dart';
 import 'package:tejory/coins/ether.dart';
 import 'package:tejory/coins/pst.dart';
+import 'package:tejory/coins/spark_btc.dart';
 import 'package:tejory/coins/tx.dart';
 import 'package:tejory/coins/visual_tx.dart';
 import 'package:tejory/coins/wallet.dart';
@@ -293,8 +294,21 @@ class Asset with ChangeNotifier {
           netVersionPrivateHex: config["netVersionPrivateHex"],
         );
         break;
-      case "BTCLN":
-        coin = BTCLN(
+      // case "BTCLN":
+      //   coin = BTCLN(
+      //     config["walletId"],
+      //     walletType: config["walletType"],
+      //     magic: config["magic"],
+      //     port: config["port"],
+      //     peerSeedType: config["peerSeedType"],
+      //     peerSource: config["peerSource"],
+      //     coinId: config["coinId"],
+      //     netVersionPublicHex: config["netVersionPublicHex"],
+      //     netVersionPrivateHex: config["netVersionPrivateHex"],
+      //   );
+      //   break;
+      case "SPKBTC":
+        coin = SparkBTC(
           config["walletId"],
           walletType: config["walletType"],
           magic: config["magic"],
@@ -322,6 +336,22 @@ class Asset with ChangeNotifier {
             coinName: config["name"],
             coinSymbol: config["symbol"],
             contractHash: config["contractHash"],
+          );
+        } else if ((config["template"] ?? "") == "BTKN") {
+          coin = BTKN(
+            config["walletId"],
+            walletType: config["walletType"],
+            magic: config["magic"],
+            port: config["port"],
+            peerSeedType: config["peerSeedType"],
+            peerSource: config["peerSource"],
+            decimals: config["decimals"],
+            coinId: config["coinId"],
+            netVersionPublicHex: config["netVersionPublicHex"],
+            netVersionPrivateHex: config["netVersionPrivateHex"],
+            coinName: config["name"],
+            coinSymbol: config["symbol"],
+            btknId: config["contractHash"],
           );
         }
         break;

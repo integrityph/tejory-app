@@ -292,7 +292,6 @@ class _ReceiverState extends State<Receiver> {
                 asset =
                     Singleton.assetList.assetListState.findAsset(selectedToken);
 
-                // TODO: this is not correct. A network should have the asset id to check
                 if (selectedNetwork?.networkName != asset?.id) {
                   selectedNetwork = Network("", "");
                   selectedNetworkString = "";

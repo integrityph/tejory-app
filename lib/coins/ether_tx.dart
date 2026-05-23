@@ -24,7 +24,7 @@ class EtherTx implements Tx {
   Uint8List destination = Uint8List(0);
   BigInt amount = BigInt.zero;
   Uint8List data = Uint8List(0);
-  List<Tuple<BigInt, List<BigInt>>> accessList = [];
+  List<(BigInt, List<BigInt>)> accessList = [];
   int signatureYParity = 0;
   Uint8List signatureR = Uint8List(0);
   Uint8List signatureS = Uint8List(0);
@@ -145,7 +145,7 @@ class EtherTx implements Tx {
       return;
     }
     accessList = () {
-      List<Tuple<BigInt, List<BigInt>>> val = [];
+      List<(BigInt, List<BigInt>)> val = [];
 
       BigInt item1;
       List<dynamic> item2Raw;
@@ -157,7 +157,7 @@ class EtherTx implements Tx {
         for (int j = 0; j < item2Raw.length; j++) {
           item2.add(BigInt.parse(item2Raw[j] as String, radix: 16));
         }
-        val.add(Tuple<BigInt, List<BigInt>>(item1, item2));
+        val.add((item1, item2));
       }
 
       return val;
@@ -219,7 +219,7 @@ class EtherTx implements Tx {
       return;
     }
     accessList = () {
-      List<Tuple<BigInt, List<BigInt>>> val = [];
+      List<(BigInt, List<BigInt>)> val = [];
 
       BigInt item1;
       List<dynamic> item2Raw;
@@ -231,7 +231,7 @@ class EtherTx implements Tx {
         for (int j = 0; j < item2Raw.length; j++) {
           item2.add(BigInt.parse(item2Raw[j] as String, radix: 16));
         }
-        val.add(Tuple<BigInt, List<BigInt>>(item1, item2));
+        val.add((item1, item2));
       }
 
       return val;
@@ -282,7 +282,7 @@ class EtherTx implements Tx {
       List<dynamic> accessListRaw = [];
       List<dynamic> item = [];
       for (int i = 0; i < accessList.length; i++) {
-        item = [accessList[i].item1, accessList[i].item2];
+        item = [accessList[i].$1, accessList[i].$2];
         accessListRaw.add(item);
       }
       val = [
@@ -304,7 +304,7 @@ class EtherTx implements Tx {
       List<dynamic> accessListRaw = [];
       List<dynamic> item = [];
       for (int i = 0; i < accessList.length; i++) {
-        item = [accessList[i].item1, accessList[i].item2];
+        item = [accessList[i].$1, accessList[i].$2];
         accessListRaw.add(item);
       }
       val = [

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:tejory/coins/crypto_coin.dart';
 import 'package:tejory/objectbox/lp.dart';
 import 'package:tejory/singleton.dart';
@@ -32,6 +33,7 @@ class LiquidityPool {
   }
 
   factory LiquidityPool.fromLP(LP lp) {
+    debugPrint("lp.currency0: ${lp.currency0}, Singleton.assetList.assetListState: ${Singleton.assetList.assetListState.assets.map((v)=>"'${v.name}'").join((","))}");
     CryptoCoin currency0 = Singleton.assetList.assetListState.findAsset(lp.currency0!)!.coinTemplate!;
     CryptoCoin currency1 = Singleton.assetList.assetListState.findAsset(lp.currency1!)!.coinTemplate!;
     BigInt fee = BigInt.from(lp.fee!);

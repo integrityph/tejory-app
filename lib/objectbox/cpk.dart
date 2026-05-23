@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 // import 'package:cryptography/cryptography.dart';
-import 'package:boringssl_ffi/boringssl_ffi.dart' as bsll;
+import 'package:boringssl_ffi/boringssl_ffi.dart' as bssl;
 
 class CPK {
   /// Helper function to convert a dynamic value to a consistent byte representation
@@ -118,7 +118,7 @@ class CPK {
       builder.add(toBytes(chunk));
     }
     final allBytes = builder.toBytes();
-    final hashBytes = bsll.sha256.hash(allBytes);
+    final hashBytes = bssl.sha256.hash(allBytes);
 
     if (hashBytes == null) {
       return "";

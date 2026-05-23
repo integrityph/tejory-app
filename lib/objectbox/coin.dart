@@ -1,6 +1,6 @@
-import 'package:tejory/codegen/box_model/box_model.dart';
-import 'package:tejory/codegen/box_model/ignore_in_isar_migration.dart';
-import 'package:tejory/codegen/box_model/unique_index.dart';
+import 'package:tejory/objectbox/box_model.dart';
+import 'package:tejory/objectbox/ignore_in_isar_migration.dart';
+import 'package:tejory/objectbox/unique_index.dart';
 import 'package:tejory/objectbox.g.dart';
 import 'package:tejory/objectbox/base_box_model.dart';
 import 'package:tejory/objectbox/cpk.dart';

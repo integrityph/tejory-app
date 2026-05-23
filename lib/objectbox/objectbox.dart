@@ -6,6 +6,7 @@ import 'package:tejory/objectbox.g.dart';
 import 'package:tejory/objectbox/balance.dart';
 import 'package:path/path.dart' as p;
 import 'package:tejory/objectbox/block.dart';
+// ignore: unnecessary_import
 import 'package:objectbox/objectbox.dart';
 import 'package:tejory/objectbox/coin.dart';
 import 'package:tejory/objectbox/data_version.dart';

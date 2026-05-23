@@ -4,17 +4,18 @@ import 'dart:math';
 import 'package:blockchain_utils/blockchain_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:tejory/bip32/derivation_bip32_key.dart';
 import 'package:tejory/coins/wallet.dart';
+import 'package:tejory/crypto-helper/se_helper.dart';
 import 'package:tejory/objectbox/balance.dart';
 import 'package:tejory/objectbox/block.dart';
 import 'package:tejory/objectbox/key.dart' as keyCollection;
 import 'package:tejory/crypto-helper/hd_wallet.dart';
-import 'package:tejory/libsecp256k1ffi/libsecp256k1ffi.dart';
 import 'package:tejory/singleton.dart';
 import 'package:tejory/wallets/wallet_setup_response.dart';
 import 'package:tejory/wallets/wallet_type.dart';
-import 'package:boringssl_ffi/boringssl_ffi.dart' as bsll;
+import 'package:boringssl_ffi/boringssl_ffi.dart' as bssl;
+import 'package:secp256k1_ffi/secp256k1_ffi.dart';
+import 'package:bip32_key_derivation/bip32_key_derivation.dart';
 
 class DownloadPage extends StatefulWidget {
   final List<int> entropy;
@@ -40,7 +41,7 @@ class DownloadPage extends StatefulWidget {
 class _DownloadPageState extends State<DownloadPage> {
   bool option = false;
   bool terms = true;
-  List<Tuple<int, String>> derivationPathList = [];
+  List<({int coinId, String path, bool getPrivateKeyDerivation})> derivationPathList = [];
   int walletId = 0;
   bool programmed = false;
   late Future<bool> done;
@@ -91,7 +92,7 @@ class _DownloadPageState extends State<DownloadPage> {
         ),
       ),
       body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 6),
         child: FutureBuilder(
           future: done,
           builder: (context, v) {
@@ -108,6 +109,7 @@ class _DownloadPageState extends State<DownloadPage> {
                 Visibility(visible: option, child: _checkBox()),
                 // _checkBox(),
                 _downloadButton(),
+                SizedBox(height: 20),
               ],
             );
           },
@@ -156,7 +158,7 @@ class _DownloadPageState extends State<DownloadPage> {
                   padding: const EdgeInsets.only(left: 5, right: 5),
                   child: SizedBox(
                     width: 100,
-                    height: 40,
+                    height: 34,
                     child: Row(
                       children: [
                         Text(
@@ -203,24 +205,41 @@ class _DownloadPageState extends State<DownloadPage> {
     );
   }
 
+  // Widget _checkBox() {
+  //   return Row(
+  //     children: [
+  //       Checkbox(
+  //         value: terms,
+  //         onChanged: (bool? value) {
+  //           setState(() {
+  //             terms = value!;
+  //           });
+  //         },
+  //       ),
+  //       Text(
+  //         'I have saved my Seed Phrase in a safe place.',
+  //         style: TextStyle(fontSize: 14),
+  //       ),
+  //     ],
+  //   );
+  // }
+
   Widget _checkBox() {
-    return Row(
-      children: [
-        Checkbox(
-          value: terms,
-          onChanged: (bool? value) {
-            setState(() {
-              terms = value!;
-            });
-          },
-        ),
-        Text(
-          'I have saved my Seed Phrase in a safe place.',
-          style: TextStyle(fontSize: 14),
-        ),
-      ],
-    );
-  }
+  return CheckboxListTile(
+    title: Text(
+      'I have saved my Seed Phrase in a safe place.',
+      style: TextStyle(fontSize: 14),
+    ),
+    value: terms,
+    onChanged: (bool? value) {
+      setState(() {
+        terms = value!;
+      });
+    },
+    controlAffinity: ListTileControlAffinity.leading, // Moves checkbox to the left
+    contentPadding: EdgeInsets.zero, // Removes default extra padding
+  );
+}
 
   Widget _downloadButton() {
     return AbsorbPointer(
@@ -359,13 +378,10 @@ class _DownloadPageState extends State<DownloadPage> {
   static Future<List<Map<String, String?>>> _deriveKeysInBackground(
     Map<String, dynamic> args,
   ) async {
-    await LibSecp256k1FFI.init();
-    // await LibOpenSSLFFI.init();
-    Bip32KeyNetVersions netVersions =
-        args['netVersions'] as Bip32KeyNetVersions;
-    DerivationBIP32Key dKey;
+    Bip32KeyNetVersions netVersions = args['netVersions'] as Bip32KeyNetVersions;
+    BIP32DerivationKey dKey;
     try {
-      dKey = DerivationBIP32Key.fromSeed(
+      dKey = BIP32DerivationKey.fromSeed(
         seedBytes: args['seedArr'] as List<int>,
         keyNetVersions: netVersions,
       );
@@ -374,37 +390,36 @@ class _DownloadPageState extends State<DownloadPage> {
       return [];
     }
 
-
-    List<Tuple<int, String>> derivationPathList =
-        args['paths'] as List<Tuple<int, String>>;
-    // var lnPrivKey = dKey.derivePath("m/9011'/0").privateKey.toHex();
-    var lnPrivKey = hex.encode(
-      (await dKey.derivePath("m/9011'/0"))!.privateKey!,
-    );
+    final derivationPathList = args['paths'] as List<({int coinId, String path, bool getPrivateKeyDerivation})>;
+    var lnPrivKey = hex.encode((await dKey.derivePath("m/9011'/0"))!.privateKey!);
     List<Map<String, String?>> results = [
       {'fingerprint': dKey.fingerPrint.toHex()},
     ];
 
-
     for (var pathTuple in derivationPathList) {
       try {
-        DerivationBIP32Key? derivedPubKey = await dKey.derivePath(
-          pathTuple.item2,
+        BIP32DerivationKey? derivedPubKey = await dKey.derivePath(
+          pathTuple.path,
         );
+
+        // getPrivateKeyDerivation is always false for HODL coins. It's only true for hot coins like Spark.
+        // These private keys are encrypted inside the Spark SDK using the phone's hardware encryption with
+        // a key that's not available in the app.
         results.add({
-          'path': pathTuple.item2,
-          'coinId': pathTuple.item1.toString(),
+          'path': pathTuple.path,
+          'coinId': pathTuple.coinId.toString(),
           'pubKeyHex': hex.encode(derivedPubKey!.publicKey), // Raw pubkey hex
           'chainCodeHex': derivedPubKey.chainCode!.toHex(),
+          'privateKey': pathTuple.getPrivateKeyDerivation ? hex.encode(derivedPubKey.privateKey!) : null,
         });
         // adjust for LN
-        if (pathTuple.item2 == "m/9011'/0") {
+        if (pathTuple.path == "m/9011'/0") {
           results.last["chainCodeHex"] = lnPrivKey;
         }
       } catch (e) {
         results.add({
-          'path': pathTuple.item2,
-          'coinId': pathTuple.item1.toString(),
+          'path': pathTuple.path,
+          'coinId': pathTuple.coinId.toString(),
           'error': e.toString(),
         });
       }
@@ -422,18 +437,7 @@ class _DownloadPageState extends State<DownloadPage> {
       widget.entropy,
     ).join(" ");
     final salt = Uint8List.fromList("mnemonic".codeUnits);
-    // var pb = cryptography.Pbkdf2(
-    //   macAlgorithm: cryptography.Hmac(cryptography.Sha512()),
-    //   iterations: 2048,
-    //   bits: 64 * 8,
-    // );
-    // var pass = await pb.deriveKeyFromPassword(
-    //   password: mnemonic,
-    //   nonce: salt.codeUnits,
-    // );
-    // List<int> seedArr = await pass.extractBytes();
-    // Uint8List? seedArr = await LibOpenSSLFFI.PBKDF2_SHA512(password: mnemonic, salt: salt, iterations: 2048, keyLength: 64);
-    Uint8List? seedArr = bsll.pbkdf2HMAC.deriveKeySHA512(utf8.encode(mnemonic) , salt, 2048, 64);
+    Uint8List? seedArr = bssl.pbkdf2HMAC.deriveKeySHA512(utf8.encode(mnemonic), salt, 2048, 64);
 
     List<String> pathList;
     Wallet wallet = Wallet();
@@ -448,7 +452,11 @@ class _DownloadPageState extends State<DownloadPage> {
       for (final asset in Singleton.assetList.assetListState.assets) {
         pathList = asset.coinTemplate!.getInitialDerivationPaths();
         for (final path in pathList) {
-          derivationPathList.add(Tuple<int, String>(asset.coinId ?? 0, path));
+          derivationPathList.add((
+            coinId: asset.coinId ?? 0,
+            path: path,
+            getPrivateKeyDerivation: asset.coinTemplate!.getPrivateKeyDerivation
+          ));
         }
       }
       List<Map<String, String?>> derivationData = await compute(
@@ -459,7 +467,7 @@ class _DownloadPageState extends State<DownloadPage> {
           'netVersions': Bip32KeyNetVersions(
             [0x04, 0x35, 0x87, 0xCF],
             [0x04, 0x35, 0x83, 0x94],
-          ), // Make sure this is correctly passed
+          ),
         },
       );
 
@@ -469,12 +477,16 @@ class _DownloadPageState extends State<DownloadPage> {
       for (var keyData in derivationData) {
         if (keyData.containsKey('error')) continue;
         if (!keyData.containsKey('path')) continue;
+        final encryptPrivateKey = (keyData['privateKey']==null) 
+          ? null 
+          : SEHelper.encrypt(Uint8List.fromList(hex.decode(keyData['privateKey']!)));
         keyCollection.Key keyObj = keyCollection.Key();
         keyObj.coin = int.tryParse(keyData['coinId']!);
         keyObj.wallet = wallet.id;
         keyObj.path = keyData['path'];
         keyObj.pubKey = keyData['pubKeyHex'];
         keyObj.chainCode = keyData['chainCodeHex'];
+        keyObj.privateKey = (encryptPrivateKey==null) ? null : hex.encode(encryptPrivateKey) ;
         dbKeyList.add(keyObj);
         await keyObj.save();
       }

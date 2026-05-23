@@ -11,10 +11,10 @@ class UpdateUI extends StatefulWidget {
   // Add a list of active updates
   final List<Update> activeUpdates = [
     // DBMigration(),
-    CPKCalculation(),
-    FixDuplicateCPK(),
-    UpdateAssets(),
-    PoRCheck(),
+    // CPKCalculation(),
+    // FixDuplicateCPK(),
+    // UpdateAssets(),
+    // PoRCheck(),
   ];
 
   UpdateUI();

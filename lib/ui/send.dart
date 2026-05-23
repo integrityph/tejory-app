@@ -71,7 +71,7 @@ class _SenderState extends State<Sender> {
     asset = widget.asset;
     selectedToken = asset?.id ?? "";
     selectedNetwork = widget.network ?? "";
-    selectedNetworkObj = null; // TODO: find the selected network
+    selectedNetworkObj = null;
     balance = asset?.getBalance() ?? BigInt.zero;
     balanceStr = asset?.getDecimalAmount(balance) ?? "0.00000000";
     balanceFiatStr = OtherHelpers.humanizeMoney(
@@ -216,20 +216,26 @@ class _SenderState extends State<Sender> {
         amountController.text = cryptoAmount;
 
         () async {
-          var fee = await asset!.calculateFee(addressController.text, amount);
-          var feeDouble = asset!.getDecimalAmountInDouble(fee);
-          var amountDouble = asset!.getDecimalAmountInDouble(amount);
+          try{
+            var fee = await asset!.calculateFee(addressController.text, amount);
+            var feeDouble = asset!.getDecimalAmountInDouble(fee);
+            var amountDouble = asset!.getDecimalAmountInDouble(amount);
 
-          setState(() {
-            feeAmountDouble = OtherHelpers.humanizeMoney(feeDouble);
-            feeAmountFiatDouble = OtherHelpers.humanizeMoney(
-              feeDouble * asset!.priceUsd,
-              isFiat: true,
-            );
-            totalAmountDouble = OtherHelpers.humanizeMoney(
-              amountDouble + feeDouble,
-            );
-          });
+            if (!context.mounted) {
+              return;
+            }
+            setState(() {
+              feeAmountDouble = OtherHelpers.humanizeMoney(feeDouble);
+              feeAmountFiatDouble = OtherHelpers.humanizeMoney(
+                feeDouble * asset!.priceUsd,
+                isFiat: true,
+              );
+              totalAmountDouble = OtherHelpers.humanizeMoney(
+                amountDouble + feeDouble,
+              );
+            });
+          } catch (e) {}
+          
         }();
       }
     }

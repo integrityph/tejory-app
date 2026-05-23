@@ -6,7 +6,6 @@ import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tejory/coins/bitcoin.dart';
-import 'package:tejory/coins/btcln.dart';
 import 'package:tejory/singleton.dart';
 import 'package:tejory/ui/components/pin_code_dialog.dart';
 import 'package:tejory/ui/currency.dart';
@@ -779,7 +778,7 @@ class _SettingsPageState extends State<SettingsPage> with ChangeNotifier {
           listenable: this,
           builder: (context, child) {
             return DropdownButtonFormField<String>(
-              value: value,
+              initialValue: value,
               decoration: InputDecoration(
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
@@ -1478,53 +1477,54 @@ class _SettingsPageState extends State<SettingsPage> with ChangeNotifier {
     String? terminalToken, {
     String? role,
   }) async {
-    if (terminalToken == null) {
-      return null;
-    }
+    return null;
+    // if (terminalToken == null) {
+    //   return null;
+    // }
 
-    if (terminalToken.trim().isEmpty) {
-      return null;
-    }
+    // if (terminalToken.trim().isEmpty) {
+    //   return null;
+    // }
 
-    var URL = Uri.parse("https://ln.tejory.io/createterminal");
-    var btcln =
-        Singleton.assetList.assetListState.findAsset("btcln")!.coins[0]
-            as BTCLN;
-    Map<String, String> headers = <String, String>{
-      "pubkey": await btcln.getClientPubkey(),
-      "token": await btcln.getClientToken(),
-    };
-    Map<String, dynamic> body = {
-      "terminal_name": terminalName,
-      "terminal_token": terminalToken,
-    };
-    if (role != null) {
-      body["terminal_role"] = role;
-    }
-    http.Response response;
-    try {
-      response = await http.post(
-        URL,
-        headers: headers,
-        body: json.encode(body),
-      );
-    } catch (e) {
-      return null;
-    }
+    // var URL = Uri.parse("https://ln.tejory.io/createterminal");
+    // var btcln =
+    //     Singleton.assetList.assetListState.findAsset("btcln")!.coins[0]
+    //         as BTCLN;
+    // Map<String, String> headers = <String, String>{
+    //   "pubkey": await btcln.getClientPubkey(),
+    //   "token": await btcln.getClientToken(),
+    // };
+    // Map<String, dynamic> body = {
+    //   "terminal_name": terminalName,
+    //   "terminal_token": terminalToken,
+    // };
+    // if (role != null) {
+    //   body["terminal_role"] = role;
+    // }
+    // http.Response response;
+    // try {
+    //   response = await http.post(
+    //     URL,
+    //     headers: headers,
+    //     body: json.encode(body),
+    //   );
+    // } catch (e) {
+    //   return null;
+    // }
 
-    Map<String, dynamic> jObj =
-        jsonDecode(response.body) as Map<String, dynamic>;
+    // Map<String, dynamic> jObj =
+    //     jsonDecode(response.body) as Map<String, dynamic>;
 
-    if (!jObj.containsKey("status")) {
-      return null;
-    }
-    if (jObj["status"] is! String) {
-      return null;
-    }
-    if (jObj["status"] != "ok") {
-      return null;
-    }
+    // if (!jObj.containsKey("status")) {
+    //   return null;
+    // }
+    // if (jObj["status"] is! String) {
+    //   return null;
+    // }
+    // if (jObj["status"] != "ok") {
+    //   return null;
+    // }
 
-    return jObj;
+    // return jObj;
   }
 }

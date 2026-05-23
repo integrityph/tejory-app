@@ -2,8 +2,10 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:tejory/coins/crypto_coin.dart';
+import 'package:tejory/coins/ether_tx.dart';
 import 'package:tejory/coins/psbt.dart';
 import 'package:tejory/coins/pst.dart';
+import 'package:tejory/coins/spark_tx.dart';
 import 'package:tejory/coins/tx.dart';
 import 'package:tejory/comms/nfc.dart';
 import 'package:tejory/crypto-helper/other_helpers.dart';
@@ -46,7 +48,7 @@ class _SwapPage extends State<SwapPage> with ChangeNotifier {
   @override
   void initState() {
     super.initState();
-    selectedNetworkObj = null; // TODO: find the selected network
+    selectedNetworkObj = null;
     controller0.addListener(() {
       setReady(false);
     });
@@ -81,7 +83,7 @@ class _SwapPage extends State<SwapPage> with ChangeNotifier {
       if (asset1 != null) {
         estimatedSwapTime = Singleton.swap.estimatedTime(asset0!.coins[0], asset1!.coins[0]);
         oneUnitRate = Singleton.swap
-            .swapRate(asset0!.coins[0], asset1!.coins[0], doubleAmountIn: 1.0);        
+            .swapRate(asset0!.coins[0], asset1!.coins[0], doubleAmountIn: 1.0);
       }
     });
   }
@@ -135,51 +137,53 @@ class _SwapPage extends State<SwapPage> with ChangeNotifier {
             body: Container(
               child: Stack(
                 children: [
-                  Column(
-                    children: [
-                      Text(
-                        "Swap Token",
-                        style: TextStyle(fontSize: 22),
-                      ),
-                      Container(
-                        height: 275,
-                        child: Center(
-                          child: Padding(
-                            padding: const EdgeInsets.only(
-                                top: 10, left: 10, right: 10),
-                            child: Stack(
-                                alignment: AlignmentDirectional.center,
-                                fit: StackFit.expand,
-                                children: [
-                                  _sell(),
-                                  Positioned(top: 95, child: _swapButton()),
-                                ]),
+                  SingleChildScrollView(
+                    child: Column(
+                      children: [
+                        Text(
+                          "Swap Token",
+                          style: TextStyle(fontSize: 22),
+                        ),
+                        Container(
+                          height: 275,
+                          child: Center(
+                            child: Padding(
+                              padding: const EdgeInsets.only(
+                                  top: 10, left: 10, right: 10),
+                              child: Stack(
+                                  alignment: AlignmentDirectional.center,
+                                  fit: StackFit.expand,
+                                  children: [
+                                    _sell(),
+                                    Positioned(top: 95, child: _swapButton()),
+                                  ]),
+                            ),
                           ),
                         ),
-                      ),
-                      _conversion(),
-                      Padding(
-                        padding: const EdgeInsets.only(top: 18),
-                        child: ListenableBuilder(
-                            listenable: this,
-                            builder: (context, v) {
-                              if (ready == false) {
-                                return Container(
-                                    child: Center(
-                                        child: Text("Enter your swap values")));
-                              }
-                              return _confirm();
-                            }),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.only(top: 18),
-                        child: Text("Estimated time for the swap"),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: Text(estimatedSwapTime, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
-                      ),
-                    ],
+                        _conversion(),
+                        Padding(
+                          padding: const EdgeInsets.only(top: 18),
+                          child: ListenableBuilder(
+                              listenable: this,
+                              builder: (context, v) {
+                                if (ready == false) {
+                                  return Container(
+                                      child: Center(
+                                          child: Text("Enter your swap values")));
+                                }
+                                return _confirm();
+                              }),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.only(top: 18),
+                          child: Text("Estimated time for the swap"),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Text(estimatedSwapTime, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                        ),
+                      ],
+                    ),
                   ),
                   numpad,
                 ],
@@ -573,29 +577,47 @@ class _SwapPage extends State<SwapPage> with ChangeNotifier {
                 "Tokens unlocked for swaps successfully. Please wait a few minutes before swapping any tokens.");
             return;
           }
-          var tx = await Singleton.swap.swap(
+          var asset0BalanceOld = asset0!.getBalance();
+          var tx = Singleton.swap.swap(
               asset0!.coins[0],
               asset1!.coins[0],
               asset0!.getBaseAmount(double.parse(controller0.text)),
               asset1!.getBaseAmount(double.parse(controller1.text)));
-          if (tx == null) {
-            _errorDialogBuilder(context, 'Swap failed. Try again');
-            return;
+
+          Future<Map<String, dynamic>?> objFuture;
+          if (tx is Future<EtherTx?>) {
+            final finalTx = await tx;
+            if (finalTx == null) {
+              _errorDialogBuilder(context, 'Swap failed. Try again');
+              return;
+            }
+            Uint8List? signedBytes;
+            if ((await asset0!.getWallet()).type == WalletType.phone) {
+              signedBytes = await signTxPhone(asset0!.makePST(finalTx), finalTx);
+            } else if ((await asset0!.getWallet()).type == WalletType.tejoryCard) {
+              signedBytes = await signTxNFC(asset0!.makePST(finalTx), finalTx);
+            }
+            if (signedBytes == null) {
+              _errorDialogBuilder(
+                  context, 'Signing swap transaction failed. Try again');
+              return;
+            }
+            // var asset1BalanceOld = asset1!.getBalance();
+            objFuture = asset0!.transmitTxBytes(signedBytes);
+          } else {
+            objFuture = tx.then((result) {
+              if (result != null) {
+                return {"result": "ok"};
+              }
+              // Return null (or an error map like {"error": "failed"}) if tx was null
+              return null; 
+            }).catchError((error) {
+              // Always good to catch errors on un-awaited futures so they don't get swallowed
+              debugPrint("Non-blocking tx failed: $error");
+              return null;
+            });
           }
-          Uint8List? signedBytes;
-          if ((await asset0!.getWallet()).type == WalletType.phone) {
-            signedBytes = await signTxPhone(asset0!.makePST(tx), tx);
-          } else if ((await asset0!.getWallet()).type == WalletType.tejoryCard) {
-            signedBytes = await signTxNFC(asset0!.makePST(tx), tx);
-          }
-          if (signedBytes == null) {
-            _errorDialogBuilder(
-                context, 'Signing swap transaction failed. Try again');
-            return;
-          }
-          var asset0BalanceOld = asset0!.getBalance();
-          // var asset1BalanceOld = asset1!.getBalance();
-          var objFuture = asset0!.transmitTxBytes(signedBytes);
+          
 
           // int eIndex;
           // print("SIGNED TX");
@@ -620,22 +642,23 @@ class _SwapPage extends State<SwapPage> with ChangeNotifier {
                     Row(
                       children: [
                         FutureBuilder(
-                            future: objFuture,
-                            builder: (context, v) {
-                              if (v.data == null) {
-                                return Icon(Icons.pending);
-                              }
-                              if (!v.data!.containsKey("result") && !v.data!.containsKey("status")) {
-                                return Icon(Icons.error_outline_rounded,
-                                    color: Colors.red);
-                              }
-                              if (v.data!.containsKey("status") && v.data!["status"]!="ok") {
-                                return Icon(Icons.error_outline_rounded,
-                                    color: Colors.red);
-                              }
-                              return Icon(Icons.check_circle_outline,
-                                  color: Colors.green);
-                            }),
+                          future: objFuture,
+                          builder: (context, v) {
+                            if (v.data == null) {
+                              return Icon(Icons.pending);
+                            }
+                            if (!v.data!.containsKey("result") && !v.data!.containsKey("status")) {
+                              return Icon(Icons.error_outline_rounded,
+                                  color: Colors.red);
+                            }
+                            if (v.data!.containsKey("status") && v.data!["status"]!="ok") {
+                              return Icon(Icons.error_outline_rounded,
+                                  color: Colors.red);
+                            }
+                            return Icon(Icons.check_circle_outline,
+                                color: Colors.green);
+                          }
+                        ),
                         Text("Transaction sent")
                       ],
                     ),
@@ -662,10 +685,11 @@ class _SwapPage extends State<SwapPage> with ChangeNotifier {
                                   Text("Transaction successful")
                                 ],
                               ),
+                              SizedBox(height: 8),
                               Text(
                                 'Transaction Done\n'
                                 '${OtherHelpers.humanizeMoney(asset0!.getDecimalAmountInDouble(delta0))} ${asset0!.symbol} = ${OtherHelpers.humanizeMoney(double.parse(controller1.text))} ${asset1!.symbol}\n'
-                                '------------------------------------------------------',
+                                '-------------------------',
                                 textAlign: TextAlign.center,
                               ),
                             ],

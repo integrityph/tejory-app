@@ -2,7 +2,6 @@ import 'package:blockchain_utils/blockchain_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:tejory/apdu/channel.dart';
-import 'package:tejory/bip32/derivation_bip32_key.dart';
 import 'package:tejory/coins/pst.dart';
 import 'package:tejory/coins/tx.dart';
 import 'package:tejory/comms/medium.dart';
@@ -18,6 +17,7 @@ import 'package:tejory/wallets/tejorycard/ether_applet.dart';
 import 'package:tejory/wallets/wallet_setup_response.dart';
 import 'package:tejory/wallets/wallet_status.dart';
 import 'package:tejory/wallets/wallet_type.dart';
+import 'package:bip32_key_derivation/bip32_key_derivation.dart';
 
 class TejoryCard implements IWallet {
   WalletType type = WalletType.unknown;
@@ -300,7 +300,7 @@ class TejoryCard implements IWallet {
     bool getExtended = false,
     Bip32KeyNetVersions? keyNetVersions,
   }) {
-    var hdw = DerivationBIP32Key.fromSeed(
+    var hdw = BIP32DerivationKey.fromSeed(
       seedBytes: bip32Seed,
       keyNetVersions: keyNetVersions!,
     );

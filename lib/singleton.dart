@@ -178,11 +178,12 @@ class Singleton {
 
     groupKey = groupKey ?? 'tejory';
     await sendGroupSummary(groupKey);
+    
     AndroidNotificationDetails androidNotificationDetails =
         AndroidNotificationDetails(
           'tejory',
           'Tejory',
-          largeIcon:  DrawableResourceAndroidBitmap(groupKey.toLowerCase()),
+          largeIcon: DrawableResourceAndroidBitmap(groupKey.toLowerCase()),
           channelDescription: 'Tejory Notifications',
           importance: Importance.high,
           priority: Priority.high,
@@ -192,7 +193,9 @@ class Singleton {
           styleInformation: BigTextStyleInformation(
             body,
             contentTitle: title,
-            summaryText: groupKey,
+            // REMOVED: summaryText: groupKey, 
+            // Setting summaryText to groupKey overwrites the notification subtext with "tejory".
+            // It is better to omit it so the actual message body breathes.
             htmlFormatContent: true,
             htmlFormatBigText: true,
             htmlFormatSummaryText: true,
@@ -200,10 +203,12 @@ class Singleton {
             htmlFormatContentTitle: true,
           ),
         );
+        
     NotificationDetails notificationDetails = NotificationDetails(
       android: androidNotificationDetails,
     );
-    notificationId++;
+    
+    notificationId++; // This is fine for individual child notifications
     await flutterLocalNotificationsPlugin.show(
       notificationId,
       title,
@@ -212,6 +217,92 @@ class Singleton {
       payload: payload,
     );
   }
+
+  // static Future<void> sendNotification(
+  //   String title,
+  //   String body, {
+  //   String? payload,
+  //   String? groupKey,
+  // }) async {
+  //   if (!notificationsEnabled) {
+  //     return;
+  //   }
+
+  //   groupKey = groupKey ?? 'tejory';
+  //   await sendGroupSummary(groupKey);
+  //   AndroidNotificationDetails androidNotificationDetails =
+  //       AndroidNotificationDetails(
+  //         'tejory',
+  //         'Tejory',
+  //         largeIcon:  DrawableResourceAndroidBitmap(groupKey.toLowerCase()),
+  //         channelDescription: 'Tejory Notifications',
+  //         importance: Importance.high,
+  //         priority: Priority.high,
+  //         ticker: 'ticker',
+  //         groupKey: groupKey,
+  //         setAsGroupSummary: false,
+  //         styleInformation: BigTextStyleInformation(
+  //           body,
+  //           contentTitle: title,
+  //           summaryText: groupKey,
+  //           htmlFormatContent: true,
+  //           htmlFormatBigText: true,
+  //           htmlFormatSummaryText: true,
+  //           htmlFormatTitle: true,
+  //           htmlFormatContentTitle: true,
+  //         ),
+  //       );
+  //   NotificationDetails notificationDetails = NotificationDetails(
+  //     android: androidNotificationDetails,
+  //   );
+  //   notificationId++;
+  //   await flutterLocalNotificationsPlugin.show(
+  //     notificationId,
+  //     title,
+  //     body,
+  //     notificationDetails,
+  //     payload: payload,
+  //   );
+  // }
+
+  // static Future<void> sendGroupSummary(String groupKey) async {
+  //   if (!Platform.isAndroid) {
+  //     return;
+  //   }
+  //   if (!(await needsGroupSummary(groupKey))) {
+  //     print("No need for group summary");
+  //     return;
+  //   }
+  //   print("Needs new group summary");
+  //   AndroidNotificationDetails androidNotificationDetails =
+  //       AndroidNotificationDetails(
+  //         'tejory',
+  //         'Tejory',
+  //         channelDescription: 'Tejory Notifications',
+  //         importance: Importance.high,
+  //         priority: Priority.high,
+  //         ticker: 'ticker',
+  //         groupKey: groupKey,
+  //         setAsGroupSummary: true,
+  //         styleInformation: BigTextStyleInformation(
+  //           "",
+  //           htmlFormatContent: true,
+  //           htmlFormatBigText: true,
+  //           htmlFormatSummaryText: true,
+  //         ),
+  //       );
+  //   NotificationDetails notificationDetails = NotificationDetails(
+  //     android: androidNotificationDetails,
+  //   );
+  //   notificationId++;
+  //   await flutterLocalNotificationsPlugin.show(
+  //     notificationId,
+  //     groupKey,
+  //     groupKey,
+  //     notificationDetails,
+  //     payload: groupKey,
+  //   );
+  // }
 
   static Future<void> sendGroupSummary(String groupKey) async {
     if (!Platform.isAndroid) {
@@ -222,6 +313,11 @@ class Singleton {
       return;
     }
     print("Needs new group summary");
+    
+    // FIX 1: Create a consistent, unique ID for the summary based on the groupKey.
+    // Do NOT use the global notificationId++ here.
+    int summaryId = groupKey.hashCode;
+
     AndroidNotificationDetails androidNotificationDetails =
         AndroidNotificationDetails(
           'tejory',
@@ -232,21 +328,26 @@ class Singleton {
           ticker: 'ticker',
           groupKey: groupKey,
           setAsGroupSummary: true,
-          styleInformation: BigTextStyleInformation(
-            "",
-            htmlFormatContent: true,
-            htmlFormatBigText: true,
-            htmlFormatSummaryText: true,
+          // FIX 2: Add the largeIcon to the summary so it shows when collapsed
+          largeIcon: DrawableResourceAndroidBitmap(groupKey.toLowerCase()),
+          // FIX 3: Use InboxStyleInformation. This is the Android standard for group summaries.
+          // It allows the OS to automatically pull snippet lines from the child notifications.
+          styleInformation: const InboxStyleInformation(
+            [], // Leave empty, Android will auto-fill lines from child notifications
+            contentTitle: 'New Notifications', // Fallback title
+            summaryText: 'Tejory',
           ),
         );
+        
     NotificationDetails notificationDetails = NotificationDetails(
       android: androidNotificationDetails,
     );
-    notificationId++;
+    
+    // FIX 4: Pass `null` for title and body. Let the InboxStyleInformation handle it.
     await flutterLocalNotificationsPlugin.show(
-      notificationId,
-      groupKey,
-      groupKey,
+      summaryId, // Use the static ID
+      null,      // No hardcoded "tejory" title
+      null,      // No hardcoded "tejory" body
       notificationDetails,
       payload: groupKey,
     );

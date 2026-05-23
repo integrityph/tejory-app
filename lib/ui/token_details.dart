@@ -52,137 +52,16 @@ class _TokenDetails extends State<TokenDetails> with TickerProviderStateMixin {
       return val;
     });
 
-    print("this one too");
-
     return vTxList;
   }
 
-  Widget getTxItemOld(VisualTx tx) {
-    return Container(
-      padding: EdgeInsets.only(top: 8, bottom: 8),
-      decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(
-            color: Theme.of(context).colorScheme.primary,
-            width: 1.0,
-          ),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        tx.isDeposit
-                            ? Icons.arrow_circle_down
-                            : Icons.arrow_circle_up,
-                        color: tx.isDeposit ? Colors.green : Colors.red,
-                      ),
-                      SizedBox(width: 2),
-                      Text(
-                        '${tx.isDeposit ? "Received" : "Sent"}',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      SizedBox(width: 8),
-                      Text(
-                        DateFormat("hh:mm a").format(tx.time!),
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.normal,
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 2),
-
-                  // Text(
-                  //   "${tx.getFiatRate(asset)}",
-                  //   style: TextStyle(
-                  //     fontSize: 12,
-                  //     fontWeight: FontWeight.normal,
-                  //   ),
-                  // ),
-                  // Text(
-                  //   "${tx.time!.year.toString()}-${tx.time!.month.toString().padLeft(2, '0')}-${tx.time!.day.toString().padLeft(2, '0')} ${tx.time!.hour.toString().padLeft(2, '0')}:${tx.time!.minute.toString().padLeft(2, '0')}",
-                  //   style: TextStyle(
-                  //     fontSize: 12,
-                  //     fontWeight: FontWeight.normal,
-                  //   ),
-                  // ),
-                  Row(
-                    children: [
-                      SizedBox(width: 27),
-                      Text(
-                        DateFormat("MMM d, yyyy").format(tx.time!),
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.normal,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Row(
-                    children: [
-                      SizedBox(width: 27),
-                      Text(
-                        "Fee: ${(asset.getDecimalAmountInDouble(BigInt.from(tx.fee))).toStringAsFixed(8)}",
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.normal,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    "${tx.isDeposit ? "+" : "-"}${(asset.getDecimalAmountInDouble(BigInt.from((tx.amount > 0 ? tx.amount : -tx.amount)))).toStringAsFixed(8)}",
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontFamily: "monospace",
-                      color: tx.isDeposit ? Colors.green : Colors.red,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  SizedBox(height: 3),
-                  Text(
-                    "${tx.getFiatValue(asset)}",
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontFamily: "monospace",
-                      color: tx.isDeposit ? Colors.green : Colors.red,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          if (tx.outAddress != "" || tx.inAddress != "")
-            Text(
-              "${(tx.outAddress != "") ? tx.outAddress : tx.inAddress}",
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.normal),
-            ),
-        ],
-      ),
-    );
-  }
-
   Widget getTxItem(VisualTx tx) {
+    final rawText = (tx.outAddress != "") ? tx.outAddress : tx.inAddress;
+    
+    final parts = rawText.split('\n');
+    final address = parts[0];
+    final memo = parts.length > 1 ? parts[1] : null;
+
     return Card(
       margin: EdgeInsets.symmetric(vertical: 8, horizontal: 2),
       child: Padding(
@@ -292,14 +171,20 @@ class _TokenDetails extends State<TokenDetails> with TickerProviderStateMixin {
               ],
             ),
             if (tx.outAddress != "" || tx.inAddress != "")
-              // Text(
-              //   "${(tx.outAddress != "") ? tx.outAddress : tx.inAddress}",
-              //   style: TextStyle(fontSize: 13, fontWeight: FontWeight.normal),
-              // ),
               FittedBox(
                 fit: BoxFit.contain, // This tells it to scale down to fit
                 child: Text(
-                  "${(tx.outAddress != "") ? tx.outAddress : tx.inAddress}",
+                  "$address",
+                  style: TextStyle(
+                    fontFamily: 'monospace',
+                  ), // No need for a font size!
+                  maxLines: 1,
+                ),
+              ),
+              if (memo != null) FittedBox(
+                fit: BoxFit.contain, // This tells it to scale down to fit
+                child: Text(
+                  "$memo",
                   style: TextStyle(
                     fontFamily: 'monospace',
                   ), // No need for a font size!

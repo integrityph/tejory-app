@@ -100,16 +100,15 @@ class Channel {
       return true;
     }
     try {
-      Tuple<Uint8List?, bool> wrapperCommand =
-          Tuple<Uint8List?, bool>(null, false);
+      (Uint8List?, bool) wrapperCommand = (null, false);
       Uint8List? response;
       for (int i = 0; i < 4; i++) {
         wrapperCommand = _wrapper!.getInitializeBytes(response);
-        if (wrapperCommand.item2 == true) {
+        if (wrapperCommand.$2 == true) {
           return true;
         }
 
-        response = await sendRawBytes(wrapperCommand.item1!);
+        response = await sendRawBytes(wrapperCommand.$1!);
       }
     } catch (e) {
       print(e);

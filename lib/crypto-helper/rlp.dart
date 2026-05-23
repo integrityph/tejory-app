@@ -8,12 +8,12 @@ class RLP {
     return val;
   }
 
-  static Tuple<int, dynamic> readValue(List<int> buffer, int offset) {
+  static (int, dynamic) readValue(List<int> buffer, int offset) {
     if (buffer[offset] <= 0x7f) {
-      return Tuple<int, dynamic>(1, hex.encode(buffer.sublist(offset, offset+1)));
+      return (1, hex.encode(buffer.sublist(offset, offset+1)));
     } else if (buffer[offset] >= 0x80 && buffer[offset] <= 0xb7){
       var stringLen = buffer[offset]-0x80;
-      return Tuple<int, dynamic>(1+stringLen, hex.encode(buffer.sublist(1+offset,1+offset+stringLen)));
+      return (1+stringLen, hex.encode(buffer.sublist(1+offset,1+offset+stringLen)));
     } else if (buffer[offset] >= 0xb8 && buffer[offset] <= 0xbf){
       var lengthLen = buffer[offset]-0xb7;
       int stringLen = 0;
@@ -21,18 +21,18 @@ class RLP {
         stringLen = stringLen << 8;
         stringLen += buffer[1+offset+i];
       }
-      return Tuple<int, dynamic>(1+lengthLen+stringLen, hex.encode(buffer.sublist(1+offset+lengthLen,1+offset+lengthLen+stringLen)));
+      return (1+lengthLen+stringLen, hex.encode(buffer.sublist(1+offset+lengthLen,1+offset+lengthLen+stringLen)));
     } else if (buffer[offset] >= 0xc0 && buffer[offset] <= 0xf7){
       var listPayloadLen = buffer[offset]-0xc0;
       List<dynamic> val = [];
-      Tuple<int, dynamic> result;
+      (int, dynamic) result;
       int index = 0;
       while (index < listPayloadLen) {
         result = readValue(buffer, offset+index);
-        index += result.item1;
-        val.add(result.item2);
+        index += result.$1;
+        val.add(result.$2);
       }
-      return Tuple<int, dynamic>(1+listPayloadLen, val);
+      return (1+listPayloadLen, val);
     }else if (buffer[offset] >= 0xf8 && buffer[offset] <= 0xff){
       var lengthLen = buffer[offset]-0xf7;
       var listPayloadLen = 0;
@@ -41,18 +41,18 @@ class RLP {
         listPayloadLen += buffer[1+offset+i];
       }
       List<dynamic> val = [];
-      Tuple<int, dynamic> result;
+      (int, dynamic) result;
       int index = 0;
       while (index < listPayloadLen) {
         result = readValue(buffer, offset+lengthLen+index);
-        index += result.item1;
-        val.add(result.item2);
+        index += result.$1;
+        val.add(result.$2);
       }
-      return Tuple<int, dynamic>(1+lengthLen+listPayloadLen, val);
+      return (1+lengthLen+listPayloadLen, val);
     }
 
     // This is never reached
-    return Tuple<int, dynamic>(0, null);
+    return (0, null);
   }
 
   static List<int> encode(dynamic val) {

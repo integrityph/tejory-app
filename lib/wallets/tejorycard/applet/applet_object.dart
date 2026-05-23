@@ -1,5 +1,4 @@
 import 'dart:typed_data';
-import 'package:blockchain_utils/blockchain_utils.dart';
 import 'package:tejory/wallets/tejorycard/applet/applet_aid.dart';
 
 class AppletObject {
@@ -13,7 +12,7 @@ class AppletObject {
 
   AppletObject.fromAIDBytes(Uint8List aidBytes) : AID = AppletAID(aidBytes);
 
-  static Tuple<AppletObject, int> parseBytes(Uint8List buf, int offset) {
+  static (AppletObject, int) parseBytes(Uint8List buf, int offset) {
     if (buf.length < 5 + offset) {
       throw Exception(
           "Unable to parse AppletObject while reading AID. The length should be at least ${5 + offset} bytes but got ${buf.length}");
@@ -61,7 +60,7 @@ class AppletObject {
     temp.allowedPath = buf.sublist(offset, offset + pathLength);
     offset += pathLength;
 
-    return Tuple<AppletObject, int>(temp, offset);
+    return (temp, offset);
   }
 
   static List<AppletObject> parseAppListFromBytes(Uint8List buf, int offset) {
@@ -69,8 +68,8 @@ class AppletObject {
 
     while (buf.length - offset < 5) {
       var app = parseBytes(buf, offset);
-      appList.add(app.item1);
-      offset = app.item2;
+      appList.add(app.$1);
+      offset = app.$2;
     }
 
     return appList;

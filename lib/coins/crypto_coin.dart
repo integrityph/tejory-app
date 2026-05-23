@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:isolate';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
@@ -8,6 +9,7 @@ import 'package:tejory/coins/visual_tx.dart';
 import 'package:tejory/objectbox/balance.dart';
 import 'package:tejory/objectbox/block.dart';
 import 'package:tejory/objectbox/tx.dart';
+import 'package:tejory/objectbox/key.dart' as keyCollection;
 import 'package:tejory/crypto-helper/other_helpers.dart';
 import 'package:tejory/singleton.dart';
 import 'package:tejory/coins/network.dart';
@@ -37,6 +39,9 @@ abstract class CryptoCoin with ChangeNotifier {
   int coinIndex=0;
   String? template;
   SendPort? sendPort;
+  Map<String, Completer> isolateRequests = {};
+  bool getPrivateKeyDerivation = false;
+  final Completer seReady = Completer();
 
   CryptoCoin(
       {required this.walletId,
@@ -84,7 +89,7 @@ abstract class CryptoCoin with ChangeNotifier {
   // Update the balance from the blockchain
   Future<void> updateBalance();
 
-  Future<void> initCoin({List<Block>? blocks, List<TxDB>? txList, Balance? balanceDB});
+  Future<void> initCoin({List<Block>? blocks, List<TxDB>? txList, Balance? balanceDB, List<keyCollection.Key>? keys});
   Future<Uint8List?> signPST(PST? pst, Tx? tx, BuildContext? context);
   Future<Uint8List?> signTx(PST? pst, Tx? tx, BuildContext? context);
   List<String> getInitialDerivationPaths();
@@ -116,7 +121,7 @@ abstract class CryptoCoin with ChangeNotifier {
 
   String getTrackingURL(String txHash);
 
-  void callInternalFunction(String method, Map<String, dynamic> params) {
+  Future<dynamic> callInternalFunction(String method, Map<String, dynamic> params) async {
 
   }
 
@@ -154,6 +159,13 @@ abstract class CryptoCoin with ChangeNotifier {
           balance = message["balance"];
           isConnected = message["isConnected"];
           notifyListeners();
+      }
+
+      // Handle responses from the isolate requests
+      if (message["uuid"] is String) {
+        if (isolateRequests.containsKey(message["uuid"])) {
+          isolateRequests[message["uuid"]]!.complete(message["response"]);
+        }
       }
     }
   }
@@ -231,4 +243,18 @@ abstract class CryptoCoin with ChangeNotifier {
   }
 
   List<Network> getNetworks({String? address});
+
+  void setSeReady() {
+    if (isUIInstance) {
+      if (Singleton.assetList.assetListState.assets[assetIndex].isolate == null) {
+        return;
+      }
+      getAssetIsolatePort().send(<String, dynamic>{
+        "command": "setSeReady",
+        "params":{}
+      });
+      return;
+    }
+    seReady.complete();
+  }
 }

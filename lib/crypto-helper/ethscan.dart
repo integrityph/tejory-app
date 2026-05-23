@@ -8,7 +8,7 @@ class Ethscan {
   Ethscan.fromJson(Map<String, dynamic> json) {
     status = json['status'];
     message = json['message'];
-    if (json['result'] != null) {
+    if (json['result'] != null && json['result'] is List) {
       result = <Result>[];
       json['result'].forEach((v) {
         result!.add(new Result.fromJson(v));

@@ -6,6 +6,7 @@ import 'dart:async';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:tejory/coindesk/api.dart' as coindesk;
+import 'package:tejory/crypto-helper/se_helper.dart';
 import 'package:tejory/objectbox.g.dart';
 import 'package:tejory/objectbox/block.dart';
 import 'package:tejory/objectbox/coin.dart';
@@ -135,7 +136,7 @@ class _AssetListState extends State<AssetList> with ChangeNotifier {
 
   postCreationProcess(bool? easyImport, int walletId) {
     Singleton.assetList.assetListState
-        .updateWalletList(online: true, awaitWorkers: false)
+        .updateWalletList(online: true, awaitWorkers: true)
         .then((_) async {
           if (easyImport ?? false) {
             for (var asset in Singleton.assetList.assetListState.assets) {
@@ -147,8 +148,12 @@ class _AssetListState extends State<AssetList> with ChangeNotifier {
               coin.setupTransactionsForPathChildren(
                 coin.getInitialEasyImportPaths(),
               );
+              SEHelper.ready.future.then((_) {
+                asset.coins[0].setSeReady();
+              });
             }
           }
+
         });
   }
 
@@ -247,9 +252,9 @@ class _AssetListState extends State<AssetList> with ChangeNotifier {
     Directory dir = await getApplicationDocumentsDirectory();
     String localPath = '${dir.path}/$filePath';
     final file = File(localPath);
-    if (await file.exists()) {
-      return localPath;
-    }
+    // if (await file.exists()) {
+    //   return localPath;
+    // }
 
     ByteData data = await rootBundle.load(filePath);
     await file.create(recursive:true);
@@ -330,16 +335,14 @@ class _AssetListState extends State<AssetList> with ChangeNotifier {
   }
 
   Future<void> initLPData() async {
-    String filePath = "assets/lpdata.json";
-    String data = await rootBundle.loadString(filePath);
+    // String filePath = "assets/lpdata.json";
+    // String data = await rootBundle.loadString(filePath);
+    String filePath = await getAssetPath("assets/lpdata.json");
+    String data = await File(filePath).readAsString();
     JsonDecoder decoder = JsonDecoder();
     final Map<String, dynamic> jsonMap = decoder.convert(data);
 
     LiquidityPoolData initialLPs = LiquidityPoolData.fromJson(jsonMap);
-
-    // Isar isar = Singleton.getDB();
-
-    // DataVersion? lpsVersion = await isar.dataVersions.getByName("lps");
     DataVersion? lpsVersion = await Models.dataVersion.getUnique("lps");
 
     if ((lpsVersion?.counter ?? 0) >= initialLPs.version) {
@@ -347,12 +350,6 @@ class _AssetListState extends State<AssetList> with ChangeNotifier {
     }
 
     for (int i = 0; i < initialLPs.pools.length; i++) {
-      // LP lp =
-      //     await isar.lPs.getByCurrency0Currency1(
-      //       initialLPs.pools[i].currency0.name(),
-      //       initialLPs.pools[i].currency1.name(),
-      //     ) ??
-      //     LP();
       LP lp = await Models.lP.getUnique(
         initialLPs.pools[i].currency0.name(),
         initialLPs.pools[i].currency1.name()) ?? LP();
@@ -377,10 +374,7 @@ class _AssetListState extends State<AssetList> with ChangeNotifier {
   Future<void> getInitialAssets() async {
     await initCoinData();
 
-    // Isar isar = Singleton.getDB();
-    // final allCoins = await isar.coins.where().findAll();
     final allCoins = await Models.coin.find();
-    // final allWallets = await isar.walletDBs.where().findAll();
     final allWallets = await Models.walletDB.find();
     walletList = allWallets ?? [];
 
@@ -428,7 +422,6 @@ class _AssetListState extends State<AssetList> with ChangeNotifier {
 
     await initLPData();
 
-    // final allLPs = await isar.lPs.where().findAll();
     final allLPs = await Models.lP.find();
     for (int i = 0; i < (allLPs?.length??0); i++) {
       LiquidityPool pool = LiquidityPool.fromLP(allLPs![i]);
@@ -444,9 +437,6 @@ class _AssetListState extends State<AssetList> with ChangeNotifier {
     bool online = true,
     bool awaitWorkers = false,
   }) async {
-    // Isar isar = Singleton.getDB();
-
-    // final allWallets = await isar.walletDBs.where().findAll();
     final allWallets = await Models.walletDB.find();
     walletList = allWallets??[];
 
@@ -461,7 +451,10 @@ class _AssetListState extends State<AssetList> with ChangeNotifier {
     filteredAssets = assets.where((Asset asset) => asset.active).toList();
     notifyListeners();
     if (awaitWorkers) {
-      return Future.wait(assets.map((asset) => asset.isolate!.ready()));
+      return Future.wait(assets
+        .where((asset) => asset.isolate != null)
+        .map((asset) => asset.isolate!.ready())
+      );
     }
   }
 

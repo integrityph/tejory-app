@@ -529,7 +529,7 @@ final _entities = <obx_int.ModelEntity>[
   obx_int.ModelEntity(
     id: const obx_int.IdUid(17, 5205777595015133524),
     name: 'Key',
-    lastPropertyId: const obx_int.IdUid(7, 1109470085365711970),
+    lastPropertyId: const obx_int.IdUid(8, 7853613855547583572),
     flags: 0,
     properties: <obx_int.ModelProperty>[
       obx_int.ModelProperty(
@@ -578,64 +578,9 @@ final _entities = <obx_int.ModelEntity>[
         type: 9,
         flags: 0,
       ),
-    ],
-    relations: <obx_int.ModelRelation>[],
-    backlinks: <obx_int.ModelBacklink>[],
-  ),
-  obx_int.ModelEntity(
-    id: const obx_int.IdUid(18, 8095047103494148426),
-    name: 'LP',
-    lastPropertyId: const obx_int.IdUid(8, 4958241251776447678),
-    flags: 0,
-    properties: <obx_int.ModelProperty>[
       obx_int.ModelProperty(
-        id: const obx_int.IdUid(1, 5589613388047820182),
-        name: 'id',
-        type: 6,
-        flags: 129,
-      ),
-      obx_int.ModelProperty(
-        id: const obx_int.IdUid(2, 4145044173615401505),
-        name: 'cpk',
-        type: 9,
-        flags: 8,
-        indexId: const obx_int.IdUid(45, 28467182919635014),
-      ),
-      obx_int.ModelProperty(
-        id: const obx_int.IdUid(3, 5857978075020060631),
-        name: 'currency0',
-        type: 9,
-        flags: 2048,
-        indexId: const obx_int.IdUid(46, 7152764922134251075),
-      ),
-      obx_int.ModelProperty(
-        id: const obx_int.IdUid(4, 8608716791123284234),
-        name: 'currency1',
-        type: 9,
-        flags: 2048,
-        indexId: const obx_int.IdUid(47, 2200227469288260916),
-      ),
-      obx_int.ModelProperty(
-        id: const obx_int.IdUid(5, 2658158241291360533),
-        name: 'fee',
-        type: 6,
-        flags: 0,
-      ),
-      obx_int.ModelProperty(
-        id: const obx_int.IdUid(6, 320908176787524956),
-        name: 'tickSpacing',
-        type: 6,
-        flags: 0,
-      ),
-      obx_int.ModelProperty(
-        id: const obx_int.IdUid(7, 641464162762305975),
-        name: 'address',
-        type: 9,
-        flags: 0,
-      ),
-      obx_int.ModelProperty(
-        id: const obx_int.IdUid(8, 4958241251776447678),
-        name: 'dex',
+        id: const obx_int.IdUid(8, 7853613855547583572),
+        name: 'privateKey',
         type: 9,
         flags: 0,
       ),
@@ -709,6 +654,67 @@ final _entities = <obx_int.ModelEntity>[
     relations: <obx_int.ModelRelation>[],
     backlinks: <obx_int.ModelBacklink>[],
   ),
+  obx_int.ModelEntity(
+    id: const obx_int.IdUid(20, 4907065003314449),
+    name: 'LP',
+    lastPropertyId: const obx_int.IdUid(8, 2865419532387064097),
+    flags: 0,
+    properties: <obx_int.ModelProperty>[
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(1, 3990391542506228973),
+        name: 'id',
+        type: 6,
+        flags: 129,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(2, 656855738034949374),
+        name: 'cpk',
+        type: 9,
+        flags: 8,
+        indexId: const obx_int.IdUid(50, 7034611696726538157),
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(3, 7584935414967445110),
+        name: 'currency0',
+        type: 9,
+        flags: 2048,
+        indexId: const obx_int.IdUid(51, 7140372308070567126),
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(4, 5648427344910426223),
+        name: 'currency1',
+        type: 9,
+        flags: 2048,
+        indexId: const obx_int.IdUid(52, 728562876761018044),
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(5, 2243893125318501262),
+        name: 'fee',
+        type: 6,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(6, 3412481672098426812),
+        name: 'tickSpacing',
+        type: 6,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(7, 3640991707106339002),
+        name: 'address',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(8, 2865419532387064097),
+        name: 'dex',
+        type: 9,
+        flags: 0,
+      ),
+    ],
+    relations: <obx_int.ModelRelation>[],
+    backlinks: <obx_int.ModelBacklink>[],
+  ),
 ];
 
 /// Shortcut for [obx.Store.new] that passes [getObjectBoxModel] and for Flutter
@@ -749,8 +755,8 @@ Future<obx.Store> openStore({
 obx_int.ModelDefinition getObjectBoxModel() {
   final model = obx_int.ModelInfo(
     entities: _entities,
-    lastEntityId: const obx_int.IdUid(19, 1515191714854048137),
-    lastIndexId: const obx_int.IdUid(49, 743125748643895039),
+    lastEntityId: const obx_int.IdUid(20, 4907065003314449),
+    lastIndexId: const obx_int.IdUid(52, 728562876761018044),
     lastRelationId: const obx_int.IdUid(0, 0),
     lastSequenceId: const obx_int.IdUid(0, 0),
     retiredEntityUids: const [
@@ -764,6 +770,7 @@ obx_int.ModelDefinition getObjectBoxModel() {
       7059915045156741066,
       1040381135709065812,
       195483865321993243,
+      8095047103494148426,
     ],
     retiredIndexUids: const [],
     retiredPropertyUids: const [
@@ -833,6 +840,14 @@ obx_int.ModelDefinition getObjectBoxModel() {
       3315322114061843536,
       1963307798081484979,
       2054084805753282072,
+      5589613388047820182,
+      4145044173615401505,
+      5857978075020060631,
+      8608716791123284234,
+      2658158241291360533,
+      320908176787524956,
+      641464162762305975,
+      4958241251776447678,
     ],
     retiredRelationUids: const [],
     modelVersion: 5,
@@ -1429,7 +1444,10 @@ obx_int.ModelDefinition getObjectBoxModel() {
         final chainCodeOffset = object.chainCode == null
             ? null
             : fbb.writeString(object.chainCode!);
-        fbb.startTable(8);
+        final privateKeyOffset = object.privateKey == null
+            ? null
+            : fbb.writeString(object.privateKey!);
+        fbb.startTable(9);
         fbb.addInt64(0, object.id);
         fbb.addOffset(1, cpkOffset);
         fbb.addInt64(2, object.wallet);
@@ -1437,6 +1455,7 @@ obx_int.ModelDefinition getObjectBoxModel() {
         fbb.addOffset(4, pathOffset);
         fbb.addOffset(5, pubKeyOffset);
         fbb.addOffset(6, chainCodeOffset);
+        fbb.addOffset(7, privateKeyOffset);
         fbb.finish(fbb.endTable());
         return object.id;
       },
@@ -1467,76 +1486,8 @@ obx_int.ModelDefinition getObjectBoxModel() {
           ).vTableGetNullable(buffer, rootOffset, 14)
           ..chainCode = const fb.StringReader(
             asciiOptimization: true,
-          ).vTableGetNullable(buffer, rootOffset, 16);
-
-        return object;
-      },
-    ),
-    LP: obx_int.EntityDefinition<LP>(
-      model: _entities[7],
-      toOneRelations: (LP object) => [],
-      toManyRelations: (LP object) => {},
-      getId: (LP object) => object.id,
-      setId: (LP object, int id) {
-        object.id = id;
-      },
-      objectToFB: (LP object, fb.Builder fbb) {
-        final cpkOffset = object.cpk == null
-            ? null
-            : fbb.writeString(object.cpk!);
-        final currency0Offset = object.currency0 == null
-            ? null
-            : fbb.writeString(object.currency0!);
-        final currency1Offset = object.currency1 == null
-            ? null
-            : fbb.writeString(object.currency1!);
-        final addressOffset = object.address == null
-            ? null
-            : fbb.writeString(object.address!);
-        final dexOffset = object.dex == null
-            ? null
-            : fbb.writeString(object.dex!);
-        fbb.startTable(9);
-        fbb.addInt64(0, object.id);
-        fbb.addOffset(1, cpkOffset);
-        fbb.addOffset(2, currency0Offset);
-        fbb.addOffset(3, currency1Offset);
-        fbb.addInt64(4, object.fee);
-        fbb.addInt64(5, object.tickSpacing);
-        fbb.addOffset(6, addressOffset);
-        fbb.addOffset(7, dexOffset);
-        fbb.finish(fbb.endTable());
-        return object.id;
-      },
-      objectFromFB: (obx.Store store, ByteData fbData) {
-        final buffer = fb.BufferContext(fbData);
-        final rootOffset = buffer.derefObject(0);
-
-        final object = LP()
-          ..id = const fb.Int64Reader().vTableGet(buffer, rootOffset, 4, 0)
-          ..cpk = const fb.StringReader(
-            asciiOptimization: true,
-          ).vTableGetNullable(buffer, rootOffset, 6)
-          ..currency0 = const fb.StringReader(
-            asciiOptimization: true,
-          ).vTableGetNullable(buffer, rootOffset, 8)
-          ..currency1 = const fb.StringReader(
-            asciiOptimization: true,
-          ).vTableGetNullable(buffer, rootOffset, 10)
-          ..fee = const fb.Int64Reader().vTableGetNullable(
-            buffer,
-            rootOffset,
-            12,
-          )
-          ..tickSpacing = const fb.Int64Reader().vTableGetNullable(
-            buffer,
-            rootOffset,
-            14,
-          )
-          ..address = const fb.StringReader(
-            asciiOptimization: true,
           ).vTableGetNullable(buffer, rootOffset, 16)
-          ..dex = const fb.StringReader(
+          ..privateKey = const fb.StringReader(
             asciiOptimization: true,
           ).vTableGetNullable(buffer, rootOffset, 18);
 
@@ -1544,7 +1495,7 @@ obx_int.ModelDefinition getObjectBoxModel() {
       },
     ),
     WalletDB: obx_int.EntityDefinition<WalletDB>(
-      model: _entities[8],
+      model: _entities[7],
       toOneRelations: (WalletDB object) => [],
       toManyRelations: (WalletDB object) => {},
       getId: (WalletDB object) => object.id,
@@ -1619,6 +1570,77 @@ obx_int.ModelDefinition getObjectBoxModel() {
             20,
             0,
           );
+
+        return object;
+      },
+    ),
+    LP: obx_int.EntityDefinition<LP>(
+      model: _entities[8],
+      toOneRelations: (LP object) => [],
+      toManyRelations: (LP object) => {},
+      getId: (LP object) => object.id,
+      setId: (LP object, int id) {
+        object.id = id;
+      },
+      objectToFB: (LP object, fb.Builder fbb) {
+        final cpkOffset = object.cpk == null
+            ? null
+            : fbb.writeString(object.cpk!);
+        final currency0Offset = object.currency0 == null
+            ? null
+            : fbb.writeString(object.currency0!);
+        final currency1Offset = object.currency1 == null
+            ? null
+            : fbb.writeString(object.currency1!);
+        final addressOffset = object.address == null
+            ? null
+            : fbb.writeString(object.address!);
+        final dexOffset = object.dex == null
+            ? null
+            : fbb.writeString(object.dex!);
+        fbb.startTable(9);
+        fbb.addInt64(0, object.id);
+        fbb.addOffset(1, cpkOffset);
+        fbb.addOffset(2, currency0Offset);
+        fbb.addOffset(3, currency1Offset);
+        fbb.addInt64(4, object.fee);
+        fbb.addInt64(5, object.tickSpacing);
+        fbb.addOffset(6, addressOffset);
+        fbb.addOffset(7, dexOffset);
+        fbb.finish(fbb.endTable());
+        return object.id;
+      },
+      objectFromFB: (obx.Store store, ByteData fbData) {
+        final buffer = fb.BufferContext(fbData);
+        final rootOffset = buffer.derefObject(0);
+
+        final object = LP()
+          ..id = const fb.Int64Reader().vTableGet(buffer, rootOffset, 4, 0)
+          ..cpk = const fb.StringReader(
+            asciiOptimization: true,
+          ).vTableGetNullable(buffer, rootOffset, 6)
+          ..currency0 = const fb.StringReader(
+            asciiOptimization: true,
+          ).vTableGetNullable(buffer, rootOffset, 8)
+          ..currency1 = const fb.StringReader(
+            asciiOptimization: true,
+          ).vTableGetNullable(buffer, rootOffset, 10)
+          ..fee = const fb.Int64Reader().vTableGetNullable(
+            buffer,
+            rootOffset,
+            12,
+          )
+          ..tickSpacing = const fb.Int64Reader().vTableGetNullable(
+            buffer,
+            rootOffset,
+            14,
+          )
+          ..address = const fb.StringReader(
+            asciiOptimization: true,
+          ).vTableGetNullable(buffer, rootOffset, 16)
+          ..dex = const fb.StringReader(
+            asciiOptimization: true,
+          ).vTableGetNullable(buffer, rootOffset, 18);
 
         return object;
       },
@@ -2004,87 +2026,92 @@ class Key_ {
   static final chainCode = obx.QueryStringProperty<Key>(
     _entities[6].properties[6],
   );
-}
 
-/// [LP] entity fields to define ObjectBox queries.
-class LP_ {
-  /// See [LP.id].
-  static final id = obx.QueryIntegerProperty<LP>(_entities[7].properties[0]);
-
-  /// See [LP.cpk].
-  static final cpk = obx.QueryStringProperty<LP>(_entities[7].properties[1]);
-
-  /// See [LP.currency0].
-  static final currency0 = obx.QueryStringProperty<LP>(
-    _entities[7].properties[2],
+  /// See [Key.privateKey].
+  static final privateKey = obx.QueryStringProperty<Key>(
+    _entities[6].properties[7],
   );
-
-  /// See [LP.currency1].
-  static final currency1 = obx.QueryStringProperty<LP>(
-    _entities[7].properties[3],
-  );
-
-  /// See [LP.fee].
-  static final fee = obx.QueryIntegerProperty<LP>(_entities[7].properties[4]);
-
-  /// See [LP.tickSpacing].
-  static final tickSpacing = obx.QueryIntegerProperty<LP>(
-    _entities[7].properties[5],
-  );
-
-  /// See [LP.address].
-  static final address = obx.QueryStringProperty<LP>(
-    _entities[7].properties[6],
-  );
-
-  /// See [LP.dex].
-  static final dex = obx.QueryStringProperty<LP>(_entities[7].properties[7]);
 }
 
 /// [WalletDB] entity fields to define ObjectBox queries.
 class WalletDB_ {
   /// See [WalletDB.id].
   static final id = obx.QueryIntegerProperty<WalletDB>(
-    _entities[8].properties[0],
+    _entities[7].properties[0],
   );
 
   /// See [WalletDB.cpk].
   static final cpk = obx.QueryStringProperty<WalletDB>(
-    _entities[8].properties[1],
+    _entities[7].properties[1],
   );
 
   /// See [WalletDB.name].
   static final name = obx.QueryStringProperty<WalletDB>(
-    _entities[8].properties[2],
+    _entities[7].properties[2],
   );
 
   /// See [WalletDB.fingerPrint].
   static final fingerPrint = obx.QueryStringProperty<WalletDB>(
-    _entities[8].properties[3],
+    _entities[7].properties[3],
   );
 
   /// See [WalletDB.extendedPrivKey].
   static final extendedPrivKey = obx.QueryStringProperty<WalletDB>(
-    _entities[8].properties[4],
+    _entities[7].properties[4],
   );
 
   /// See [WalletDB.easyImport].
   static final easyImport = obx.QueryBooleanProperty<WalletDB>(
-    _entities[8].properties[5],
+    _entities[7].properties[5],
   );
 
   /// See [WalletDB.startYear].
   static final startYear = obx.QueryDateProperty<WalletDB>(
-    _entities[8].properties[6],
+    _entities[7].properties[6],
   );
 
   /// See [WalletDB.serialNumber].
   static final serialNumber = obx.QueryStringProperty<WalletDB>(
-    _entities[8].properties[7],
+    _entities[7].properties[7],
   );
 
   /// See [WalletDB.dbType].
   static final dbType = obx.QueryIntegerProperty<WalletDB>(
-    _entities[8].properties[8],
+    _entities[7].properties[8],
   );
+}
+
+/// [LP] entity fields to define ObjectBox queries.
+class LP_ {
+  /// See [LP.id].
+  static final id = obx.QueryIntegerProperty<LP>(_entities[8].properties[0]);
+
+  /// See [LP.cpk].
+  static final cpk = obx.QueryStringProperty<LP>(_entities[8].properties[1]);
+
+  /// See [LP.currency0].
+  static final currency0 = obx.QueryStringProperty<LP>(
+    _entities[8].properties[2],
+  );
+
+  /// See [LP.currency1].
+  static final currency1 = obx.QueryStringProperty<LP>(
+    _entities[8].properties[3],
+  );
+
+  /// See [LP.fee].
+  static final fee = obx.QueryIntegerProperty<LP>(_entities[8].properties[4]);
+
+  /// See [LP.tickSpacing].
+  static final tickSpacing = obx.QueryIntegerProperty<LP>(
+    _entities[8].properties[5],
+  );
+
+  /// See [LP.address].
+  static final address = obx.QueryStringProperty<LP>(
+    _entities[8].properties[6],
+  );
+
+  /// See [LP.dex].
+  static final dex = obx.QueryStringProperty<LP>(_entities[8].properties[7]);
 }

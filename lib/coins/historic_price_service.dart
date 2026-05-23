@@ -62,18 +62,22 @@ class HistoricPriceService {
     final priceFetchMutex = Mutex();
 
     final updatePrice = ([int? txId]) {
+      print("updating USD price for ${txId} - received");
       priceFetchMutex.protect(() async {
+        print("updating USD price for ${txId} - started");
         if (box == null) {
+          print("updating USD price for ${txId} - failed 0");
           return;
         }
         Condition<TxDB> q = TxDB_.usdAmount.isNull();
         if (txId != null) {
-          q = TxDB_.id.equals(txId);
+          q = TxDB_.id.equals(txId) & TxDB_.usdAmount.isNull();
         }
         final List<TxDB> txList = box!.txDBBox.query(q).build().find();
 
         for (final tx in txList) {
           if (tx.usdAmount != null || tx.coin == null) {
+            print("updating USD price for ${txId} - failed 1");
             continue;
           }
 
@@ -89,10 +93,13 @@ class HistoricPriceService {
           tx.usdAmount = await _fetchPrice(symbol, tx.time);
 
           if (tx.usdAmount == null) {
+            print("updating USD price for ${txId} - failed 2");
             continue;
           }
-          await tx.save();
+          await TxDBModel().upsert(tx);
+          print("updating USD price for ${txId} - DONE");
         }
+        return null;
       });
     };
 

@@ -2,13 +2,13 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:blockchain_utils/bip/bip.dart';
-import 'package:tejory/bip32/derivation_bip32_key.dart';
 import 'package:tejory/objectbox/wallet_db.dart';
 import 'package:tejory/box_models.g.dart';
 import 'package:tejory/wallets/iwallet.dart';
 import 'package:tejory/wallets/softwarewallet/software_wallet.dart';
 import 'package:tejory/wallets/tejorycard/tejory_card.dart';
 import 'package:tejory/wallets/wallet_type.dart';
+import 'package:bip32_key_derivation/bip32_key_derivation.dart';
 
 class Wallet {
   int? id;
@@ -69,7 +69,7 @@ class Wallet {
       // var x = Bip32Slip10Secp256k1.fromSeed([]);
       // x.publicKey.toExtended
       // var seedArr = bip39.mnemonicToSeed(mnemonic);
-      var hdw = DerivationBIP32Key.fromSeed(
+      var hdw = BIP32DerivationKey.fromSeed(
         seedBytes: seedArr,
         keyNetVersions: Bip32KeyNetVersions(
           [0x04, 0x35, 0x87, 0xCF],

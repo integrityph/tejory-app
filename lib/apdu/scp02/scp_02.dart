@@ -54,14 +54,14 @@ class SCP02 extends ChannelWrapper {
   }
 
   @override
-  Tuple<Uint8List?, bool> getInitializeBytes(Uint8List? previousResponse) {
+  (Uint8List?, bool) getInitializeBytes(Uint8List? previousResponse) {
     // First SELECT command
     List<int> buffer;
     if (authState == SCP02Phase.UNSECURE) {
       print("Phase UNSECURE, sending SELECT");
       buffer = [ISO7816.CLA_ISO, ISO7816.INS_SELECT, 0x04, 0x00, 0x00];
       authState = SCP02Phase.SD_SELECT;
-      return Tuple<Uint8List?, bool>(Uint8List.fromList(buffer), false);
+      return (Uint8List.fromList(buffer), false);
     }
 
     // Second INITIALIZE UPDATE command
@@ -71,7 +71,7 @@ class SCP02 extends ChannelWrapper {
       if (previousResponse == null || previousResponse.length < 2) {
         print("Phase SD_SELECT, previousResponse is null");
         authState = SCP02Phase.UNSECURE;
-        return Tuple<Uint8List?, bool>(null, false);
+        return (null, false);
       }
 
       List<int> SW =
@@ -80,7 +80,7 @@ class SCP02 extends ChannelWrapper {
       if (SW[0] != 0x90 || SW[1] != 0x00) {
         print("Phase SD_SELECT, previousResponse SW is not 9000");
         authState = SCP02Phase.UNSECURE;
-        return Tuple<Uint8List?, bool>(null, false);
+        return (null, false);
       }
 
       // Generate hostChallenge
@@ -96,7 +96,7 @@ class SCP02 extends ChannelWrapper {
       buffer.add(0x00); // le
       print("Phase SD_SELECT, sending INITIALIZE_UPDATE");
       authState = SCP02Phase.INITIALIZE_UPDATE;
-      return Tuple<Uint8List?, bool>(Uint8List.fromList(buffer), false);
+      return (Uint8List.fromList(buffer), false);
     }
 
     // Third EXTERNAL AUTHENTICATE Command
@@ -175,7 +175,7 @@ class SCP02 extends ChannelWrapper {
 
       command.add(0x00); //le
       authState = SCP02Phase.EXTERNAL_AUTHENTICATE;
-      return Tuple<Uint8List?, bool>(Uint8List.fromList(command), false);
+      return (Uint8List.fromList(command), false);
     }
 
     // check the response of EXTERNAL AUTHENTICATE Command, then return true or false
@@ -194,10 +194,10 @@ class SCP02 extends ChannelWrapper {
         throw Exception("SDDSSSSSS");
       }
       authState = SCP02Phase.SECURE_CMAC;
-      return Tuple<Uint8List?, bool>(null, true);
+      return (null, true);
     }
 
-    return Tuple<Uint8List?, bool>(null, false);
+    return (null, false);
   }
 
   @override

@@ -21,16 +21,14 @@ configurations {
 
 android {
     namespace = "ph.integritynet.tejory"
-    // compileSdk = flutter.compileSdkVersion
-    compileSdk = 35
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
-			// Flag to enable support for the new language APIs
     	coreLibraryDesugaringEnabled true
 
-			sourceCompatibility = JavaVersion.VERSION_17
-			targetCompatibility = JavaVersion.VERSION_17
+		sourceCompatibility = JavaVersion.VERSION_17
+		targetCompatibility = JavaVersion.VERSION_17
     }
     
     kotlinOptions {
@@ -39,13 +37,8 @@ android {
 
     defaultConfig {
         applicationId = "ph.integritynet.tejory"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://docs.flutter.dev/deployment/android#reviewing-the-gradle-build-configuration.
-        //flutter.minSdkVersion
-        // minSdk =  flutter.minSdkVersion
-				minSdk =  24
-        // targetSdk = flutter.targetSdkVersion
-        targetSdk = 35
+		minSdk =  24
+        targetSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
@@ -57,37 +50,32 @@ android {
             storeFile = keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']) : null
             storePassword = keystoreProperties['storePassword']
         }
-				debug {
-						keyAlias = keystoreProperties['keyAlias']
+		debug {
+			keyAlias = keystoreProperties['keyAlias']
             keyPassword = keystoreProperties['keyPassword']
             storeFile = keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']) : null
             storePassword = keystoreProperties['storePassword']
-				}
+		}
     }
     buildTypes {
         release {
-						shrinkResources true
-						minifyEnabled true
+			shrinkResources true
+			minifyEnabled true
             signingConfig = signingConfigs.release
-						proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+			proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
-				debug {
-						shrinkResources false
-						minifyEnabled false
+		debug {
+			shrinkResources false
+			minifyEnabled false
             signingConfig = signingConfigs.release
-        }
-    }
-		externalNativeBuild {
-        cmake {
-            path "src/main/cpp/CMakeLists.txt" // Points to top-level CMake for native code
         }
     }
 }
 
 dependencies {
-	implementation 'androidx.window:window:1.0.0'
-	implementation 'androidx.window:window-java:1.0.0'
-  coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'
+    implementation 'androidx.window:window:1.0.0'
+    implementation 'androidx.window:window-java:1.0.0'
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'
 	// Add the Android library with ObjectBox Admin only for debug builds.
 	// Note: when the objectbox package updates, check if the Android
 	// library below needs to be updated as well.

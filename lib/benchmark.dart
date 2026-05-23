@@ -16,7 +16,6 @@
 // import 'package:tejory/crypto-helper/hd_wallet.dart';
 // import 'package:tejory/crypto-helper/other_helpers.dart';
 // import 'package:tejory/libopensslffi/libopensslffi.dart';
-// import 'package:tejory/libsecp256k1ffi/libsecp256k1ffi.dart';
 // import 'package:tejory/ui/setup/seed_dropdown.dart';
 // import 'package:tejory/ui/setup/word_list.dart';
 

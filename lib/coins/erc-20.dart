@@ -104,7 +104,7 @@ class ERC20 extends CryptoCoin {
   }
 
   @override
-  Future<void> initCoin({List<Block>? blocks, List<TxDB>? txList, Balance? balanceDB}) async {
+  Future<void> initCoin({List<Block>? blocks, List<TxDB>? txList, Balance? balanceDB, List<keyCollection.Key>? keys}) async {
     if (balanceDB != null && balanceDB.coinBalance != null) {
       balance = BigInt.from(balanceDB.coinBalance!);
     }
@@ -698,12 +698,13 @@ class ERC20 extends CryptoCoin {
     try {
       response = await http.get(URL).timeout(Duration(seconds: 5));
       jObj = jsonDecode(response.body) as Map<String, dynamic>;
+      debugPrint("ETH.jObj: ${jObj}");
     } catch (e) {
       return;
     }
 
     Ethscan resultObj = Ethscan.fromJson(jObj);
-    if (resultObj.result == null) {
+    if (resultObj.result == null || resultObj.result is String) {
       return;
     }
     // var isar = Singleton.getDB();
