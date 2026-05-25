@@ -26,6 +26,7 @@ import 'package:tejory/coins/crypto_coin.dart';
 import 'package:tejory/coins/network.dart';
 import 'package:tejory/coins/psbt.dart';
 import 'package:tejory/coins/pst.dart';
+import 'package:tejory/coins/spark_tx.dart';
 import 'package:tejory/coins/tx.dart';
 import 'package:tejory/coins/visual_tx.dart';
 import 'package:tejory/coins/wallet.dart';
@@ -349,14 +350,22 @@ class SparkBTC extends CryptoCoin {
 
   @override
   Future<Tx?> makeTransaction(String toAddress, BigInt amount, {noChange = false}) async {
-    if (isUIInstance) {
+    if (isUIInstance) {  
+      final uuid = UUID.generateUUIDv4();
+      isolateRequests[uuid] = Completer();
       getAssetIsolatePort().send(<String, dynamic>{
         "command": "makeTransaction",
-        "params": {"toAddress": toAddress, "amount": amount, "noChange": noChange},
+        "params": {
+          "toAddress": toAddress,
+          "amount": amount,
+          "noChange": noChange,
+        },
+        "uuid": uuid,
       });
       
-      var tx = new BitcoinTx();
-      return tx;
+      final result = ((await isolateRequests[uuid]!.future) as Tx?) ?? null;
+      isolateRequests.remove(uuid);
+      return result;
     }
 
     DecodedSparkAddressData? sparkAddress;
@@ -364,10 +373,11 @@ class SparkBTC extends CryptoCoin {
       sparkAddress = decodeSparkAddress(toAddress);
     } catch (_) {}
     
-
+    Uint8List rawBytes;
     if (sparkAddress != null && sparkAddress.sparkInvoiceFields == null) {
       try {
-        await spark!.transfer(amountSats: amount, receiverSparkAddress: toAddress);
+        final transfer = await spark!.transfer(amountSats: amount, receiverSparkAddress: toAddress);
+        rawBytes = utf8.encode(transfer.id);
       } catch (e) {
         debugPrint("Unable to make transfer. $e");
         return null;
@@ -379,6 +389,7 @@ class SparkBTC extends CryptoCoin {
           debugPrint("Error in fulfillSparkInvoice for sats. invalidInvoices: ${result.invalidInvoices}, satsTransactionErrors: ${result.satsTransactionErrors}");
           return null;
         }
+        rawBytes = utf8.encode(result.satsTransactionSuccess[0].transferResponse.id);
       } catch (e) {
         debugPrint("Unable to make spark sats invoice payment. $e");
         return null;
@@ -398,7 +409,7 @@ class SparkBTC extends CryptoCoin {
       ) {
         return null;
       }
-
+      rawBytes = utf8.encode(response.walletTransfer?.id ?? "");
       // // get the actual fee
       // fee = BigInt.from(response.lightningSendRequest!.fee.getValueInSatoshi());
 
@@ -418,9 +429,12 @@ class SparkBTC extends CryptoCoin {
       // ..blockHash = ""
       // ..lockingScript = "";
       // await tx.save();
+    } else {
+      throw Exception("Unknown tranfer method");
     }
     
-    var tx = BitcoinTx();
+    var tx = SparkTx();
+    tx.fromTxBytes(rawBytes);
     return tx;
   }
 
@@ -443,7 +457,7 @@ class SparkBTC extends CryptoCoin {
 
   @override
   Future<Uint8List?> signPST(PST? pst, Tx? tx, BuildContext? context) async {
-    return Uint8List(0);
+    return tx?.getRawTX();
   }
 
   @override
@@ -891,8 +905,10 @@ class SparkBTC extends CryptoCoin {
       .toSet() // Using .toSet() ensures you don't call the API multiple times for the same transaction
       .toList();
     
-    response = await spark!.queryTokenTransactionsByTxHashes(missingTxHashesToFetch);
-    txList = [...response.tokenTransactionsWithStatus, ...txList];
+    if (missingTxHashesToFetch.isNotEmpty) {
+      response = await spark!.queryTokenTransactionsByTxHashes(missingTxHashesToFetch);
+      txList = [...response.tokenTransactionsWithStatus, ...txList];
+    }
 
     return txList;
   }

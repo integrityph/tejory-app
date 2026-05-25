@@ -61,6 +61,7 @@ class _SenderState extends State<Sender> {
   late final bool startInQR;
   List<Asset> currentAssetList = [];
   List<Network> currentNetworkList = [];
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -410,6 +411,7 @@ class _SenderState extends State<Sender> {
   }
 
   final TextEditingController controller = TextEditingController();
+
   @override
   Widget build(BuildContext context) {
     return Stack(
@@ -457,6 +459,15 @@ class _SenderState extends State<Sender> {
           ),
         ),
         numpad,
+        if (_isLoading)
+          Positioned.fill(
+            child: Container(
+              color: Colors.black.withValues(alpha: 0.4),
+              child: const Center(
+                child: CircularProgressIndicator(),
+              ),
+            ),
+          ),
       ],
     );
   }
@@ -938,17 +949,31 @@ class _SenderState extends State<Sender> {
         // Uint8List addressBytes = asset!.getAddressBytes(address);
         var amountStr = amountController.text;
         var amount = double.parse(amountStr);
-        Tx? tx = await asset!.makeTransaction(
-          address,
-          asset!.getBaseAmount(amount),
-          noChange: _isMax,
-        );
+        Tx? tx;
+        String? txError;
+        setState(() {
+          _isLoading = true;
+        });
+        try {
+          tx = await asset!.makeTransaction(
+            address,
+            asset!.getBaseAmount(amount),
+            noChange: _isMax,
+          );
+        } catch (e) {
+          txError = e.toString();
+        }
+        
+        setState(() {
+          _isLoading = false;
+        });
+
         if (tx == null) {
           showDialog(
             context: context,
             builder: (context) {
               return AlertDialog(
-                content: Text('Unable to generate transaction'),
+                content: Text('Unable to generate transaction $txError'),
               );
             },
           );

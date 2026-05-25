@@ -6,6 +6,8 @@ import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tejory/coins/bitcoin.dart';
+import 'package:tejory/coins/btkn.dart';
+import 'package:tejory/coins/spark_btc.dart';
 import 'package:tejory/singleton.dart';
 import 'package:tejory/ui/components/pin_code_dialog.dart';
 import 'package:tejory/ui/currency.dart';
@@ -367,7 +369,7 @@ class _SettingsPageState extends State<SettingsPage> with ChangeNotifier {
               spacing: 10,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _linkTerminalWithQRCode(context),
+                // _linkTerminalWithQRCode(context),
                 _linkTerminalWithToken(context),
                 _linkTejoryBusiness(context),
               ],
@@ -1249,62 +1251,66 @@ class _SettingsPageState extends State<SettingsPage> with ChangeNotifier {
               return;
             }
 
-            // Generate a pseudo random 33 bytes that starts with ff to emulate an uninitialized terminal
-            final terminalToken =
-                "ff" +
-                hex.encode(
-                  List<int>.generate(32, (i) => Random.secure().nextInt(256)),
-                );
+            // // Generate a pseudo random 33 bytes that starts with ff to emulate an uninitialized terminal
+            // final terminalToken =
+            //     "ff" +
+            //     hex.encode(
+            //       List<int>.generate(32, (i) => Random.secure().nextInt(256)),
+            //     );
 
-            print("${terminalName} ${terminalToken}");
+            // print("${terminalName} ${terminalToken}");
 
-            final terminalInfo = await _createTerminal(
-              context,
-              terminalName,
-              terminalToken, // Assuming this is passed to your function
-            );
+            // final terminalInfo = await _createTerminal(
+            //   context,
+            //   terminalName,
+            //   terminalToken, // Assuming this is passed to your function
+            // );
 
-            // --- This error handling part remains the same ---
-            if (terminalInfo == null) {
-              // Check if the widget is still mounted before showing UI
-              if (!context.mounted) return;
-              const snackBar = SnackBar(
-                content: Row(
-                  children: [
-                    Icon(
-                      Icons.error_outline,
-                      size: 50,
-                      color: Color.fromARGB(255, 206, 51, 51),
-                    ),
-                    SizedBox(width: 8),
-                    Text("Failed to link terminal. Try again"),
-                  ],
-                ),
-              );
-              ScaffoldMessenger.of(context).showSnackBar(snackBar);
-              return;
-            }
+            // // --- This error handling part remains the same ---
+            // if (terminalInfo == null) {
+            //   // Check if the widget is still mounted before showing UI
+            //   if (!context.mounted) return;
+            //   const snackBar = SnackBar(
+            //     content: Row(
+            //       children: [
+            //         Icon(
+            //           Icons.error_outline,
+            //           size: 50,
+            //           color: Color.fromARGB(255, 206, 51, 51),
+            //         ),
+            //         SizedBox(width: 8),
+            //         Text("Failed to link terminal. Try again"),
+            //       ],
+            //     ),
+            //   );
+            //   ScaffoldMessenger.of(context).showSnackBar(snackBar);
+            //   return;
+            // }
 
-            // --- This is the new success dialog ---
-            // Check if the widget is still mounted before showing UI
-            if (!context.mounted) return;
+            // // --- This is the new success dialog ---
+            // // Check if the widget is still mounted before showing UI
+            // if (!context.mounted) return;
 
-            final pubkey = terminalInfo["pubkey"];
-            final token = terminalInfo["token"];
-            final initCode = "$pubkey:$token:$terminalName";
+            // final pubkey = terminalInfo["pubkey"];
+            // final token = terminalInfo["token"];
+            // final initCode = "$pubkey:$token:$terminalName";
+
+            final sparkCoin = Singleton.assetList.assetListState.findAsset("USDB")!.coins[0] as BTKN;
+            final sparkInvoice = await sparkCoin.getTerminalLinkAddress(terminalName);
+            final initCode = "$sparkInvoice:$terminalName";
 
             await showDialog(
               context: context,
               builder: (dialogContext) {
                 return AlertDialog(
-                  title: const Text('Terminal Linked Successfully'),
+                  title: const Text('Terminal Link Code'),
                   // Use SelectableText to make the code easy to copy manually
                   content: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        'Scan this code with your Tejory Business app:',
+                        'Copy this code and past it in Tejory Terminal to link it:',
                       ),
                       const SizedBox(height: 16),
                       SelectableText(

@@ -1,10 +1,16 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:tejory/coins/tx.dart';
 
 class SparkTx implements Tx {
+  Uint8List _raw = Uint8List(0);
+
   @override
-  fromTxBytes(Uint8List buffer) {}
+  fromTxBytes(Uint8List buffer) {
+    _raw = buffer;
+    return this;
+  }
 
   @override
   BigInt getFee() {
@@ -13,11 +19,11 @@ class SparkTx implements Tx {
 
   @override
   String getHashHex() {
-    return "";
+    return utf8.decode(_raw);
   }
 
   @override
   Uint8List getRawTX() {
-    return Uint8List(0);
+    return _raw;
   }
 }

@@ -26,6 +26,7 @@ import 'package:tejory/coins/network.dart';
 import 'package:tejory/coins/psbt.dart';
 import 'package:tejory/coins/pst.dart';
 import 'package:tejory/coins/spark_btc.dart';
+import 'package:tejory/coins/spark_tx.dart';
 import 'package:tejory/coins/tx.dart';
 import 'package:tejory/coins/visual_tx.dart';
 import 'package:tejory/coins/wallet.dart';
@@ -176,7 +177,6 @@ class BTKN extends CryptoCoin {
   }) async {
     switch (network) {
       case ("SPKBTC"):
-      // return await spark.createTokensInvoice(tokenIdentifier: btknId!, memo: "terminal 1");
         return await spark.getReceivingAddress(network: network, amount: amount);
       case ("SPKBTCI"): // Spark Invoice
         if (amount == null) {
@@ -186,6 +186,10 @@ class BTKN extends CryptoCoin {
       default:
         return "";
     }
+  }
+
+  Future<String> getTerminalLinkAddress(String terminalName) async {
+    return await spark.createTokensInvoice(tokenIdentifier: btknId!, memo: terminalName);
   }
 
   @override
@@ -215,11 +219,13 @@ class BTKN extends CryptoCoin {
       sparkAddress = decodeSparkAddress(toAddress);
     } catch (_) {}
 
+    Uint8List rawBytes = Uint8List(0);
     if (sparkAddress != null && sparkAddress.sparkInvoiceFields == null) {
       final txHash = await spark.transferToken(btknId!, toAddress, amount);
       if (txHash == null) {
         return null;
       }
+      rawBytes = utf8.encode(txHash);
     } else if (sparkAddress != null && sparkAddress.sparkInvoiceFields?.paymentType?.type == "tokens") {
       final result = await spark.fulfillSparkInvoice(amount, toAddress);
       if (result == null) {
@@ -229,11 +235,13 @@ class BTKN extends CryptoCoin {
         debugPrint("Error in fulfillSparkInvoice for tokens. invalidInvoices: ${result.invalidInvoices}, tokenTransactionErrors: ${result.tokenTransactionErrors}");
         return null;
       }
+      rawBytes = utf8.encode(result.tokenTransactionSuccess[0].txid);
     } else {
       return null;
     }
 
-    var tx = BitcoinTx();
+    var tx = SparkTx();
+    tx.fromTxBytes(rawBytes);
     return tx;
   }
 
@@ -256,7 +264,7 @@ class BTKN extends CryptoCoin {
 
   @override
   Future<Uint8List?> signPST(PST? pst, Tx? tx, BuildContext? context) async {
-    return Uint8List(0);
+    return tx?.getRawTX();
   }
 
   @override

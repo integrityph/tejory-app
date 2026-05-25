@@ -62,11 +62,8 @@ class HistoricPriceService {
     final priceFetchMutex = Mutex();
 
     final updatePrice = ([int? txId]) {
-      print("updating USD price for ${txId} - received");
       priceFetchMutex.protect(() async {
-        print("updating USD price for ${txId} - started");
         if (box == null) {
-          print("updating USD price for ${txId} - failed 0");
           return;
         }
         Condition<TxDB> q = TxDB_.usdAmount.isNull();
@@ -77,7 +74,6 @@ class HistoricPriceService {
 
         for (final tx in txList) {
           if (tx.usdAmount != null || tx.coin == null) {
-            print("updating USD price for ${txId} - failed 1");
             continue;
           }
 
@@ -93,11 +89,9 @@ class HistoricPriceService {
           tx.usdAmount = await _fetchPrice(symbol, tx.time);
 
           if (tx.usdAmount == null) {
-            print("updating USD price for ${txId} - failed 2");
             continue;
           }
           await TxDBModel().upsert(tx);
-          print("updating USD price for ${txId} - DONE");
         }
         return null;
       });

@@ -25,7 +25,7 @@ class AssetIsolate {
   }
 
   void _initializeReceivePorts() {
-    receivePorts = List.filled(coins.length, ReceivePort());
+    receivePorts = List.generate(coins.length, (_) => ReceivePort());
     for (int i = 0; i < receivePorts.length; i++) {
       final coinId = coins[i].id; // Or another unique ID from coins[i]
       receivePorts[i].listen((message) {

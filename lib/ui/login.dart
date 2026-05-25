@@ -26,6 +26,10 @@ class _LoginState extends State<Login>  with SingleTickerProviderStateMixin {
   void initState() {
     super.initState();
 
+    sanityCheck();
+
+    SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+
     _controller = AnimationController(
       duration: Duration(seconds: 4),
       vsync: this,
@@ -61,16 +65,15 @@ class _LoginState extends State<Login>  with SingleTickerProviderStateMixin {
       ),
     ]).animate(_controller);
 
-    Singleton.initNotifications();
-    SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+    HistoricPriceService.start();
 
     Singleton.assetList = AssetList(
       humanizeMoney: OtherHelpers.humanizeMoney,
     );
-    Singleton.loaded = Singleton.assetList.assetListState.loadAssets();
-    HistoricPriceService.start();
 
     () async {
+      await Singleton.initNotifications();
+      Singleton.loaded = Singleton.assetList.assetListState.loadAssets();
       while (true) {
         final ok = await SEHelper.unlock();
         if (!ok) {
@@ -113,6 +116,15 @@ class _LoginState extends State<Login>  with SingleTickerProviderStateMixin {
         return;
       }
     }();
+  }
+
+  void sanityCheck() {
+    if (bssl.sha1.hash([])==null) {
+      throw Exception("boringSSLFFI didn't load");
+    }
+    if (secp256k1FFI.taggedSHA256.hash([],[])==null) {
+      throw Exception("secp256k1FFI didn't load");
+    }
   }
 
   @override
